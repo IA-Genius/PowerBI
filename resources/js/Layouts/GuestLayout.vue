@@ -12,9 +12,9 @@ import { Link } from '@inertiajs/vue3';
                 <ApplicationLogo class="fill-current text-gray-500" />
             </Link>
         </div>
-
+        
         <div
-            class="mt-6 w-full overflow-hidden bg-white px-6 py-4 shadow-md sm:max-w-md sm:rounded-lg"
+            class="mt-6 overflow-hidden bg-white px-6 py-4 shadow-md sm:max-w-md sm:rounded-lg w-full s"
         >
             <slot />
         </div>
