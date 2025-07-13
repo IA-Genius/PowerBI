@@ -9,79 +9,105 @@ use Inertia\Inertia;
 class UserController extends Controller
 {
     // Listar todos los usuarios
-
-    public function index()
+    public function index(Request $request)
     {
-        $users = \App\Models\User::all();
+        $users = User::all();
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'data' => $users
+            ]);
+        }
+
         return Inertia::render('GestionarUsuarios', [
             'users' => $users,
             'success' => session('success'),
         ]);
     }
 
-    // Mostrar el formulario para crear un usuario
-    public function create()
-    {
-        return view('users.create');
-    }
-
-
     // Guardar un nuevo usuario
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users',
             'password' => 'required|string|min:6',
             'active' => 'required|boolean',
         ]);
 
-        User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => bcrypt($request->password),
-            'active' => $request->active,
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => bcrypt($validated['password']),
+            'active' => $validated['active'],
         ]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Usuario creado correctamente.',
+                'data' => $user
+            ], 201);
+        }
 
         return redirect()->route('users.index')->with('success', 'Usuario creado correctamente.');
     }
 
     // Mostrar un usuario específico
-    public function show(User $user)
+    public function show(Request $request, User $user)
     {
-        return view('users.show', compact('user'));
-    }
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'data' => $user
+            ]);
+        }
 
-    // Mostrar el formulario para editar un usuario
-    public function edit(User $user)
-    {
-        return view('users.edit', compact('user'));
+        return view('users.show', compact('user'));
     }
 
     // Actualizar un usuario
     public function update(Request $request, User $user)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
             'active' => 'required|boolean',
+            'password' => 'nullable|string|min:6',
         ]);
 
         $data = $request->only('name', 'email', 'active');
 
-        if ($request->filled('password')) {
-            $data['password'] = bcrypt($request->password);
+        if (!empty($validated['password'])) {
+            $data['password'] = bcrypt($validated['password']);
         }
 
         $user->update($data);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Usuario actualizado correctamente.',
+                'data' => $user
+            ]);
+        }
 
         return redirect()->route('users.index')->with('success', 'Usuario actualizado correctamente.');
     }
 
     // Eliminar un usuario
-    public function destroy(User $user)
+    public function destroy(Request $request, User $user)
     {
         $user->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Usuario eliminado correctamente.'
+            ]);
+        }
+
         return redirect()->route('users.index')->with('success', 'Usuario eliminado correctamente.');
     }
 }

@@ -3,17 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cartera;
-use App\Models\Reporte;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class CarterasController extends Controller
 {
-    // Listar todas las carteras
     public function index()
     {
-        $carteras = \App\Models\Cartera::all();
+        $carteras = Cartera::all();
         $reportes = \App\Models\Reporte::with('cartera')->get();
+
         return Inertia::render('GestionarCarteras', [
             'carteras' => $carteras,
             'reportes' => $reportes,
@@ -21,39 +20,61 @@ class CarterasController extends Controller
         ]);
     }
 
-    // Guardar una nueva cartera
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'nombre' => 'required|string|max:255',
             'descripcion' => 'nullable|string',
             'orden' => 'nullable|integer',
             'estado' => 'required|boolean',
         ]);
 
-        Cartera::create($request->only('nombre', 'descripcion', 'orden', 'estado'));
+        $cartera = Cartera::create($validated);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Cartera creada correctamente.',
+                'cartera' => $cartera,
+            ]);
+        }
 
         return redirect()->route('carteras.index')->with('success', 'Cartera creada correctamente.');
     }
-    // Actualizar una cartera
+
     public function update(Request $request, Cartera $cartera)
     {
-        $request->validate([
+        $validated = $request->validate([
             'nombre' => 'required|string|max:255',
             'descripcion' => 'nullable|string',
             'orden' => 'nullable|integer',
             'estado' => 'required|boolean',
         ]);
 
-        $cartera->update($request->only('nombre', 'descripcion', 'orden', 'estado'));
+        $cartera->update($validated);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Cartera actualizada correctamente.',
+                'cartera' => $cartera,
+            ]);
+        }
 
         return redirect()->route('carteras.index')->with('success', 'Cartera actualizada correctamente.');
     }
 
-    // Eliminar una cartera
-    public function destroy(Cartera $cartera)
+    public function destroy(Request $request, Cartera $cartera)
     {
         $cartera->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Cartera eliminada correctamente.',
+            ]);
+        }
+
         return redirect()->route('carteras.index')->with('success', 'Cartera eliminada correctamente.');
     }
 }

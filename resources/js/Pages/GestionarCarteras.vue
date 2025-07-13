@@ -1,19 +1,27 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
-import ModalCartera from "@/Components/ModalCartera.vue";
+import ModalGestion from "@/Components/ModalGestion.vue";
 import GestReportes from "@/Components/GestReportes.vue";
 import { Head, usePage, router } from "@inertiajs/vue3";
 import { ref, onMounted } from "vue";
 import Swal from "sweetalert2";
 
+// --- State ---
 const carteras = ref(usePage().props.carteras);
-const success = usePage().props.success;
 const reportes = usePage().props.reportes;
+const success = usePage().props.success;
 const showModal = ref(false);
-const carteraEditar = ref(null);
 const showModalReportes = ref(false);
 const keyReportes = ref(Date.now());
+const carteraEditar = ref(null);
+const carteraForm = ref({
+    nombre: "",
+    descripcion: "",
+    orden: 0,
+    estado: true,
+});
 
+// --- Lifecycle ---
 onMounted(() => {
     if (success) {
         Swal.fire({
@@ -28,17 +36,45 @@ onMounted(() => {
     }
 });
 
+// --- Methods ---
 function abrirModalAgregar() {
     carteraEditar.value = null;
+    carteraForm.value = {
+        nombre: "",
+        descripcion: "",
+        orden: 0,
+        estado: true,
+    };
     showModal.value = true;
 }
+
 function abrirModalEditar(cartera) {
     carteraEditar.value = cartera;
+    carteraForm.value = {
+        nombre: cartera.nombre,
+        descripcion: cartera.descripcion,
+        orden: cartera.orden,
+        estado: !!cartera.estado,
+    };
     showModal.value = true;
 }
+
 function cerrarModal() {
     showModal.value = false;
     carteraEditar.value = null;
+}
+
+function handleSuccess(message) {
+    Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "success",
+        title: message,
+        showConfirmButton: false,
+        timer: 2000,
+        timerProgressBar: true,
+    });
+    recargar();
 }
 
 function recargar() {
@@ -96,9 +132,11 @@ function eliminarCartera(cartera) {
 function abrirModalReportes() {
     showModalReportes.value = true;
 }
+
 function cerrarModalReportes() {
     showModalReportes.value = false;
 }
+
 function recargarReportes() {
     router.visit(route("carteras.index"), {
         preserveScroll: true,
@@ -113,7 +151,6 @@ function recargarReportes() {
 
 <template>
     <Head title="Gestión de Carteras" />
-
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between">
@@ -157,12 +194,106 @@ function recargarReportes() {
                 <div class="bg-white shadow-xl rounded-lg overflow-hidden">
                     <div class="p-6">
                         <!-- Modal para agregar/editar cartera -->
-                        <ModalCartera
+                        <ModalGestion
                             :show="showModal"
-                            :cartera="carteraEditar"
+                            :title="
+                                carteraEditar
+                                    ? 'Editar Cartera'
+                                    : 'Agregar Cartera'
+                            "
+                            :submitLabel="'Guardar'"
+                            :initialForm="carteraForm"
+                            :endpoint="
+                                carteraEditar && carteraEditar.id
+                                    ? `/carteras/${carteraEditar.id}`
+                                    : '/carteras'
+                            "
+                            :method="
+                                carteraEditar && carteraEditar.id
+                                    ? 'put'
+                                    : 'post'
+                            "
                             @close="cerrarModal"
-                            @success="recargar"
-                        />
+                            @success="handleSuccess"
+                        >
+                            <template #default="{ form, errors }">
+                                <div>
+                                    <label
+                                        class="block text-sm font-medium text-gray-700 mb-1"
+                                        >Nombre</label
+                                    >
+                                    <input
+                                        v-model="form.nombre"
+                                        type="text"
+                                        name="cartera_nombre"
+                                        placeholder="Nombre"
+                                        autocomplete="off"
+                                        class="border border-gray-300 px-3 py-2 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                                    />
+                                    <div
+                                        v-if="errors.nombre"
+                                        class="text-red-500 text-xs mt-1"
+                                    >
+                                        {{ errors.nombre }}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label
+                                        class="block text-sm font-medium text-gray-700 mb-1"
+                                        >Descripción</label
+                                    >
+                                    <textarea
+                                        v-model="form.descripcion"
+                                        name="cartera_descripcion"
+                                        placeholder="Descripción"
+                                        autocomplete="off"
+                                        class="border border-gray-300 px-3 py-2 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none resize-none"
+                                    ></textarea>
+                                    <div
+                                        v-if="errors.descripcion"
+                                        class="text-red-500 text-xs mt-1"
+                                    >
+                                        {{ errors.descripcion }}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label
+                                        class="block text-sm font-medium text-gray-700 mb-1"
+                                        >Orden</label
+                                    >
+                                    <input
+                                        v-model="form.orden"
+                                        type="number"
+                                        name="cartera_orden"
+                                        min="0"
+                                        autocomplete="off"
+                                        class="border border-gray-300 px-3 py-2 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                                    />
+                                    <div
+                                        v-if="errors.orden"
+                                        class="text-red-500 text-xs mt-1"
+                                    >
+                                        {{ errors.orden }}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label
+                                        class="block text-sm font-medium text-gray-700 mb-1"
+                                        for="estado"
+                                        >Estado</label
+                                    >
+                                    <select
+                                        id="estado"
+                                        v-model="form.estado"
+                                        class="border border-gray-300 px-3 py-2 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                                    >
+                                        <option :value="true">Activa</option>
+                                        <option :value="false">Inactiva</option>
+                                    </select>
+                                </div>
+                            </template>
+                        </ModalGestion>
+
                         <GestReportes
                             :key="keyReportes"
                             :show="showModalReportes"
@@ -181,9 +312,9 @@ function recargarReportes() {
                                 title="Ver listado de reportes"
                                 @click="abrirModalReportes"
                             >
-                                <span class="font-bold text-xs tracking-wide">
-                                    VER TODOS REPORTES
-                                </span>
+                                <span class="font-bold text-xs tracking-wide"
+                                    >VER TODOS REPORTES</span
+                                >
                             </button>
                         </div>
 
@@ -277,56 +408,50 @@ function recargarReportes() {
                                             <div
                                                 class="flex justify-center gap-2"
                                             >
-                                                <div
-                                                    class="flex justify-center gap-2"
+                                                <button
+                                                    @click="
+                                                        abrirModalEditar(
+                                                            cartera
+                                                        )
+                                                    "
+                                                    class="p-1.5 rounded-full bg-yellow-400 hover:bg-yellow-500 text-white shadow-md transition transform hover:scale-105"
+                                                    title="Editar Cartera"
                                                 >
-                                                    <button
-                                                        @click="
-                                                            abrirModalEditar(
-                                                                cartera
-                                                            )
-                                                        "
-                                                        class="p-1.5 rounded-full bg-yellow-400 hover:bg-yellow-500 text-white shadow-md transition transform hover:scale-105"
-                                                        title="Editar Cartera"
+                                                    <svg
+                                                        class="w-4 h-4"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        stroke-width="2"
+                                                        viewBox="0 0 24 24"
                                                     >
-                                                        <svg
-                                                            class="w-4 h-4"
-                                                            fill="none"
-                                                            stroke="currentColor"
-                                                            stroke-width="2"
-                                                            viewBox="0 0 24 24"
-                                                        >
-                                                            <path
-                                                                stroke-linecap="round"
-                                                                stroke-linejoin="round"
-                                                                d="M15.232 5.232l3.536 3.536M9 13l6.293-6.293a1 1 0 011.414 0l3.586 3.586a1 1 0 010 1.414L13 17H9v-4z"
-                                                            />
-                                                        </svg>
-                                                    </button>
-                                                    <button
-                                                        @click="
-                                                            eliminarCartera(
-                                                                cartera
-                                                            )
-                                                        "
-                                                        class="p-1.5 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-md transition transform hover:scale-105"
-                                                        title="Eliminar Cartera"
+                                                        <path
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                            d="M15.232 5.232l3.536 3.536M9 13l6.293-6.293a1 1 0 011.414 0l3.586 3.586a1 1 0 010 1.414L13 17H9v-4z"
+                                                        />
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        eliminarCartera(cartera)
+                                                    "
+                                                    class="p-1.5 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-md transition transform hover:scale-105"
+                                                    title="Eliminar Cartera"
+                                                >
+                                                    <svg
+                                                        class="w-4 h-4"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        stroke-width="2"
+                                                        viewBox="0 0 24 24"
                                                     >
-                                                        <svg
-                                                            class="w-4 h-4"
-                                                            fill="none"
-                                                            stroke="currentColor"
-                                                            stroke-width="2"
-                                                            viewBox="0 0 24 24"
-                                                        >
-                                                            <path
-                                                                stroke-linecap="round"
-                                                                stroke-linejoin="round"
-                                                                d="M6 18L18 6M6 6l12 12"
-                                                            />
-                                                        </svg>
-                                                    </button>
-                                                </div>
+                                                        <path
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                            d="M6 18L18 6M6 6l12 12"
+                                                        />
+                                                    </svg>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>

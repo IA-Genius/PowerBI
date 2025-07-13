@@ -1,6 +1,6 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
-import ModalUsuario from "@/Components/ModalUsuario.vue";
+import ModalGestion from "@/Components/ModalGestion.vue";
 import { Head, usePage, router } from "@inertiajs/vue3";
 import { ref, onMounted } from "vue";
 import Swal from "sweetalert2";
@@ -9,6 +9,12 @@ const users = usePage().props.users;
 const success = usePage().props.success;
 const showModal = ref(false);
 const usuarioEditar = ref(null);
+const usuarioForm = ref({
+    name: "",
+    email: "",
+    password: "",
+    active: true,
+});
 
 onMounted(() => {
     if (success) {
@@ -26,16 +32,42 @@ onMounted(() => {
 
 function abrirModalAgregar() {
     usuarioEditar.value = null;
+    usuarioForm.value = {
+        name: "",
+        email: "",
+        password: "",
+        active: true,
+    };
     showModal.value = true;
 }
 function abrirModalEditar(user) {
     usuarioEditar.value = user;
+    usuarioForm.value = {
+        name: user.name,
+        email: user.email,
+        password: "",
+        active: !!user.active,
+    };
     showModal.value = true;
 }
 function cerrarModal() {
     showModal.value = false;
     usuarioEditar.value = null;
 }
+function handleSuccess(message) {
+    Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "success",
+        title: message,
+        showConfirmButton: false,
+        timer: 2000,
+        timerProgressBar: true,
+    });
+
+    recargar();
+}
+
 function recargar() {
     router.visit(route("users.index"), {
         preserveScroll: true,
@@ -134,13 +166,158 @@ function eliminarUsuario(user) {
             <div class="mx-auto max-w-7xl">
                 <div class="bg-white shadow-xl rounded-lg overflow-hidden">
                     <div class="p-6">
-                        <!-- Modal para agregar/editar usuario -->
-                        <ModalUsuario
+                        <!-- Modal genérico para agregar/editar usuario -->
+                        <ModalGestion
                             :show="showModal"
-                            :user="usuarioEditar"
+                            :title="
+                                usuarioEditar
+                                    ? 'Editar Usuario'
+                                    : 'Agregar Usuario'
+                            "
+                            :submitLabel="
+                                usuarioEditar ? 'Actualizar' : 'Registrar'
+                            "
+                            :initialForm="usuarioForm"
+                            :endpoint="
+                                usuarioEditar && usuarioEditar.id
+                                    ? `/users/${usuarioEditar.id}`
+                                    : '/users'
+                            "
+                            :method="
+                                usuarioEditar && usuarioEditar.id
+                                    ? 'put'
+                                    : 'post'
+                            "
                             @close="cerrarModal"
-                            @success="recargar"
-                        />
+                            @success="handleSuccess"
+                        >
+                            <template #default="{ form, errors }">
+                                <input
+                                    type="text"
+                                    name="fakeusernameremembered"
+                                    style="display: none"
+                                    autocomplete="off"
+                                />
+                                <input
+                                    type="password"
+                                    name="fakepasswordremembered"
+                                    style="display: none"
+                                    autocomplete="off"
+                                />
+                                <div>
+                                    <label
+                                        class="block text-sm font-medium text-gray-700 mb-1"
+                                        >Nombre</label
+                                    >
+                                    <input
+                                        v-model="form.name"
+                                        type="text"
+                                        name="user_name"
+                                        placeholder="Nombre"
+                                        autocomplete="off"
+                                        class="border border-gray-300 px-3 py-2 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                                    />
+                                    <div
+                                        v-if="errors.name"
+                                        class="text-red-500 text-xs mt-1"
+                                    >
+                                        {{ errors.name }}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label
+                                        class="block text-sm font-medium text-gray-700 mb-1"
+                                        >Email</label
+                                    >
+                                    <input
+                                        v-model="form.email"
+                                        type="email"
+                                        name="user_email"
+                                        placeholder="Email"
+                                        autocomplete="off"
+                                        class="border border-gray-300 px-3 py-2 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                                    />
+                                    <div
+                                        v-if="errors.email"
+                                        class="text-red-500 text-xs mt-1"
+                                    >
+                                        {{ errors.email }}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label
+                                        class="block text-sm font-medium text-gray-700 mb-1"
+                                    >
+                                        {{
+                                            usuarioEditar
+                                                ? "Nueva contraseña (opcional)"
+                                                : "Contraseña"
+                                        }}
+                                    </label>
+
+                                    <!-- Inputs falsos para evitar autocompletado -->
+                                    <input
+                                        type="text"
+                                        name="fakeusernameremembered"
+                                        style="display: none"
+                                        autocomplete="off"
+                                    />
+                                    <input
+                                        type="password"
+                                        name="fakepasswordremembered"
+                                        style="display: none"
+                                        autocomplete="off"
+                                    />
+
+                                    <input
+                                        v-model="form.password"
+                                        type="password"
+                                        :name="
+                                            usuarioEditar
+                                                ? 'new_user_password'
+                                                : 'user_password'
+                                        "
+                                        :placeholder="
+                                            usuarioEditar
+                                                ? 'Dejar vacío para mantener la contraseña actual'
+                                                : 'Contraseña'
+                                        "
+                                        autocomplete="new-password"
+                                        readonly
+                                        @focus="
+                                            (e) =>
+                                                e.target.removeAttribute(
+                                                    'readonly'
+                                                )
+                                        "
+                                        class="border border-gray-300 px-3 py-2 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                                    />
+
+                                    <div
+                                        v-if="errors.password"
+                                        class="text-red-500 text-xs mt-1"
+                                    >
+                                        {{ errors.password }}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label
+                                        class="block text-sm font-medium text-gray-700 mb-1"
+                                        for="estado"
+                                        >Estado</label
+                                    >
+                                    <select
+                                        id="estado"
+                                        v-model="form.active"
+                                        class="border border-gray-300 px-3 py-2 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                                    >
+                                        <option :value="true">Activo</option>
+                                        <option :value="false">Inactivo</option>
+                                    </select>
+                                </div>
+                            </template>
+                        </ModalGestion>
 
                         <div class="flex items-center justify-between mb-4">
                             <h1 class="text-xl font-semibold text-gray-800">
