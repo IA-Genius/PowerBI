@@ -1,14 +1,18 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
-import ModalUsuario from "@/Components/ModalUsuario.vue";
+import ModalCartera from "@/Components/ModalCartera.vue";
+import GestReportes from "@/Components/GestReportes.vue";
 import { Head, usePage, router } from "@inertiajs/vue3";
 import { ref, onMounted } from "vue";
 import Swal from "sweetalert2";
 
-const users = usePage().props.users;
+const carteras = ref(usePage().props.carteras);
 const success = usePage().props.success;
+const reportes = usePage().props.reportes;
 const showModal = ref(false);
-const usuarioEditar = ref(null);
+const carteraEditar = ref(null);
+const showModalReportes = ref(false);
+const keyReportes = ref(Date.now());
 
 onMounted(() => {
     if (success) {
@@ -25,32 +29,33 @@ onMounted(() => {
 });
 
 function abrirModalAgregar() {
-    usuarioEditar.value = null;
+    carteraEditar.value = null;
     showModal.value = true;
 }
-function abrirModalEditar(user) {
-    usuarioEditar.value = user;
+function abrirModalEditar(cartera) {
+    carteraEditar.value = cartera;
     showModal.value = true;
 }
 function cerrarModal() {
     showModal.value = false;
-    usuarioEditar.value = null;
+    carteraEditar.value = null;
 }
+
 function recargar() {
-    router.visit(route("users.index"), {
+    router.visit(route("carteras.index"), {
         preserveScroll: true,
-        only: ["users", "success"],
+        only: ["carteras", "success"],
         onFinish: () => {
+            carteras.value = usePage().props.carteras;
             cerrarModal();
         },
     });
 }
 
-// Método para eliminar usuario with confirmación y toast
-function eliminarUsuario(user) {
+function eliminarCartera(cartera) {
     Swal.fire({
-        title: "¿Eliminar usuario?",
-        text: `¿Estás seguro de eliminar a ${user.name}?`,
+        title: "¿Eliminar cartera?",
+        text: `¿Estás seguro de eliminar "${cartera.nombre}"?`,
         icon: "warning",
         showCancelButton: true,
         confirmButtonColor: "#3085d6",
@@ -59,13 +64,13 @@ function eliminarUsuario(user) {
         cancelButtonText: "Cancelar",
     }).then((result) => {
         if (result.isConfirmed) {
-            router.delete(`/users/${user.id}`, {
+            router.delete(`/carteras/${cartera.id}`, {
                 onSuccess: () => {
                     Swal.fire({
                         toast: true,
                         position: "top-end",
                         icon: "success",
-                        title: "Usuario eliminado",
+                        title: "Cartera eliminada",
                         showConfirmButton: false,
                         timer: 2000,
                         timerProgressBar: true,
@@ -77,7 +82,7 @@ function eliminarUsuario(user) {
                         toast: true,
                         position: "top-end",
                         icon: "error",
-                        title: "No se pudo eliminar el usuario",
+                        title: "No se pudo eliminar la cartera",
                         showConfirmButton: false,
                         timer: 2000,
                         timerProgressBar: true,
@@ -87,10 +92,27 @@ function eliminarUsuario(user) {
         }
     });
 }
+
+function abrirModalReportes() {
+    showModalReportes.value = true;
+}
+function cerrarModalReportes() {
+    showModalReportes.value = false;
+}
+function recargarReportes() {
+    router.visit(route("carteras.index"), {
+        preserveScroll: true,
+        preserveState: true,
+        only: ["reportes", "carteras", "success"],
+        onFinish: () => {
+            showModalReportes.value = true;
+        },
+    });
+}
 </script>
 
 <template>
-    <Head title="Gestión de Usuarios" />
+    <Head title="Gestión de Carteras" />
 
     <AuthenticatedLayout>
         <template #header>
@@ -99,13 +121,13 @@ function eliminarUsuario(user) {
                     <h2
                         class="text-xl font-semibold leading-tight text-gray-800"
                     >
-                        Gestión de Usuarios
+                        Gestión de Carteras
                     </h2>
                     <span
                         class="text-white text-xs px-3 py-1 rounded-full ml-2"
                         style="background-color: #5f61ff"
                     >
-                        {{ users.length }} usuarios
+                        {{ carteras.length }} carteras
                     </span>
                 </div>
                 <button
@@ -125,7 +147,7 @@ function eliminarUsuario(user) {
                             d="M12 4v16m8-8H4"
                         />
                     </svg>
-                    Agregar Usuario
+                    Agregar Cartera
                 </button>
             </div>
         </template>
@@ -134,32 +156,37 @@ function eliminarUsuario(user) {
             <div class="mx-auto max-w-7xl">
                 <div class="bg-white shadow-xl rounded-lg overflow-hidden">
                     <div class="p-6">
-                        <!-- Modal para agregar/editar usuario -->
-                        <ModalUsuario
+                        <!-- Modal para agregar/editar cartera -->
+                        <ModalCartera
                             :show="showModal"
-                            :user="usuarioEditar"
+                            :cartera="carteraEditar"
                             @close="cerrarModal"
                             @success="recargar"
+                        />
+                        <GestReportes
+                            :key="keyReportes"
+                            :show="showModalReportes"
+                            :carteras="carteras"
+                            :reportes="reportes"
+                            @close="cerrarModalReportes"
+                            @recargarReportes="recargarReportes"
                         />
 
                         <div class="flex items-center justify-between mb-4">
                             <h1 class="text-xl font-semibold text-gray-800">
-                                Listado de Usuarios
+                                Listado de Carteras
                             </h1>
                             <button
                                 class="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-indigo-700 text-white px-4 py-1.5 rounded-md shadow-md hover:shadow-lg hover:brightness-110 hover:-translate-y-0.5 transition-all duration-300 ease-out"
                                 title="Ver listado de reportes"
+                                @click="abrirModalReportes"
                             >
                                 <span class="font-bold text-xs tracking-wide">
-                                    VER ASIGNACIONES
-                                </span>
-                                <span
-                                    class="ml-2 bg-white text-indigo-700 font-bold px-2 py-0.5 rounded-full text-xs shadow-sm"
-                                >
-                                    1
+                                    VER TODOS REPORTES
                                 </span>
                             </button>
                         </div>
+
                         <div
                             class="overflow-x-auto rounded-xl border border-gray-100 bg-gray-50"
                         >
@@ -181,7 +208,12 @@ function eliminarUsuario(user) {
                                         <th
                                             class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
                                         >
-                                            Email
+                                            Descripción
+                                        </th>
+                                        <th
+                                            class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
+                                        >
+                                            Orden
                                         </th>
                                         <th
                                             class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
@@ -197,49 +229,51 @@ function eliminarUsuario(user) {
                                 </thead>
                                 <tbody>
                                     <tr
-                                        v-for="(user, $index) in users"
-                                        :key="user.id"
-                                        :class="[
-                                            $index % 2 === 0
-                                                ? 'bg-white'
-                                                : 'bg-indigo-50',
-                                            'hover:bg-indigo-100 transition',
-                                        ]"
+                                        v-for="cartera in carteras"
+                                        :key="cartera.id"
+                                        class="bg-white even:bg-indigo-50 hover:bg-indigo-100 transition"
                                     >
                                         <td
                                             class="px-4 py-2 text-gray-700 text-[13px]"
                                         >
-                                            {{ user.id }}
+                                            {{ cartera.id }}
+                                        </td>
+                                        <td
+                                            class="px-4 py-2 text-gray-800 text-[13px]"
+                                        >
+                                            {{ cartera.nombre }}
                                         </td>
                                         <td
                                             class="px-4 py-2 text-gray-700 text-[13px]"
                                         >
-                                            {{ user.name }}
+                                            {{ cartera.descripcion }}
                                         </td>
                                         <td
                                             class="px-4 py-2 text-gray-700 text-[13px]"
                                         >
-                                            {{ user.email }}
+                                            {{ cartera.orden }}
                                         </td>
                                         <td
                                             class="px-4 py-2 text-gray-700 text-[13px]"
                                         >
                                             <span
                                                 :class="
-                                                    user.active
+                                                    cartera.estado
                                                         ? 'bg-green-100 text-green-700'
                                                         : 'bg-red-100 text-red-700'
                                                 "
                                                 class="inline-block px-3 py-1 rounded-full text-xs font-semibold"
                                             >
                                                 {{
-                                                    user.active
-                                                        ? "Activo"
-                                                        : "Inactivo"
+                                                    cartera.estado
+                                                        ? "Activa"
+                                                        : "Inactiva"
                                                 }}
                                             </span>
                                         </td>
-                                        <td class="px-4 py-2 text-center">
+                                        <td
+                                            class="px-4 py-2 text-center text-[13px]"
+                                        >
                                             <div
                                                 class="flex justify-center gap-2"
                                             >
@@ -249,11 +283,11 @@ function eliminarUsuario(user) {
                                                     <button
                                                         @click="
                                                             abrirModalEditar(
-                                                                user
+                                                                cartera
                                                             )
                                                         "
                                                         class="p-1.5 rounded-full bg-yellow-400 hover:bg-yellow-500 text-white shadow-md transition transform hover:scale-105"
-                                                        title="Editar usuario"
+                                                        title="Editar Cartera"
                                                     >
                                                         <svg
                                                             class="w-4 h-4"
@@ -271,12 +305,12 @@ function eliminarUsuario(user) {
                                                     </button>
                                                     <button
                                                         @click="
-                                                            eliminarUsuario(
-                                                                user
+                                                            eliminarCartera(
+                                                                cartera
                                                             )
                                                         "
                                                         class="p-1.5 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-md transition transform hover:scale-105"
-                                                        title="Eliminar usuario"
+                                                        title="Eliminar Cartera"
                                                     >
                                                         <svg
                                                             class="w-4 h-4"
@@ -296,12 +330,12 @@ function eliminarUsuario(user) {
                                             </div>
                                         </td>
                                     </tr>
-                                    <tr v-if="users.length === 0">
+                                    <tr v-if="carteras.length === 0">
                                         <td
-                                            colspan="5"
+                                            colspan="6"
                                             class="text-center py-4 text-gray-400 text-lg"
                                         >
-                                            No hay usuarios registrados.
+                                            No hay carteras registradas.
                                         </td>
                                     </tr>
                                 </tbody>
