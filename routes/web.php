@@ -20,9 +20,7 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [UserController::class, 'dashboard'])->middleware(['auth', 'verified'])->name('dashboard');
 
 // ===================
 // AUTENTICACIÓN
@@ -63,4 +61,3 @@ Route::get('/reportes', [ReportesController::class, 'index'])->name('reportes.in
 Route::post('/reportes', [ReportesController::class, 'store'])->name('reportes.store');
 Route::put('/reportes/{reporte}', [ReportesController::class, 'update'])->name('reportes.update');
 Route::delete('/reportes/{reporte}', [ReportesController::class, 'destroy'])->name('reportes.destroy');
-

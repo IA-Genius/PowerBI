@@ -61,47 +61,6 @@ const showingNavigationDropdown = ref(false);
                 </div>
 
                 <nav class="flex-1 overflow-y-auto">
-                    <div class="flex items-center cartera">
-                        <Dropdown align="right" width="50">
-                            <template #trigger>
-                                <span class="inline-flex rounded-md">
-                                    <button
-                                        type="button"
-                                        class="inline-flex items-center focus:outline-none transition ease-in-out duration-150"
-                                    >
-                                        Cartera
-                                        <svg
-                                            class="-me-0.5 ms-2 h-4 w-4"
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 20 20"
-                                            fill="currentColor"
-                                        >
-                                            <path
-                                                fill-rule="evenodd"
-                                                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                clip-rule="evenodd"
-                                            />
-                                        </svg>
-                                    </button>
-                                </span>
-                            </template>
-
-                            <template #content>
-                                <DropdownLink href="#"> Win </DropdownLink>
-                                <DropdownLink href="#">
-                                    PerúFibra
-                                </DropdownLink>
-                                <DropdownLink href="#">
-                                    CablePerú
-                                </DropdownLink>
-                                <DropdownLink href="#">
-                                    Telefonia
-                                </DropdownLink>
-                                <DropdownLink href="#"> Energia </DropdownLink>
-                            </template>
-                        </Dropdown>
-                    </div>
-
                     <NavLink
                         :href="route('dashboard')"
                         :active="route().current('dashboard')"
