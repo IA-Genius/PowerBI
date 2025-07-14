@@ -1,48 +1,114 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import ApplicationLogo from "@/Components/ApplicationLogo.vue";
+import ApplicationLogoMini from "@/Components/ApplicationLogoMini.vue";
 import Dropdown from "@/Components/Dropdown.vue";
 import DropdownLink from "@/Components/DropdownLink.vue";
 import NavLink from "@/Components/NavLink.vue";
 import { Link } from "@inertiajs/vue3";
 
-const isSidebarOpen = ref(false);
+const isSidebarOpen = ref(false); // Cambiado a false para que empiece cerrado
 const showingNavigationDropdown = ref(false);
+
+// Ajustar estado según el tamaño de pantalla
+onMounted(() => {
+  const handleResize = () => {
+    if (window.innerWidth < 1024) {
+      isSidebarOpen.value = false;
+    } else {
+      // En pantallas grandes, dejamos el valor por defecto (false)
+    }
+  };
+  
+  window.addEventListener('resize', handleResize);
+  handleResize();
+  
+  return () => window.removeEventListener('resize', handleResize);
+});
 </script>
 
 <template>
     <div class="min-h-screen bg-gray-100 flex">
-        <!-- Overlay para móviles -->
-        <transition name="fade">
-            <div
-                v-if="isSidebarOpen"
-                @click="isSidebarOpen = false"
-                class="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
-            ></div>
-        </transition>
-
         <!-- Sidebar -->
-        <div
-            class="fixed lg:relative z-30 transform transition-all duration-300 ease-in-out"
-            :class="{
-                '-translate-x-full lg:translate-x-0': !isSidebarOpen,
-                'translate-x-0': isSidebarOpen,
-            }"
-        >
-            <div
-                class="w-64 h-full bg-white shadow-lg flex flex-col menuColapsable"
+        <div class="fixed lg:relative inset-y-0 left-0 z-30 h-screen">
+            <div 
+                class="h-full bg-white shadow-lg flex flex-col transition-all duration-300 ease-in-out"
+                :style="{ width: isSidebarOpen ? '250px' : '80px' }"
+                :class="{ center: isSidebarOpen }"
             >
-                <div class="flex items-center justify-between p-4 border-b">
-                    <!-- LOGO -->
-                    <Link :href="route('dashboard')" class="flex items-center">
-                        <ApplicationLogo
-                            class="block h-9 w-auto fill-current text-gray-800"
-                        />
+                <!-- Logo -->
+                <div class="flex items-center justify-center p-4 border-b h-16">
+                    <Link :href="route('dashboard')" class="flex items-center justify-center">
+                        <ApplicationLogo v-if="isSidebarOpen" class="block h-9 w-auto fill-current text-gray-800" />
+                        <ApplicationLogoMini v-else class="block h-9 w-auto fill-current text-gray-800" />
                     </Link>
+                </div>
 
+                <!-- Menú colapsable -->
+                <nav class="flex-1 overflow-y-auto py-2">
+                    <!-- Botón para colapsar/expandir -->
                     <button
-                        @click="isSidebarOpen = false"
-                        class="p-1 rounded-md hover:bg-gray-200 lg:hidden"
+                        @click="isSidebarOpen = !isSidebarOpen"
+                        class="w-full flex items-center justify-center p-3 hover:bg-gray-100"
+                    >
+                        <svg
+                            class="h-6 w-6 text-gray-500"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                :d="isSidebarOpen ? 'M6 18L18 6M6 6l12 12' : 'M4 6h16M4 12h16M4 18h16'"
+                            />
+                        </svg>
+                        <span v-if="isSidebarOpen" class="ml-2 text-sm"></span>
+                    </button>
+
+                    <!-- Carteras Dropdown -->
+                    <!-- <div class="">
+                        <Dropdown align="left" width="full">
+                            <template #trigger>
+                                <button
+                                    class="w-full flex items-center px-3 py-2 rounded-md hover:bg-gray-100"
+                                    :class="{ 'bg-purple-50 text-purple-600': route().current('carteras.*') }"
+                                >
+                                    <svg
+                                        class="h-6 w-6"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                                        />
+                                    </svg>
+                                    <transition name="fade">
+                                        <span v-if="isSidebarOpen" class="ml-3">Carteras</span>
+                                    </transition>
+                                </button>
+                            </template>
+
+                            <template #content>
+                                <DropdownLink href="#">Win</DropdownLink>
+                                <DropdownLink href="#">PerúFibra</DropdownLink>
+                                <DropdownLink href="#">CablePerú</DropdownLink>
+                                <DropdownLink href="#">Telefonia</DropdownLink>
+                                <DropdownLink href="#">Energia</DropdownLink>
+                            </template>
+                        </Dropdown>
+                    </div> -->
+
+                    <!-- Items del menú -->
+                    <NavLink
+                        :href="route('dashboard')"
+                        :active="route().current('dashboard')"
+                        class="flex items-center px-3 py-3 hover:bg-gray-100 full"
                     >
                         <svg
                             class="h-6 w-6"
@@ -54,41 +120,21 @@ const showingNavigationDropdown = ref(false);
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
                                 stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12"
-                            />
-                        </svg>
-                    </button>
-                </div>
-
-                <nav class="flex-1 overflow-y-auto">
-                    <NavLink
-                        :href="route('dashboard')"
-                        :active="route().current('dashboard')"
-                        class="flex items-center px-4 py-3 hover:bg-gray-100"
-                    >
-                        <svg
-                            class="h-7 w-7 mr-3"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
                                 d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
                             />
                         </svg>
-                        <span>Dashboard</span>
+                        <transition name="fade">
+                            <span v-if="isSidebarOpen" class="ml-3">Dashboard</span>
+                        </transition>
                     </NavLink>
 
                     <NavLink
                         :href="route('carteras.index')"
                         :active="route().current('carteras.index')"
-                        class="flex items-center px-4 py-3 hover:bg-gray-100"
+                        class="flex items-center px-3 py-3 hover:bg-gray-100 full"
                     >
                         <svg
-                            class="h-7 w-7 mr-3"
+                            class="h-6 w-6"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -100,16 +146,18 @@ const showingNavigationDropdown = ref(false);
                                 d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                             />
                         </svg>
-                        <span>Gestionar Carteras</span>
+                        <transition name="fade">
+                            <span v-if="isSidebarOpen" class="ml-3">Gestionar Carteras</span>
+                        </transition>
                     </NavLink>
 
                     <NavLink
                         :href="route('users.index')"
                         :active="route().current('users.index')"
-                        class="flex items-center px-4 py-3 hover:bg-gray-100"
+                        class="flex items-center px-3 py-3 hover:bg-gray-100"
                     >
                         <svg
-                            class="h-7 w-7 mr-3"
+                            class="h-6 w-6"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -127,48 +175,45 @@ const showingNavigationDropdown = ref(false);
                                 d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                             />
                         </svg>
-                        <span>Gestionar Usuarios</span>
+                        <transition name="fade">
+                            <span v-if="isSidebarOpen" class="ml-3">Gestionar Usuarios</span>
+                        </transition>
                     </NavLink>
                 </nav>
             </div>
         </div>
 
         <!-- Contenido principal -->
-        <div class="flex-1 flex flex-col overflow-hidden">
+        <div 
+            class="flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out"
+        >
             <!-- Barra superior -->
             <header class="bg-white shadow-sm z-10">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="flex justify-between h-16 items-center">
-                        <div class="flex">
-                            <!-- LOGO -->
-                            <Link
-                                :href="route('dashboard')"
-                                class="flex items-center"
+                        <!-- Botón para mostrar/ocultar sidebar en móvil -->
+                        <button
+                            @click="isSidebarOpen = !isSidebarOpen"
+                            class="p-2 rounded-md hover:bg-gray-100 lg:hidden"
+                        >
+                            <svg
+                                class="h-6 w-6"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
                             >
-                                <ApplicationLogo
-                                    class="block h-9 w-auto fill-current text-gray-800"
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M4 6h16M4 12h16M4 18h16"
                                 />
-                            </Link>
-                            <button
-                                @click="isSidebarOpen = !isSidebarOpen"
-                                class="p-2 rounded-md hover:bg-gray-100"
-                            >
-                                <svg
-                                    class="h-6 w-6"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M4 6h16M4 12h16M4 18h16"
-                                    />
-                                </svg>
-                            </button>
-                        </div>
+                            </svg>
+                        </button>
 
+                        <div class="flex-1"></div>
+
+                        <!-- Menú de usuario -->
                         <div class="flex items-center">
                             <Dropdown align="right" width="48">
                                 <template #trigger>
@@ -214,10 +259,8 @@ const showingNavigationDropdown = ref(false);
 
             <!-- Contenido de la página -->
             <main class="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-100">
-                <div class="max-w-7xl mx-auto">
-                    <!-- Slot para la cabecera personalizada -->
+                <div class="mx-auto">
                     <slot name="header" />
-                    <!-- Contenido principal -->
                     <slot />
                 </div>
             </main>
@@ -226,52 +269,51 @@ const showingNavigationDropdown = ref(false);
 </template>
 
 <style>
-/* Animación para el sidebar */
-
-.menuColapsable {
-    height: 100vh;
-}
-a.inline-flex.items-center {
-    width: 100%;
-    padding: 20px;
-    font-size: 15px;
-}
-.cartera,
-a.menuActivado {
-    background: #5f61ff;
-    color: #fff;
-}
-.cartera {
-    width: auto;
-    margin: 20px;
-    padding: 10px;
-    border-radius: 5px;
-    text-align: center;
-}
-
-.transform {
-    transition-property: transform;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 300ms;
-}
-
-/* Animación para el overlay */
+/* Transiciones */
 .fade-enter-active,
 .fade-leave-active {
-    transition: opacity 0.3s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-    opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
-/* Estilo para enlaces activos */
-.router-link-active {
-    background-color: #eff6ff;
-    color: #2563eb;
-    border-right: 4px solid #2563eb;
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
+
+/* Estilo para enlaces activos - Cambiado a morado */
+.router-link-active {
+    @apply bg-purple-50 text-purple-600;
+}
+
 .router-link-active svg {
-    color: #2563eb;
+    @apply text-purple-600;
+}
+
+/* Ajustes para el menú colapsado */
+[style*="width: 80px"] .dropdown-content {
+    left: 80px;
+    min-width: 200px;
+}
+
+/* Asegurar que el contenido no se desborde */
+.max-w-7xl {
+    max-width: 100%;
+}
+
+@media (min-width: 1280px) {
+    .max-w-7xl {
+        max-width: 80rem;
+    }
+}
+
+/* Asegurar que el sidebar ocupe toda la altura */
+.h-screen {
+    height: 100vh;
+}
+
+/* Ajustar posición del sidebar */
+.fixed.inset-y-0 {
+    top: 0;
+    bottom: 0;
 }
 </style>
