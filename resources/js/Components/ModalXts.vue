@@ -7,32 +7,43 @@
             <div
                 class="bg-gradient-to-br from-blue-600 to-indigo-600 p-1 rounded-xl shadow-2xl w-full max-w-lg transition-all"
             >
-                <div class="bg-white rounded-lg p-6">
-                    <h2
-                        class="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2"
-                    >
-                        <svg
-                            class="w-7 h-7 text-indigo-600"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            viewBox="0 0 24 24"
+                <div
+                    class="bg-white rounded-lg flex flex-col p-0"
+                    style="min-height: 550px; max-height: 90vh"
+                >
+                    <div class="p-6 pb-0">
+                        <h2
+                            class="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2"
                         >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M12 4v16m8-8H4"
-                            />
-                        </svg>
-                        {{ title }}
-                    </h2>
+                            <svg
+                                class="w-7 h-7 text-indigo-600"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M12 4v16m8-8H4"
+                                />
+                            </svg>
+                            {{ title }}
+                        </h2>
+                    </div>
                     <form
                         @submit.prevent="handleSubmit"
-                        class="space-y-4"
+                        class="space-y-4 flex-1 flex flex-col overflow-hidden"
                         autocomplete="off"
+                        style="min-height: 200px"
                     >
-                        <slot :form="form" :errors="errors"></slot>
-                        <div class="flex justify-end gap-2 mt-6">
+                        <div
+                            class="flex-1 overflow-y-auto px-6 pt-0 pb-2"
+                            style="min-height: 120px; max-height: 55vh"
+                        >
+                            <slot :form="form" :errors="errors"></slot>
+                        </div>
+                        <div class="flex justify-end gap-2 mt-6 px-6 pb-6">
                             <button
                                 type="button"
                                 @click="$emit('close')"
@@ -54,15 +65,17 @@
     </transition>
 </template>
 
+// ModalGestion.vue
+
 <script setup>
-import { reactive, ref, watchEffect } from "vue";
+import { ref } from "vue";
 import axios from "axios";
 
 const props = defineProps({
     show: Boolean,
     title: String,
     submitLabel: String,
-    initialForm: Object,
+    form: Object,
     endpoint: String,
     method: String,
     transform: {
@@ -72,21 +85,11 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["close", "success"]);
-
-const form = reactive({});
 const errors = ref({});
-
-// ✅ Solución FINAL sin perder referencias (carteras/reportes):
-watchEffect(() => {
-    if (props.show) {
-        // Copia por referencia directa, no borres las keys
-        Object.assign(form, props.initialForm);
-    }
-});
 
 async function handleSubmit() {
     try {
-        const data = props.transform(form);
+        const data = props.transform(props.form);
 
         const response =
             props.method === "put"

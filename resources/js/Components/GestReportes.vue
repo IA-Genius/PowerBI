@@ -20,9 +20,25 @@
             </h2>
 
             <div class="flex justify-between items-center mb-6">
-                <span class="text-lg font-semibold text-gray-700"
-                    >Listado de reportes</span
+                <span
+                    class="text-lg font-semibold text-gray-700 flex items-center gap-2"
                 >
+                    <template v-if="carteraSeleccionada?.nombre">
+                        Listado de {{ carteraSeleccionada.nombre }}
+                    </template>
+                    <template v-else> Listado Total </template>
+
+                    <span
+                        class="text-white text-xs px-3 py-1 rounded-full ml-2"
+                        style="background-color: #5f61ff"
+                    >
+                        {{ reportesLocal.length }}
+                        {{
+                            reportesLocal.length === 1 ? "reporte" : "reportes"
+                        }}
+                    </span>
+                </span>
+
                 <button
                     class="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-5 py-2 rounded-lg shadow-md hover:shadow-lg hover:brightness-110 hover:-translate-y-0.5 transition-all duration-300 ease-out font-semibold"
                     @click="abrirModalCrear"
@@ -121,47 +137,16 @@
                             </td>
                             <td class="px-4 py-2 text-center">
                                 <div class="flex justify-center gap-2">
-                                    <button
-                                        @click="abrirModalEditar(reporte)"
-                                        class="p-1.5 rounded-full bg-yellow-400 hover:bg-yellow-500 text-white shadow-md transition transform hover:scale-105"
-                                        title="Editar reporte"
-                                    >
-                                        <svg
-                                            class="w-4 h-4"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            stroke-width="2"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                d="M15.232 5.232l3.536 3.536M9 13l6.293-6.293a1 1 0 011.414 0l3.586 3.586a1 1 0 010 1.414L13 17H9v-4z"
-                                            />
-                                        </svg>
-                                    </button>
-                                    <button
-                                        @click="eliminarReporte(reporte)"
-                                        class="p-1.5 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-md transition transform hover:scale-105"
-                                        title="Eliminar reporte"
-                                    >
-                                        <svg
-                                            class="w-4 h-4"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            stroke-width="2"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                d="M6 18L18 6M6 6l12 12"
-                                            />
-                                        </svg>
-                                    </button>
+                                    <Actions
+                                        :edit="true"
+                                        :remove="true"
+                                        @edit="abrirModalEditar(reporte)"
+                                        @delete="eliminarReporte(reporte)"
+                                    />
                                 </div>
                             </td>
                         </tr>
+
                         <tr v-if="reportesLocal.length === 0">
                             <td
                                 colspan="6"
@@ -173,7 +158,6 @@
                     </tbody>
                 </table>
 
-                <!-- Fade dinámico -->
                 <transition name="fade">
                     <div
                         v-if="showFade"
@@ -183,10 +167,9 @@
             </div>
         </div>
 
-        <!-- Modal de crear/editar reporte -->
         <ModalReporte
             v-if="showSubModal"
-            :carteras="props.carteras"
+            :carteras="carteras"
             :form="form"
             :editando="editando"
             @close="cerrarSubModal"
@@ -200,26 +183,38 @@ import { ref, reactive, watch, onMounted, nextTick } from "vue";
 import axios from "axios";
 import Swal from "sweetalert2";
 import ModalReporte from "./ModalReporte.vue";
+import Actions from "./Actions.vue";
 
 const props = defineProps({
     show: Boolean,
     reportes: { type: Array, default: () => [] },
     carteras: { type: Array, default: () => [] },
+    carteraSeleccionada: { type: Object, default: null },
 });
 
-const reportesLocal = ref([...props.reportes]);
+const emit = defineEmits(["recargarReportes"]);
+
+const reportesLocal = ref([]);
 const scrollContainer = ref(null);
 const showFade = ref(false);
 
 watch(
-    () => props.reportes,
-    (nuevos) => {
-        reportesLocal.value = [...nuevos];
-        nextTick(() => {
-            handleScroll();
-        });
+    [() => props.reportes, () => props.carteraSeleccionada, () => props.show],
+    ([nuevosReportes, nuevaCartera, show]) => {
+        if (show) {
+            if (nuevaCartera) {
+                reportesLocal.value = nuevosReportes.filter(
+                    (r) => r.cartera_id === nuevaCartera.id
+                );
+            } else {
+                reportesLocal.value = [...nuevosReportes];
+            }
+            nextTick(() => {
+                handleScroll();
+            });
+        }
     },
-    { immediate: true }
+    { immediate: true, deep: true }
 );
 
 const showSubModal = ref(false);
@@ -239,7 +234,9 @@ function abrirModalCrear() {
     form.nombre = "";
     form.link = "";
     form.orden = 0;
-    form.cartera_id = props.carteras.length ? props.carteras[0].id : null;
+    form.cartera_id =
+        props.carteraSeleccionada?.id ||
+        (props.carteras.length ? props.carteras[0].id : null);
     showSubModal.value = true;
 }
 
@@ -267,43 +264,26 @@ async function guardarReporte() {
 
     try {
         if (editando.value) {
-            const response = await axios.put(`/reportes/${form.id}`, payload);
-            const updated = response.data.reporte;
-
-            const idx = reportesLocal.value.findIndex(
-                (r) => r.id === updated.id
-            );
-            if (idx !== -1) {
-                reportesLocal.value[idx] = updated;
-            }
-
-            cerrarSubModal();
-
-            await Swal.fire({
-                toast: true,
-                position: "top-end",
-                icon: "success",
-                title: "Reporte actualizado correctamente",
-                showConfirmButton: false,
-                timer: 2000,
-                timerProgressBar: true,
-            });
+            await axios.put(`/reportes/${form.id}`, payload);
         } else {
-            const response = await axios.post(`/reportes`, payload);
-            reportesLocal.value.push(response.data.reporte);
-
-            cerrarSubModal();
-
-            await Swal.fire({
-                toast: true,
-                position: "top-end",
-                icon: "success",
-                title: "Reporte creado correctamente",
-                showConfirmButton: false,
-                timer: 2000,
-                timerProgressBar: true,
-            });
+            await axios.post(`/reportes`, payload);
         }
+
+        cerrarSubModal();
+
+        await Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: "success",
+            title: editando.value
+                ? "Reporte actualizado correctamente"
+                : "Reporte creado correctamente",
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true,
+        });
+
+        emit("recargarReportes");
     } catch (error) {
         console.error(error);
         await Swal.fire({
@@ -329,9 +309,6 @@ function eliminarReporte(reporte) {
             axios
                 .delete(`/reportes/${reporte.id}`)
                 .then(() => {
-                    reportesLocal.value = reportesLocal.value.filter(
-                        (r) => r.id !== reporte.id
-                    );
                     Swal.fire({
                         toast: true,
                         position: "top-end",
@@ -341,6 +318,8 @@ function eliminarReporte(reporte) {
                         timer: 2000,
                         timerProgressBar: true,
                     });
+
+                    emit("recargarReportes");
                 })
                 .catch(() => {
                     Swal.fire({
@@ -360,7 +339,6 @@ function eliminarReporte(reporte) {
 function handleScroll() {
     const el = scrollContainer.value;
     if (!el) return;
-
     showFade.value = el.scrollTop + el.clientHeight < el.scrollHeight - 5;
 }
 
@@ -375,23 +353,23 @@ onMounted(() => {
 .custom-scroll {
     position: relative;
     overflow-y: auto;
-    scrollbar-width: none; /* Firefox */
+    scrollbar-width: none;
 }
+
 .custom-scroll::-webkit-scrollbar {
     width: 0;
 }
 
-/* Fade dinámico */
 .fade-bottom {
     background: linear-gradient(to bottom, transparent, #f9fafb);
     transition: opacity 0.3s ease;
 }
 
-/* Animación de fade */
 .fade-enter-active,
 .fade-leave-active {
     transition: opacity 0.3s ease;
 }
+
 .fade-enter-from,
 .fade-leave-to {
     opacity: 0;

@@ -13,8 +13,17 @@ class Reporte extends Model
         'cartera_id',
     ];
 
+    protected $casts = [
+        'orden' => 'integer',
+    ];
+
     public function cartera()
     {
         return $this->belongsTo(Cartera::class);
+    }
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'reporte_user');
     }
 }

@@ -2,17 +2,23 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import ModalGestion from "@/Components/ModalGestion.vue";
 import GestReportes from "@/Components/GestReportes.vue";
+import Actions from "@/Components/Actions.vue";
+import InputField from "@/Components/InputField.vue";
+import StatusBadge from "@/Components/StatusBadge.vue";
 import { Head, usePage, router } from "@inertiajs/vue3";
 import { ref, onMounted } from "vue";
 import Swal from "sweetalert2";
 
-// --- State ---
 const carteras = ref(usePage().props.carteras);
 const reportes = usePage().props.reportes;
 const success = usePage().props.success;
+
 const showModal = ref(false);
 const showModalReportes = ref(false);
 const keyReportes = ref(Date.now());
+const reportesFiltrados = ref([]);
+const carteraSeleccionada = ref(null);
+
 const carteraEditar = ref(null);
 const carteraForm = ref({
     nombre: "",
@@ -21,7 +27,6 @@ const carteraForm = ref({
     estado: true,
 });
 
-// --- Lifecycle ---
 onMounted(() => {
     if (success) {
         Swal.fire({
@@ -36,7 +41,6 @@ onMounted(() => {
     }
 });
 
-// --- Methods ---
 function abrirModalAgregar() {
     carteraEditar.value = null;
     carteraForm.value = {
@@ -129,7 +133,18 @@ function eliminarCartera(cartera) {
     });
 }
 
-function abrirModalReportes() {
+function abrirModalReportes(cartera = null) {
+    // Siempre usar los props más recientes
+    const allReportes = usePage().props.reportes;
+    if (cartera) {
+        carteraSeleccionada.value = cartera;
+        reportesFiltrados.value = allReportes.filter(
+            (r) => r.cartera_id === cartera.id
+        );
+    } else {
+        carteraSeleccionada.value = null;
+        reportesFiltrados.value = allReportes;
+    }
     showModalReportes.value = true;
 }
 
@@ -143,6 +158,16 @@ function recargarReportes() {
         preserveState: true,
         only: ["reportes", "carteras", "success"],
         onFinish: () => {
+            const allReportes = usePage().props.reportes;
+
+            if (carteraSeleccionada.value) {
+                reportesFiltrados.value = allReportes.filter(
+                    (r) => r.cartera_id === carteraSeleccionada.value.id
+                );
+            } else {
+                reportesFiltrados.value = allReportes;
+            }
+
             showModalReportes.value = true;
         },
     });
@@ -151,6 +176,7 @@ function recargarReportes() {
 
 <template>
     <Head title="Gestión de Carteras" />
+
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between">
@@ -193,7 +219,6 @@ function recargarReportes() {
             <div class="mx-auto max-w-7xl">
                 <div class="bg-white shadow-xl rounded-lg overflow-hidden">
                     <div class="p-6">
-                        <!-- Modal para agregar/editar cartera -->
                         <ModalGestion
                             :show="showModal"
                             :title="
@@ -201,81 +226,41 @@ function recargarReportes() {
                                     ? 'Editar Cartera'
                                     : 'Agregar Cartera'
                             "
-                            :submitLabel="'Guardar'"
+                            submitLabel="Guardar"
                             :initialForm="carteraForm"
                             :endpoint="
-                                carteraEditar && carteraEditar.id
+                                carteraEditar
                                     ? `/carteras/${carteraEditar.id}`
                                     : '/carteras'
                             "
-                            :method="
-                                carteraEditar && carteraEditar.id
-                                    ? 'put'
-                                    : 'post'
-                            "
+                            :method="carteraEditar ? 'put' : 'post'"
                             @close="cerrarModal"
                             @success="handleSuccess"
                         >
                             <template #default="{ form, errors }">
-                                <div>
-                                    <label
-                                        class="block text-sm font-medium text-gray-700 mb-1"
-                                        >Nombre</label
-                                    >
-                                    <input
-                                        v-model="form.nombre"
-                                        type="text"
-                                        name="cartera_nombre"
-                                        placeholder="Nombre"
-                                        autocomplete="off"
-                                        class="border border-gray-300 px-3 py-2 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none"
-                                    />
-                                    <div
-                                        v-if="errors.nombre"
-                                        class="text-red-500 text-xs mt-1"
-                                    >
-                                        {{ errors.nombre }}
-                                    </div>
-                                </div>
-                                <div>
-                                    <label
-                                        class="block text-sm font-medium text-gray-700 mb-1"
-                                        >Descripción</label
-                                    >
-                                    <textarea
-                                        v-model="form.descripcion"
-                                        name="cartera_descripcion"
-                                        placeholder="Descripción"
-                                        autocomplete="off"
-                                        class="border border-gray-300 px-3 py-2 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none resize-none"
-                                    ></textarea>
-                                    <div
-                                        v-if="errors.descripcion"
-                                        class="text-red-500 text-xs mt-1"
-                                    >
-                                        {{ errors.descripcion }}
-                                    </div>
-                                </div>
-                                <div>
-                                    <label
-                                        class="block text-sm font-medium text-gray-700 mb-1"
-                                        >Orden</label
-                                    >
-                                    <input
-                                        v-model="form.orden"
-                                        type="number"
-                                        name="cartera_orden"
-                                        min="0"
-                                        autocomplete="off"
-                                        class="border border-gray-300 px-3 py-2 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none"
-                                    />
-                                    <div
-                                        v-if="errors.orden"
-                                        class="text-red-500 text-xs mt-1"
-                                    >
-                                        {{ errors.orden }}
-                                    </div>
-                                </div>
+                                <InputField
+                                    label="Nombre"
+                                    v-model="form.nombre"
+                                    name="cartera_nombre"
+                                    placeholder="Nombre"
+                                    :error="errors.nombre"
+                                />
+                                <InputField
+                                    label="Descripción"
+                                    v-model="form.descripcion"
+                                    name="cartera_descripcion"
+                                    type="textarea"
+                                    placeholder="Descripción"
+                                    :error="errors.descripcion"
+                                />
+                                <InputField
+                                    label="Orden"
+                                    v-model="form.orden"
+                                    name="cartera_orden"
+                                    type="number"
+                                    :min="0"
+                                    :error="errors.orden"
+                                />
                                 <div>
                                     <label
                                         class="block text-sm font-medium text-gray-700 mb-1"
@@ -298,7 +283,8 @@ function recargarReportes() {
                             :key="keyReportes"
                             :show="showModalReportes"
                             :carteras="carteras"
-                            :reportes="reportes"
+                            :reportes="reportesFiltrados"
+                            :cartera-seleccionada="carteraSeleccionada"
                             @close="cerrarModalReportes"
                             @recargarReportes="recargarReportes"
                         />
@@ -308,9 +294,8 @@ function recargarReportes() {
                                 Listado de Carteras
                             </h1>
                             <button
+                                @click="abrirModalReportes(null)"
                                 class="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-indigo-700 text-white px-4 py-1.5 rounded-md shadow-md hover:shadow-lg hover:brightness-110 hover:-translate-y-0.5 transition-all duration-300 ease-out"
-                                title="Ver listado de reportes"
-                                @click="abrirModalReportes"
                             >
                                 <span class="font-bold text-xs tracking-wide"
                                     >VER TODOS REPORTES</span
@@ -362,7 +347,11 @@ function recargarReportes() {
                                     <tr
                                         v-for="cartera in carteras"
                                         :key="cartera.id"
-                                        class="bg-white even:bg-indigo-50 hover:bg-indigo-100 transition"
+                                        :class="[
+                                            'bg-white',
+                                            'even:bg-indigo-50',
+                                            'hover:bg-indigo-100 transition',
+                                        ]"
                                     >
                                         <td
                                             class="px-4 py-2 text-gray-700 text-[13px]"
@@ -387,72 +376,27 @@ function recargarReportes() {
                                         <td
                                             class="px-4 py-2 text-gray-700 text-[13px]"
                                         >
-                                            <span
-                                                :class="
-                                                    cartera.estado
-                                                        ? 'bg-green-100 text-green-700'
-                                                        : 'bg-red-100 text-red-700'
-                                                "
-                                                class="inline-block px-3 py-1 rounded-full text-xs font-semibold"
-                                            >
-                                                {{
-                                                    cartera.estado
-                                                        ? "Activa"
-                                                        : "Inactiva"
-                                                }}
-                                            </span>
+                                            <StatusBadge
+                                                :active="!!cartera.estado"
+                                            />
                                         </td>
                                         <td
                                             class="px-4 py-2 text-center text-[13px]"
                                         >
-                                            <div
-                                                class="flex justify-center gap-2"
-                                            >
-                                                <button
-                                                    @click="
-                                                        abrirModalEditar(
-                                                            cartera
-                                                        )
-                                                    "
-                                                    class="p-1.5 rounded-full bg-yellow-400 hover:bg-yellow-500 text-white shadow-md transition transform hover:scale-105"
-                                                    title="Editar Cartera"
-                                                >
-                                                    <svg
-                                                        class="w-4 h-4"
-                                                        fill="none"
-                                                        stroke="currentColor"
-                                                        stroke-width="2"
-                                                        viewBox="0 0 24 24"
-                                                    >
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="M15.232 5.232l3.536 3.536M9 13l6.293-6.293a1 1 0 011.414 0l3.586 3.586a1 1 0 010 1.414L13 17H9v-4z"
-                                                        />
-                                                    </svg>
-                                                </button>
-                                                <button
-                                                    @click="
-                                                        eliminarCartera(cartera)
-                                                    "
-                                                    class="p-1.5 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-md transition transform hover:scale-105"
-                                                    title="Eliminar Cartera"
-                                                >
-                                                    <svg
-                                                        class="w-4 h-4"
-                                                        fill="none"
-                                                        stroke="currentColor"
-                                                        stroke-width="2"
-                                                        viewBox="0 0 24 24"
-                                                    >
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="M6 18L18 6M6 6l12 12"
-                                                        />
-                                                    </svg>
-                                                </button>
-                                            </div>
+                                            <Actions
+                                                :edit="true"
+                                                :remove="true"
+                                                :list="true"
+                                                @edit="
+                                                    abrirModalEditar(cartera)
+                                                "
+                                                @delete="
+                                                    eliminarCartera(cartera)
+                                                "
+                                                @list="
+                                                    abrirModalReportes(cartera)
+                                                "
+                                            />
                                         </td>
                                     </tr>
                                     <tr v-if="carteras.length === 0">

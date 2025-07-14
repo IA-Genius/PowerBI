@@ -1,19 +1,38 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
-import ModalGestion from "@/Components/ModalGestion.vue";
+import ModalXts from "@/Components/ModalXts.vue";
+import Actions from "@/Components/Actions.vue";
+import InputField from "@/Components/InputField.vue";
+import StatusBadge from "@/Components/StatusBadge.vue";
 import { Head, usePage, router } from "@inertiajs/vue3";
-import { ref, onMounted } from "vue";
+import { reactive, ref, computed, onMounted, watch } from "vue";
 import Swal from "sweetalert2";
+import Multiselect from "vue-multiselect";
+import "vue-multiselect/dist/vue-multiselect.css";
 
 const users = usePage().props.users;
 const success = usePage().props.success;
+const carteras = usePage().props.carteras || [];
+
 const showModal = ref(false);
 const usuarioEditar = ref(null);
-const usuarioForm = ref({
+const tabActiva = ref("basicos");
+
+const usuarioForm = reactive({
     name: "",
     email: "",
     password: "",
     active: true,
+    carteras: [],
+    reportes: [],
+});
+
+const reportesFiltradosPorCarteras = computed(() => {
+    if (!usuarioForm.carteras || !usuarioForm.carteras.length) return [];
+    const reportes = usuarioForm.carteras.flatMap((c) =>
+        c && c.reportes ? c.reportes : []
+    );
+    return Array.from(new Map(reportes.map((r) => [r.id, r])).values());
 });
 
 onMounted(() => {
@@ -31,29 +50,54 @@ onMounted(() => {
 });
 
 function abrirModalAgregar() {
-    usuarioEditar.value = null;
-    usuarioForm.value = {
+    Object.assign(usuarioForm, {
         name: "",
         email: "",
         password: "",
         active: true,
-    };
+        carteras: [],
+        reportes: [],
+    });
+    usuarioEditar.value = null;
+    tabActiva.value = "basicos";
     showModal.value = true;
 }
+
 function abrirModalEditar(user) {
     usuarioEditar.value = user;
-    usuarioForm.value = {
+
+    // Obtener carteras seleccionadas
+    const carterasSeleccionadas = carteras.filter((c) =>
+        user.carteras?.some((uc) => uc.id === c.id)
+    );
+
+    // Obtener reportes seleccionados desde esas carteras (usando los objetos originales)
+    const reportesDeCarteras = carterasSeleccionadas.flatMap(
+        (c) => c.reportes || []
+    );
+
+    const reportesSeleccionados = reportesDeCarteras.filter((r) =>
+        user.reportes.some((ur) => ur.id === r.id)
+    );
+
+    Object.assign(usuarioForm, {
         name: user.name,
         email: user.email,
         password: "",
         active: !!user.active,
-    };
+        carteras: carterasSeleccionadas,
+        reportes: reportesSeleccionados, // Esto ya estará sincronizado por id y referencia
+    });
+
+    tabActiva.value = "basicos";
     showModal.value = true;
 }
+
 function cerrarModal() {
     showModal.value = false;
     usuarioEditar.value = null;
 }
+
 function handleSuccess(message) {
     Swal.fire({
         toast: true,
@@ -64,7 +108,6 @@ function handleSuccess(message) {
         timer: 2000,
         timerProgressBar: true,
     });
-
     recargar();
 }
 
@@ -72,13 +115,10 @@ function recargar() {
     router.visit(route("users.index"), {
         preserveScroll: true,
         only: ["users", "success"],
-        onFinish: () => {
-            cerrarModal();
-        },
+        onFinish: () => cerrarModal(),
     });
 }
 
-// Método para eliminar usuario with confirmación y toast
 function eliminarUsuario(user) {
     Swal.fire({
         title: "¿Eliminar usuario?",
@@ -119,6 +159,37 @@ function eliminarUsuario(user) {
         }
     });
 }
+
+watch(
+    () => usuarioForm.carteras,
+    (nuevasCarteras) => {
+        const nuevosReportesDisponibles = nuevasCarteras.length
+            ? nuevasCarteras.flatMap((c) => c.reportes || [])
+            : [];
+        const nuevosIds = new Set(nuevosReportesDisponibles.map((r) => r.id));
+        usuarioForm.reportes = usuarioForm.reportes.filter((r) =>
+            nuevosIds.has(r.id)
+        );
+    }
+);
+// --- Métodos para selección granular de
+
+function seleccionarTodosReportesCartera(cartera) {
+    cartera.reportes.forEach((r) => {
+        if (!usuarioForm.reportes.some((sel) => sel.id === r.id))
+            usuarioForm.reportes.push(r);
+    });
+}
+function toggleReporteCartera(reporte, checked) {
+    if (checked) {
+        if (!usuarioForm.reportes.some((r) => r.id === reporte.id))
+            usuarioForm.reportes.push(reporte);
+    } else {
+        usuarioForm.reportes = usuarioForm.reportes.filter(
+            (r) => r.id !== reporte.id
+        );
+    }
+}
 </script>
 
 <template>
@@ -127,19 +198,9 @@ function eliminarUsuario(user) {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <h2
-                        class="text-xl font-semibold leading-tight text-gray-800"
-                    >
-                        Gestión de Usuarios
-                    </h2>
-                    <span
-                        class="text-white text-xs px-3 py-1 rounded-full ml-2"
-                        style="background-color: #5f61ff"
-                    >
-                        {{ users.length }} usuarios
-                    </span>
-                </div>
+                <h2 class="text-xl font-semibold text-gray-800">
+                    Gestión de Usuarios
+                </h2>
                 <button
                     @click="abrirModalAgregar"
                     class="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-5 py-2 rounded-lg shadow-md hover:shadow-lg hover:brightness-110 hover:-translate-y-0.5 transition-all duration-300 ease-out"
@@ -166,8 +227,7 @@ function eliminarUsuario(user) {
             <div class="mx-auto max-w-7xl">
                 <div class="bg-white shadow-xl rounded-lg overflow-hidden">
                     <div class="p-6">
-                        <!-- Modal genérico para agregar/editar usuario -->
-                        <ModalGestion
+                        <ModalXts
                             :show="showModal"
                             :title="
                                 usuarioEditar
@@ -177,312 +237,347 @@ function eliminarUsuario(user) {
                             :submitLabel="
                                 usuarioEditar ? 'Actualizar' : 'Registrar'
                             "
-                            :initialForm="usuarioForm"
+                            :form="usuarioForm"
                             :endpoint="
-                                usuarioEditar && usuarioEditar.id
+                                usuarioEditar
                                     ? `/users/${usuarioEditar.id}`
                                     : '/users'
                             "
-                            :method="
-                                usuarioEditar && usuarioEditar.id
-                                    ? 'put'
-                                    : 'post'
+                            :method="usuarioEditar ? 'put' : 'post'"
+                            :transform="
+                                (form) => ({
+                                    ...form,
+                                    carteras: form.carteras.map((c) => c.id),
+                                    reportes: form.reportes.map((r) => r.id),
+                                })
                             "
                             @close="cerrarModal"
                             @success="handleSuccess"
                         >
                             <template #default="{ form, errors }">
-                                <input
-                                    type="text"
-                                    name="fakeusernameremembered"
-                                    style="display: none"
-                                    autocomplete="off"
-                                />
-                                <input
-                                    type="password"
-                                    name="fakepasswordremembered"
-                                    style="display: none"
-                                    autocomplete="off"
-                                />
-                                <div>
-                                    <label
-                                        class="block text-sm font-medium text-gray-700 mb-1"
-                                        >Nombre</label
+                                <!-- Tabs -->
+                                <div class="mb-6">
+                                    <nav
+                                        class="flex gap-2 w-full bg-indigo-50 rounded-lg p-1 mx-auto shadow-sm"
                                     >
-                                    <input
+                                        <button
+                                            @click="tabActiva = 'basicos'"
+                                            type="button"
+                                            :class="[
+                                                'px-6 py-2 w-full rounded-md text-sm font-semibold transition-all duration-200 focus:outline-none',
+                                                tabActiva === 'basicos'
+                                                    ? 'bg-white text-indigo-700 shadow border border-indigo-200'
+                                                    : 'bg-transparent text-gray-500 hover:bg-white hover:text-indigo-600',
+                                            ]"
+                                        >
+                                            Datos Básicos
+                                        </button>
+                                        <button
+                                            @click="tabActiva = 'carteras'"
+                                            type="button"
+                                            :class="[
+                                                'px-6 py-2 w-full rounded-md text-sm font-semibold transition-all duration-200 focus:outline-none',
+                                                tabActiva === 'carteras'
+                                                    ? 'bg-white text-indigo-700 shadow border border-indigo-200'
+                                                    : 'bg-transparent text-gray-500 hover:bg-white hover:text-indigo-600',
+                                            ]"
+                                        >
+                                            Carteras y Reportes
+                                        </button>
+                                    </nav>
+                                </div>
+
+                                <!-- Contenido del tab -->
+                                <div v-if="tabActiva === 'basicos'">
+                                    <InputField
+                                        label="Nombre"
                                         v-model="form.name"
-                                        type="text"
-                                        name="user_name"
-                                        placeholder="Nombre"
-                                        autocomplete="off"
-                                        class="border border-gray-300 px-3 py-2 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                                        :error="errors.name"
                                     />
-                                    <div
-                                        v-if="errors.name"
-                                        class="text-red-500 text-xs mt-1"
-                                    >
-                                        {{ errors.name }}
-                                    </div>
-                                </div>
-                                <div>
-                                    <label
-                                        class="block text-sm font-medium text-gray-700 mb-1"
-                                        >Email</label
-                                    >
-                                    <input
+                                    <InputField
+                                        label="Email"
                                         v-model="form.email"
-                                        type="email"
-                                        name="user_email"
-                                        placeholder="Email"
-                                        autocomplete="off"
-                                        class="border border-gray-300 px-3 py-2 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                                        :error="errors.email"
                                     />
-                                    <div
-                                        v-if="errors.email"
-                                        class="text-red-500 text-xs mt-1"
-                                    >
-                                        {{ errors.email }}
-                                    </div>
-                                </div>
-                                <div>
-                                    <label
-                                        class="block text-sm font-medium text-gray-700 mb-1"
-                                    >
-                                        {{
+                                    <InputField
+                                        :label="
                                             usuarioEditar
-                                                ? "Nueva contraseña (opcional)"
-                                                : "Contraseña"
-                                        }}
-                                    </label>
-
-                                    <!-- Inputs falsos para evitar autocompletado -->
-                                    <input
-                                        type="text"
-                                        name="fakeusernameremembered"
-                                        style="display: none"
-                                        autocomplete="off"
-                                    />
-                                    <input
-                                        type="password"
-                                        name="fakepasswordremembered"
-                                        style="display: none"
-                                        autocomplete="off"
-                                    />
-
-                                    <input
-                                        v-model="form.password"
-                                        type="password"
-                                        :name="
-                                            usuarioEditar
-                                                ? 'new_user_password'
-                                                : 'user_password'
-                                        "
-                                        :placeholder="
-                                            usuarioEditar
-                                                ? 'Dejar vacío para mantener la contraseña actual'
+                                                ? 'Nueva contraseña (opcional)'
                                                 : 'Contraseña'
                                         "
-                                        autocomplete="new-password"
-                                        readonly
-                                        @focus="
-                                            (e) =>
-                                                e.target.removeAttribute(
-                                                    'readonly'
-                                                )
-                                        "
-                                        class="border border-gray-300 px-3 py-2 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                                        v-model="form.password"
+                                        type="password"
+                                        :error="errors.password"
                                     />
-
-                                    <div
-                                        v-if="errors.password"
-                                        class="text-red-500 text-xs mt-1"
-                                    >
-                                        {{ errors.password }}
+                                    <div>
+                                        <label
+                                            class="block text-sm font-medium text-gray-700 mb-1"
+                                        >
+                                            Estado
+                                        </label>
+                                        <select
+                                            v-model="form.active"
+                                            class="w-full border rounded px-3 py-2"
+                                        >
+                                            <option :value="true">
+                                                Activo
+                                            </option>
+                                            <option :value="false">
+                                                Inactivo
+                                            </option>
+                                        </select>
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label
-                                        class="block text-sm font-medium text-gray-700 mb-1"
-                                        for="estado"
-                                        >Estado</label
+                                <div v-if="tabActiva === 'carteras'">
+                                    <div class="mb-4">
+                                        <label
+                                            class="block text-sm font-medium text-gray-700 mb-1"
+                                            >Selecciona carteras</label
+                                        >
+                                        <Multiselect
+                                            v-model="form.carteras"
+                                            :options="carteras"
+                                            :multiple="true"
+                                            :track-by="'id'"
+                                            :label="'nombre'"
+                                            placeholder="Selecciona carteras"
+                                            class="w-full"
+                                        />
+                                    </div>
+                                    <div
+                                        v-if="form.carteras.length"
+                                        class="space-y-6"
+                                        style="
+                                            max-height: 217px;
+                                            overflow-y: auto;
+                                        "
                                     >
-                                    <select
-                                        id="estado"
-                                        v-model="form.active"
-                                        class="border border-gray-300 px-3 py-2 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none"
-                                    >
-                                        <option :value="true">Activo</option>
-                                        <option :value="false">Inactivo</option>
-                                    </select>
-                                </div>
-                            </template>
-                        </ModalGestion>
-
-                        <div class="flex items-center justify-between mb-4">
-                            <h1 class="text-xl font-semibold text-gray-800">
-                                Listado de Usuarios
-                            </h1>
-                            <button
-                                class="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-indigo-700 text-white px-4 py-1.5 rounded-md shadow-md hover:shadow-lg hover:brightness-110 hover:-translate-y-0.5 transition-all duration-300 ease-out"
-                                title="Ver listado de reportes"
-                            >
-                                <span class="font-bold text-xs tracking-wide">
-                                    VER ASIGNACIONES
-                                </span>
-                                <span
-                                    class="ml-2 bg-white text-indigo-700 font-bold px-2 py-0.5 rounded-full text-xs shadow-sm"
-                                >
-                                    1
-                                </span>
-                            </button>
-                        </div>
-                        <div
-                            class="overflow-x-auto rounded-xl border border-gray-100 bg-gray-50"
-                        >
-                            <table
-                                class="min-w-full divide-y divide-gray-200 text-sm"
-                            >
-                                <thead class="bg-indigo-100">
-                                    <tr>
-                                        <th
-                                            class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
+                                        <div
+                                            v-for="cartera in form.carteras"
+                                            :key="cartera.id"
+                                            class="border border-indigo-100 rounded-lg p-4 bg-indigo-50/50 shadow-sm"
                                         >
-                                            ID
-                                        </th>
-                                        <th
-                                            class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
-                                        >
-                                            Nombre
-                                        </th>
-                                        <th
-                                            class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
-                                        >
-                                            Email
-                                        </th>
-                                        <th
-                                            class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
-                                        >
-                                            Estado
-                                        </th>
-                                        <th
-                                            class="px-4 py-2 text-center text-xs font-bold text-indigo-700 uppercase"
-                                        >
-                                            Acciones
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr
-                                        v-for="(user, $index) in users"
-                                        :key="user.id"
-                                        :class="[
-                                            $index % 2 === 0
-                                                ? 'bg-white'
-                                                : 'bg-indigo-50',
-                                            'hover:bg-indigo-100 transition',
-                                        ]"
-                                    >
-                                        <td
-                                            class="px-4 py-2 text-gray-700 text-[13px]"
-                                        >
-                                            {{ user.id }}
-                                        </td>
-                                        <td
-                                            class="px-4 py-2 text-gray-700 text-[13px]"
-                                        >
-                                            {{ user.name }}
-                                        </td>
-                                        <td
-                                            class="px-4 py-2 text-gray-700 text-[13px]"
-                                        >
-                                            {{ user.email }}
-                                        </td>
-                                        <td
-                                            class="px-4 py-2 text-gray-700 text-[13px]"
-                                        >
-                                            <span
-                                                :class="
-                                                    user.active
-                                                        ? 'bg-green-100 text-green-700'
-                                                        : 'bg-red-100 text-red-700'
-                                                "
-                                                class="inline-block px-3 py-1 rounded-full text-xs font-semibold"
-                                            >
-                                                {{
-                                                    user.active
-                                                        ? "Activo"
-                                                        : "Inactivo"
-                                                }}
-                                            </span>
-                                        </td>
-                                        <td class="px-4 py-2 text-center">
                                             <div
-                                                class="flex justify-center gap-2"
+                                                class="flex items-center justify-between mb-2"
+                                            >
+                                                <span
+                                                    class="font-semibold text-indigo-700 text-sm flex items-center gap-2"
+                                                >
+                                                    <svg
+                                                        class="w-4 h-4 text-indigo-400"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        stroke-width="2"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                            d="M3 7h18"
+                                                        />
+                                                    </svg>
+                                                    {{ cartera.nombre }}
+                                                </span>
+                                                <button
+                                                    v-if="
+                                                        cartera.reportes &&
+                                                        cartera.reportes.length
+                                                    "
+                                                    type="button"
+                                                    class="text-xs px-2 py-1 bg-emerald-500 text-white rounded hover:bg-emerald-600 transition"
+                                                    @click="
+                                                        seleccionarTodosReportesCartera(
+                                                            cartera
+                                                        )
+                                                    "
+                                                >
+                                                    Seleccionar todos
+                                                </button>
+                                            </div>
+                                            <div
+                                                v-if="
+                                                    cartera.reportes &&
+                                                    cartera.reportes.length
+                                                "
                                             >
                                                 <div
-                                                    class="flex justify-center gap-2"
+                                                    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2"
                                                 >
-                                                    <button
-                                                        @click="
-                                                            abrirModalEditar(
-                                                                user
-                                                            )
-                                                        "
-                                                        class="p-1.5 rounded-full bg-yellow-400 hover:bg-yellow-500 text-white shadow-md transition transform hover:scale-105"
-                                                        title="Editar usuario"
+                                                    <div
+                                                        v-for="reporte in cartera.reportes"
+                                                        :key="reporte.id"
+                                                        class="flex items-center gap-2 bg-white rounded px-2 py-1 shadow-sm"
                                                     >
-                                                        <svg
-                                                            class="w-4 h-4"
-                                                            fill="none"
-                                                            stroke="currentColor"
-                                                            stroke-width="2"
-                                                            viewBox="0 0 24 24"
+                                                        <input
+                                                            type="checkbox"
+                                                            :id="
+                                                                'reporte-' +
+                                                                cartera.id +
+                                                                '-' +
+                                                                reporte.id
+                                                            "
+                                                            :checked="
+                                                                form.reportes.some(
+                                                                    (r) =>
+                                                                        r.id ===
+                                                                        reporte.id
+                                                                )
+                                                            "
+                                                            @change="
+                                                                toggleReporteCartera(
+                                                                    reporte,
+                                                                    $event
+                                                                        .target
+                                                                        .checked
+                                                                )
+                                                            "
+                                                            class="accent-indigo-500"
+                                                        />
+                                                        <label
+                                                            :for="
+                                                                'reporte-' +
+                                                                cartera.id +
+                                                                '-' +
+                                                                reporte.id
+                                                            "
+                                                            class="text-xs text-gray-700 cursor-pointer truncate max-w-[120px]"
+                                                            :title="
+                                                                reporte.nombre
+                                                            "
                                                         >
-                                                            <path
-                                                                stroke-linecap="round"
-                                                                stroke-linejoin="round"
-                                                                d="M15.232 5.232l3.536 3.536M9 13l6.293-6.293a1 1 0 011.414 0l3.586 3.586a1 1 0 010 1.414L13 17H9v-4z"
-                                                            />
-                                                        </svg>
-                                                    </button>
-                                                    <button
-                                                        @click="
-                                                            eliminarUsuario(
-                                                                user
-                                                            )
-                                                        "
-                                                        class="p-1.5 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-md transition transform hover:scale-105"
-                                                        title="Eliminar usuario"
-                                                    >
-                                                        <svg
-                                                            class="w-4 h-4"
-                                                            fill="none"
-                                                            stroke="currentColor"
-                                                            stroke-width="2"
-                                                            viewBox="0 0 24 24"
-                                                        >
-                                                            <path
-                                                                stroke-linecap="round"
-                                                                stroke-linejoin="round"
-                                                                d="M6 18L18 6M6 6l12 12"
-                                                            />
-                                                        </svg>
-                                                    </button>
+                                                            {{ reporte.nombre }}
+                                                        </label>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </td>
-                                    </tr>
-                                    <tr v-if="users.length === 0">
-                                        <td
-                                            colspan="5"
-                                            class="text-center py-4 text-gray-400 text-lg"
+                                            <div
+                                                v-else
+                                                class="text-xs text-gray-400 italic mt-2"
+                                            >
+                                                Esta cartera no tiene reportes
+                                                disponibles.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div
+                                        v-if="form.reportes.length"
+                                        class="mt-2 flex items-center justify-start"
+                                    >
+                                        <label
+                                            class="block text-xs font-semibold text-gray-500 mb-1 mr-2"
                                         >
-                                            No hay usuarios registrados.
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                                            Cantidad de reportes asignados:
+                                        </label>
+                                        <span
+                                            class="bg-indigo-100 text-indigo-700 rounded px-2 py-1 text-xs"
+                                        >
+                                            {{ form.reportes.length }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </template>
+                        </ModalXts>
+
+                        <!-- Listado de usuarios -->
+                        <div class="mt-6">
+                            <h1
+                                class="text-xl font-semibold text-gray-800 mb-4"
+                            >
+                                Listado de Usuarios
+                            </h1>
+                            <div
+                                class="overflow-x-auto rounded-xl border border-gray-100 bg-gray-50"
+                            >
+                                <table
+                                    class="min-w-full divide-y divide-gray-200 text-sm"
+                                >
+                                    <thead class="bg-indigo-100">
+                                        <tr>
+                                            <th
+                                                class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
+                                            >
+                                                ID
+                                            </th>
+                                            <th
+                                                class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
+                                            >
+                                                Nombre
+                                            </th>
+                                            <th
+                                                class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
+                                            >
+                                                Email
+                                            </th>
+                                            <th
+                                                class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
+                                            >
+                                                Estado
+                                            </th>
+                                            <th
+                                                class="px-4 py-2 text-center text-xs font-bold text-indigo-700 uppercase"
+                                            >
+                                                Acciones
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr
+                                            v-for="(user, $index) in users"
+                                            :key="user.id"
+                                            :class="[
+                                                $index % 2 === 0
+                                                    ? 'bg-white'
+                                                    : 'bg-indigo-50',
+                                                'hover:bg-indigo-100 transition',
+                                            ]"
+                                        >
+                                            <td
+                                                class="px-4 py-2 text-gray-700 text-[13px]"
+                                            >
+                                                {{ user.id }}
+                                            </td>
+                                            <td
+                                                class="px-4 py-2 text-gray-700 text-[13px]"
+                                            >
+                                                {{ user.name }}
+                                            </td>
+                                            <td
+                                                class="px-4 py-2 text-gray-700 text-[13px]"
+                                            >
+                                                {{ user.email }}
+                                            </td>
+                                            <td
+                                                class="px-4 py-2 text-gray-700 text-[13px]"
+                                            >
+                                                <StatusBadge
+                                                    :active="!!user.active"
+                                                />
+                                            </td>
+                                            <td class="px-4 py-2 text-center">
+                                                <Actions
+                                                    :edit="true"
+                                                    :remove="true"
+                                                    @edit="
+                                                        abrirModalEditar(user)
+                                                    "
+                                                    @delete="
+                                                        eliminarUsuario(user)
+                                                    "
+                                                />
+                                            </td>
+                                        </tr>
+                                        <tr v-if="users.length === 0">
+                                            <td
+                                                colspan="5"
+                                                class="text-center py-4 text-gray-400 text-lg"
+                                            >
+                                                No hay usuarios registrados.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>

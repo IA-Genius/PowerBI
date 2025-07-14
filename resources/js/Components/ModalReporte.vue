@@ -4,7 +4,7 @@
             class="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-40"
         >
             <div
-                class="bg-gradient-to-br from-blue-600 to-indigo-600 p-1 rounded-xl shadow-2xl w-full max-w-md transition-all"
+                class="bg-gradient-to-br from-blue-600 to-indigo-600 p-1 rounded-xl shadow-2xl w-full max-w-lg transition-all"
             >
                 <div class="bg-white rounded-lg p-6">
                     <h2
