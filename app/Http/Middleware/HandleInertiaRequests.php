@@ -40,16 +40,11 @@ class HandleInertiaRequests extends Middleware
                     : [],
             ],
             'userCarteras' => fn() => $user
-                ? $user->roles
-                ->flatMap->carteras
-                ->unique('id')
-                ->values()
+                ? $user->carteras()->with('reportes')->get()
                 : [],
+
             'userReportes' => fn() => $user
-                ? $user->roles
-                ->flatMap->reportes
-                ->unique('id')
-                ->values()
+                ? $user->reportes()->with('cartera')->get()
                 : [],
 
             'can' => [

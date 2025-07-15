@@ -6,11 +6,12 @@ import InputField from "@/Components/InputField.vue";
 import StatusBadge from "@/Components/StatusBadge.vue";
 import { Head, usePage, router } from "@inertiajs/vue3";
 import { reactive, ref, computed, onMounted, watch } from "vue";
+
 import Swal from "sweetalert2";
 import Multiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.css";
 
-const { users, carteras, reportes, roles, success } = usePage().props;
+const { users, carteras, roles, success } = usePage().props;
 
 const showModal = ref(false);
 const usuarioEditar = ref(null);
@@ -21,17 +22,15 @@ const usuarioForm = reactive({
     email: "",
     password: "",
     active: true,
-    carteras: [],
-    reportes: [],
-    roles: [],
+    roles: null, // ahora es un solo objeto rol
+    customCarteras: [],
+    customReportes: [],
 });
 
-const reportesFiltradosPorCarteras = computed(() => {
-    if (!usuarioForm.carteras || !usuarioForm.carteras.length) return [];
-    const reportes = usuarioForm.carteras.flatMap((c) =>
-        c && c.reportes ? c.reportes : []
-    );
-    return Array.from(new Map(reportes.map((r) => [r.id, r])).values());
+// Reportes heredados del rol seleccionado
+const inheritedReportes = computed(() => {
+    if (!usuarioForm.roles) return [];
+    return usuarioForm.roles.reportes || [];
 });
 
 onMounted(() => {
@@ -47,6 +46,66 @@ onMounted(() => {
         });
     }
 });
+function resetearACarterasYReportesPorDefecto() {
+    if (!usuarioForm.roles) return;
+
+    Swal.fire({
+        title: "¿Restablecer permisos?",
+        text: "Se reemplazarán las carteras y reportes actuales por los del rol seleccionado. ¿Deseas continuar?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Sí, restablecer",
+        cancelButtonText: "Cancelar",
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const carterasRol = usuarioForm.roles.carteras || [];
+
+            const carterasCompletas = carterasRol.map((cartera) => {
+                const encontrada = carteras.find((c) => c.id === cartera.id);
+                return encontrada ? { ...encontrada } : { ...cartera };
+            });
+
+            const reportesDesdeCarteras = carterasCompletas
+                .flatMap((c) => c.reportes || [])
+                .filter(
+                    (r, i, self) => self.findIndex((x) => x.id === r.id) === i
+                );
+
+            usuarioForm.customCarteras = carterasCompletas;
+            usuarioForm.customReportes = reportesDesdeCarteras;
+
+            Swal.fire({
+                toast: true,
+                position: "top-end",
+                icon: "success",
+                title: "Permisos restablecidos",
+                showConfirmButton: false,
+                timer: 1500,
+            });
+        }
+    });
+}
+
+watch(
+    () => usuarioForm.roles,
+    (nuevoRol) => {
+        if (!nuevoRol || cargandoDesdeEdicion.value) return;
+
+        const carterasRol = nuevoRol.carteras || [];
+
+        const carterasCompletas = carterasRol.map((cartera) => {
+            const encontrada = carteras.find((c) => c.id === cartera.id);
+            return encontrada ? { ...encontrada } : { ...cartera };
+        });
+
+        const reportesDesdeCarteras = carterasCompletas
+            .flatMap((c) => c.reportes || [])
+            .filter((r, i, self) => self.findIndex((x) => x.id === r.id) === i);
+
+        usuarioForm.customCarteras = carterasCompletas;
+        usuarioForm.customReportes = reportesDesdeCarteras;
+    }
+);
 
 function abrirModalAgregar() {
     Object.assign(usuarioForm, {
@@ -54,46 +113,46 @@ function abrirModalAgregar() {
         email: "",
         password: "",
         active: true,
-        carteras: [],
-        reportes: [],
-        roles: [],
+        roles: null,
+        customCarteras: [],
+        customReportes: [],
     });
     usuarioEditar.value = null;
     tabActiva.value = "basicos";
     showModal.value = true;
 }
+const cargandoDesdeEdicion = ref(false);
 function abrirModalEditar(user) {
+    cargandoDesdeEdicion.value = true;
+
     usuarioEditar.value = user;
 
-    // Obtener carteras seleccionadas
-    const carterasSeleccionadas = carteras.filter((c) =>
-        user.carteras?.some((uc) => uc.id === c.id)
+    const seleccionRol = roles.find((r) =>
+        user.roles && user.roles.length ? user.roles[0].id === r.id : false
     );
 
-    // Obtener reportes seleccionados desde esas carteras (usando los objetos originales)
-    const reportesDeCarteras = carterasSeleccionadas.flatMap(
-        (c) => c.reportes || []
-    );
-    const selectedRoles = roles.filter((r) =>
-        user.roles.some((ur) => ur.id === r.id)
-    );
+    const seleccionCarteras = (user.carteras || []).map((cartera) => {
+        const carteraCompleta = carteras.find((c) => c.id === cartera.id);
+        return carteraCompleta ? { ...carteraCompleta } : { ...cartera };
+    });
 
-    const reportesSeleccionados = reportesDeCarteras.filter((r) =>
-        user.reportes.some((ur) => ur.id === r.id)
-    );
+    const seleccionReportes = user.reportes || [];
 
     Object.assign(usuarioForm, {
         name: user.name,
         email: user.email,
         password: "",
         active: !!user.active,
-        carteras: carterasSeleccionadas,
-        reportes: reportesSeleccionados,
-        roles: selectedRoles,
+        roles: seleccionRol || null,
+        customCarteras: seleccionCarteras,
+        customReportes: seleccionReportes,
     });
 
     tabActiva.value = "basicos";
     showModal.value = true;
+    setTimeout(() => {
+        cargandoDesdeEdicion.value = false;
+    }, 50);
 }
 
 function cerrarModal() {
@@ -118,7 +177,7 @@ function recargar() {
     router.visit(route("users.index"), {
         preserveScroll: true,
         only: ["users", "success"],
-        onFinish: () => cerrarModal(),
+        onFinish: cerrarModal,
     });
 }
 
@@ -147,48 +206,17 @@ function eliminarUsuario(user) {
                     });
                     recargar();
                 },
-                onError: () => {
-                    Swal.fire({
-                        toast: true,
-                        position: "top-end",
-                        icon: "error",
-                        title: "No se pudo eliminar el usuario",
-                        showConfirmButton: false,
-                        timer: 2000,
-                        timerProgressBar: true,
-                    });
-                },
             });
         }
     });
 }
-
-watch(
-    () => usuarioForm.carteras,
-    (nuevasCarteras) => {
-        const nuevosReportesDisponibles = nuevasCarteras.length
-            ? nuevasCarteras.flatMap((c) => c.reportes || [])
-            : [];
-        const nuevosIds = new Set(nuevosReportesDisponibles.map((r) => r.id));
-        usuarioForm.reportes = usuarioForm.reportes.filter((r) =>
-            nuevosIds.has(r.id)
-        );
-    }
-);
-// --- Métodos para selección granular de
-
-function seleccionarTodosReportesCartera(cartera) {
-    cartera.reportes.forEach((r) => {
-        if (!usuarioForm.reportes.some((sel) => sel.id === r.id))
-            usuarioForm.reportes.push(r);
-    });
-}
-function toggleReporteCartera(reporte, checked) {
+function toggleReportePersonalizado(reporte, checked) {
     if (checked) {
-        if (!usuarioForm.reportes.some((r) => r.id === reporte.id))
-            usuarioForm.reportes.push(reporte);
+        if (!usuarioForm.customReportes.some((r) => r.id === reporte.id)) {
+            usuarioForm.customReportes.push(reporte);
+        }
     } else {
-        usuarioForm.reportes = usuarioForm.reportes.filter(
+        usuarioForm.customReportes = usuarioForm.customReportes.filter(
             (r) => r.id !== reporte.id
         );
     }
@@ -201,12 +229,10 @@ function toggleReporteCartera(reporte, checked) {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between">
-                <h2 class="text-xl font-semibold text-gray-800">
-                    Gestión de Usuarios
-                </h2>
+                <h2 class="text-xl font-semibold">Gestión de Usuarios</h2>
                 <button
                     @click="abrirModalAgregar"
-                    class="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-5 py-2 rounded-lg shadow-md hover:shadow-lg hover:brightness-110 hover:-translate-y-0.5 transition-all duration-300 ease-out"
+                    class="flex items-center gap-2 bg-green-500 text-white px-5 py-2 rounded shadow hover:bg-green-600 transition"
                 >
                     <svg
                         class="w-5 h-5"
@@ -227,404 +253,298 @@ function toggleReporteCartera(reporte, checked) {
         </template>
 
         <div class="py-8">
-            <div class="mx-auto w-full">
-                <div class="bg-white shadow-xl rounded-lg overflow-hidden">
-                    <div class="p-6">
-                        <ModalXts
-                            :show="showModal"
-                            :title="
-                                usuarioEditar
-                                    ? 'Editar Usuario'
-                                    : 'Agregar Usuario'
+            <ModalXts
+                :show="showModal"
+                :title="usuarioEditar ? 'Editar Usuario' : 'Agregar Usuario'"
+                :submitLabel="usuarioEditar ? 'Actualizar' : 'Registrar'"
+                :form="usuarioForm"
+                :endpoint="
+                    usuarioEditar ? `/users/${usuarioEditar.id}` : '/users'
+                "
+                :method="usuarioEditar ? 'put' : 'post'"
+                :transform="
+                    (form) => ({
+                        ...form,
+                        roles: form.roles ? [form.roles.id] : [],
+                        carteras: form.customCarteras.map((c) => c.id),
+                        reportes: form.customReportes.map((r) => r.id),
+                    })
+                "
+                @close="cerrarModal"
+                @success="handleSuccess"
+            >
+                <template #default="{ form, errors }">
+                    <!-- Tabs -->
+                    <nav class="flex mb-6 bg-indigo-50 rounded p-1">
+                        <button
+                            @click="tabActiva = 'basicos'"
+                            type="button"
+                            :class="
+                                tabActiva === 'basicos'
+                                    ? 'bg-white text-indigo-700 shadow px-6 py-2 rounded'
+                                    : 'text-gray-500 hover:bg-white hover:text-indigo-600 px-6 py-2 rounded'
                             "
-                            :submitLabel="
-                                usuarioEditar ? 'Actualizar' : 'Registrar'
-                            "
-                            :form="usuarioForm"
-                            :endpoint="
-                                usuarioEditar
-                                    ? `/users/${usuarioEditar.id}`
-                                    : '/users'
-                            "
-                            :method="usuarioEditar ? 'put' : 'post'"
-                            :transform="
-                                (form) => ({
-                                    ...form,
-                                    carteras: form.carteras.map((c) => c.id),
-                                    reportes: form.reportes.map((r) => r.id),
-                                    roles: form.roles.map((r) => r.id),
-                                })
-                            "
-                            @close="cerrarModal"
-                            @success="handleSuccess"
                         >
-                            <template #default="{ form, errors }">
-                                <!-- Tabs -->
-                                <div class="mb-6">
-                                    <nav
-                                        class="flex gap-2 w-full bg-indigo-50 rounded-lg p-1 mx-auto shadow-sm"
-                                    >
-                                        <button
-                                            @click="tabActiva = 'basicos'"
-                                            type="button"
-                                            :class="[
-                                                'px-6 py-2 w-full rounded-md text-sm font-semibold transition-all duration-200 focus:outline-none',
-                                                tabActiva === 'basicos'
-                                                    ? 'bg-white text-indigo-700 shadow border border-indigo-200'
-                                                    : 'bg-transparent text-gray-500 hover:bg-white hover:text-indigo-600',
-                                            ]"
-                                        >
-                                            Datos Básicos
-                                        </button>
-                                        <button
-                                            @click="tabActiva = 'carteras'"
-                                            type="button"
-                                            :class="[
-                                                'px-6 py-2 w-full rounded-md text-sm font-semibold transition-all duration-200 focus:outline-none',
-                                                tabActiva === 'carteras'
-                                                    ? 'bg-white text-indigo-700 shadow border border-indigo-200'
-                                                    : 'bg-transparent text-gray-500 hover:bg-white hover:text-indigo-600',
-                                            ]"
-                                        >
-                                            Carteras y Reportes
-                                        </button>
-                                    </nav>
-                                </div>
+                            Datos Básicos
+                        </button>
+                        <button
+                            @click="tabActiva = 'avanzado'"
+                            type="button"
+                            :class="
+                                tabActiva === 'avanzado'
+                                    ? 'bg-white text-indigo-700 shadow px-6 py-2 rounded'
+                                    : 'text-gray-500 hover:bg-white hover:text-indigo-600 px-6 py-2 rounded'
+                            "
+                        >
+                            Avanzado
+                        </button>
+                    </nav>
 
-                                <!-- Contenido del tab -->
-                                <div v-if="tabActiva === 'basicos'">
-                                    <InputField
-                                        label="Nombre"
-                                        v-model="form.name"
-                                        :error="errors.name"
-                                    />
-                                    <InputField
-                                        label="Email"
-                                        v-model="form.email"
-                                        :error="errors.email"
-                                    />
-                                    <InputField
-                                        :label="
-                                            usuarioEditar
-                                                ? 'Nueva contraseña (opcional)'
-                                                : 'Contraseña'
-                                        "
-                                        v-model="form.password"
-                                        type="password"
-                                        :error="errors.password"
-                                    />
-                                    <div>
-                                        <label
-                                            class="block text-sm font-medium text-gray-700 mb-1"
-                                        >
-                                            Estado
-                                        </label>
-                                        <select
-                                            v-model="form.active"
-                                            class="w-full border rounded px-3 py-2"
-                                        >
-                                            <option :value="true">
-                                                Activo
-                                            </option>
-                                            <option :value="false">
-                                                Inactivo
-                                            </option>
-                                        </select>
-                                    </div>
-                                    <div class="mb-4">
-                                        <label
-                                            class="block text-sm font-medium text-gray-700 mb-1"
-                                            >Roles</label
-                                        >
-                                        <Multiselect
-                                            v-model="usuarioForm.roles"
-                                            :options="roles"
-                                            :multiple="true"
-                                            :track-by="'id'"
-                                            :label="'name'"
-                                            placeholder="Selecciona uno o varios roles"
-                                            class="w-full"
-                                        />
-                                        <p
-                                            v-if="errors.roles"
-                                            class="text-red-600 text-sm"
-                                        >
-                                            {{ errors.roles }}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div v-if="tabActiva === 'carteras'">
-                                    <div class="mb-4">
-                                        <label
-                                            class="block text-sm font-medium text-gray-700 mb-1"
-                                            >Selecciona carteras</label
-                                        >
-                                        <Multiselect
-                                            v-model="form.carteras"
-                                            :options="carteras"
-                                            :multiple="true"
-                                            :track-by="'id'"
-                                            :label="'nombre'"
-                                            placeholder="Selecciona carteras"
-                                            class="w-full"
-                                        />
-                                    </div>
-                                    <div
-                                        v-if="form.carteras.length"
-                                        class="space-y-6"
-                                        style="
-                                            max-height: 217px;
-                                            overflow-y: auto;
-                                        "
-                                    >
-                                        <div
-                                            v-for="cartera in form.carteras"
-                                            :key="cartera.id"
-                                            class="border border-indigo-100 rounded-lg p-4 bg-indigo-50/50 shadow-sm"
-                                        >
-                                            <div
-                                                class="flex items-center justify-between mb-2"
-                                            >
-                                                <span
-                                                    class="font-semibold text-indigo-700 text-sm flex items-center gap-2"
-                                                >
-                                                    <svg
-                                                        class="w-4 h-4 text-indigo-400"
-                                                        fill="none"
-                                                        stroke="currentColor"
-                                                        stroke-width="2"
-                                                        viewBox="0 0 24 24"
-                                                    >
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="M3 7h18"
-                                                        />
-                                                    </svg>
-                                                    {{ cartera.nombre }}
-                                                </span>
-                                                <button
-                                                    v-if="
-                                                        cartera.reportes &&
-                                                        cartera.reportes.length
-                                                    "
-                                                    type="button"
-                                                    class="text-xs px-2 py-1 bg-emerald-500 text-white rounded hover:bg-emerald-600 transition"
-                                                    @click="
-                                                        seleccionarTodosReportesCartera(
-                                                            cartera
-                                                        )
-                                                    "
-                                                >
-                                                    Seleccionar todos
-                                                </button>
-                                            </div>
-                                            <div
-                                                v-if="
-                                                    cartera.reportes &&
-                                                    cartera.reportes.length
-                                                "
-                                            >
-                                                <div
-                                                    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2"
-                                                >
-                                                    <div
-                                                        v-for="reporte in cartera.reportes"
-                                                        :key="reporte.id"
-                                                        class="flex items-center gap-2 bg-white rounded px-2 py-1 shadow-sm"
-                                                    >
-                                                        <input
-                                                            type="checkbox"
-                                                            :id="
-                                                                'reporte-' +
-                                                                cartera.id +
-                                                                '-' +
-                                                                reporte.id
-                                                            "
-                                                            :checked="
-                                                                form.reportes.some(
-                                                                    (r) =>
-                                                                        r.id ===
-                                                                        reporte.id
-                                                                )
-                                                            "
-                                                            @change="
-                                                                toggleReporteCartera(
-                                                                    reporte,
-                                                                    $event
-                                                                        .target
-                                                                        .checked
-                                                                )
-                                                            "
-                                                            class="accent-indigo-500"
-                                                        />
-                                                        <label
-                                                            :for="
-                                                                'reporte-' +
-                                                                cartera.id +
-                                                                '-' +
-                                                                reporte.id
-                                                            "
-                                                            class="text-xs text-gray-700 cursor-pointer truncate max-w-[120px]"
-                                                            :title="
-                                                                reporte.nombre
-                                                            "
-                                                        >
-                                                            {{ reporte.nombre }}
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div
-                                                v-else
-                                                class="text-xs text-gray-400 italic mt-2"
-                                            >
-                                                Esta cartera no tiene reportes
-                                                disponibles.
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div
-                                        v-if="form.reportes.length"
-                                        class="mt-2 flex items-center justify-start"
-                                    >
-                                        <label
-                                            class="block text-xs font-semibold text-gray-500 mb-1 mr-2"
-                                        >
-                                            Cantidad de reportes asignados:
-                                        </label>
-                                        <span
-                                            class="bg-indigo-100 text-indigo-700 rounded px-2 py-1 text-xs"
-                                        >
-                                            {{ form.reportes.length }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </template>
-                        </ModalXts>
-
-                        <!-- Listado de usuarios -->
+                    <!-- Datos Básicos -->
+                    <div v-if="tabActiva === 'basicos'">
+                        <InputField
+                            label="Nombre"
+                            v-model="form.name"
+                            :error="errors.name"
+                        />
+                        <InputField
+                            label="Email"
+                            v-model="form.email"
+                            :error="errors.email"
+                        />
+                        <InputField
+                            :label="
+                                usuarioEditar
+                                    ? 'Nueva contraseña (opcional)'
+                                    : 'Contraseña'
+                            "
+                            v-model="form.password"
+                            type="password"
+                            :error="errors.password"
+                        />
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-1"
+                                >Estado</label
+                            >
+                            <select
+                                v-model="form.active"
+                                class="w-full border rounded px-3 py-2"
+                            >
+                                <option :value="true">Activo</option>
+                                <option :value="false">Inactivo</option>
+                            </select>
+                        </div>
                         <div>
-                            <h1
-                                class="text-xl font-semibold text-gray-800 mb-4"
+                            <label class="block text-sm font-medium mb-1"
+                                >Rol</label
                             >
-                                Listado de Usuarios
-                            </h1>
-                            <div
-                                class="overflow-x-auto rounded-xl border border-gray-100 bg-gray-50"
-                            >
-                                <table
-                                    class="min-w-full divide-y divide-gray-200 text-sm"
-                                >
-                                    <thead class="bg-indigo-100">
-                                        <tr>
-                                            <th
-                                                class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
-                                            >
-                                                ID
-                                            </th>
-                                            <th
-                                                class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
-                                            >
-                                                Nombre
-                                            </th>
-                                            <th
-                                                class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
-                                            >
-                                                Email
-                                            </th>
-                                            <th
-                                                class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
-                                            >
-                                                Rol
-                                            </th>
-                                            <th
-                                                class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
-                                            >
-                                                Estado
-                                            </th>
-                                            <th
-                                                class="px-4 py-2 text-center text-xs font-bold text-indigo-700 uppercase"
-                                            >
-                                                Acciones
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr
-                                            v-for="(user, $index) in users"
-                                            :key="user.id"
-                                            :class="[
-                                                $index % 2 === 0
-                                                    ? 'bg-white'
-                                                    : 'bg-indigo-50',
-                                                'hover:bg-indigo-100 transition',
-                                            ]"
-                                        >
-                                            <td
-                                                class="px-4 py-2 text-gray-700 text-[13px]"
-                                            >
-                                                {{ user.id }}
-                                            </td>
-                                            <td
-                                                class="px-4 py-2 text-gray-700 text-[13px]"
-                                            >
-                                                {{ user.name }}
-                                            </td>
-                                            <td
-                                                class="px-4 py-2 text-gray-700 text-[13px]"
-                                            >
-                                                {{ user.email }}
-                                            </td>
-                                            <td class="px-4 py-2">
-                                                <span
-                                                    v-for="role in user.roles"
-                                                    :key="role.id"
-                                                    class="inline-block bg-indigo-100 text-indigo-700 rounded px-2 py-1 text-xs mr-1 mb-1"
-                                                >
-                                                    {{ role.name }}
-                                                </span>
-                                                <span
-                                                    v-if="!user.roles.length"
-                                                    class="text-gray-400 text-xs"
-                                                    >—</span
-                                                >
-                                            </td>
-                                            <td
-                                                class="px-4 py-2 text-gray-700 text-[13px]"
-                                            >
-                                                <StatusBadge
-                                                    :active="!!user.active"
-                                                />
-                                            </td>
-                                            <td class="px-4 py-2 text-center">
-                                                <Actions
-                                                    :edit="true"
-                                                    :remove="true"
-                                                    @edit="
-                                                        abrirModalEditar(user)
-                                                    "
-                                                    @delete="
-                                                        eliminarUsuario(user)
-                                                    "
-                                                />
-                                            </td>
-                                        </tr>
-                                        <tr v-if="users.length === 0">
-                                            <td
-                                                colspan="5"
-                                                class="text-center py-4 text-gray-400 text-lg"
-                                            >
-                                                No hay usuarios registrados.
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                            <Multiselect
+                                v-model="usuarioForm.roles"
+                                :options="roles"
+                                track-by="id"
+                                label="name"
+                                placeholder="Selecciona un rol"
+                                class="w-full"
+                            />
+
+                            <p v-if="errors.roles" class="text-red-600 text-sm">
+                                {{ errors.roles }}
+                            </p>
                         </div>
                     </div>
-                </div>
+
+                    <!-- Avanzado -->
+                    <div v-if="tabActiva === 'avanzado'">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-1"
+                                >Carteras personalizadas</label
+                            >
+                            <Multiselect
+                                v-model="form.customCarteras"
+                                :options="carteras"
+                                :multiple="true"
+                                track-by="id"
+                                label="nombre"
+                                placeholder="Selecciona carteras…"
+                                class="w-full"
+                            />
+                        </div>
+                        <button
+                            type="button"
+                            @click="resetearACarterasYReportesPorDefecto"
+                            class="text-xs text-indigo-600 hover:underline mt-2"
+                        >
+                            Usar valores por defecto del rol
+                        </button>
+
+                        <!-- Reportes personalizados agrupados por cartera -->
+                        <div v-if="form.customCarteras.length">
+                            <label class="block text-sm font-medium mb-1">
+                                Reportes personalizados
+                            </label>
+                            <div
+                                v-for="cartera in form.customCarteras"
+                                :key="cartera.id"
+                                class="border border-indigo-100 rounded-lg p-3 mb-3 bg-indigo-50/50 shadow-sm"
+                            >
+                                <div
+                                    class="font-semibold text-indigo-700 text-sm mb-2 flex items-center gap-2"
+                                >
+                                    <svg
+                                        class="w-4 h-4 text-indigo-400"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="M3 7h18"
+                                        />
+                                    </svg>
+                                    {{ cartera.nombre }}
+                                </div>
+                                <div
+                                    v-if="
+                                        cartera.reportes &&
+                                        cartera.reportes.length
+                                    "
+                                >
+                                    <div
+                                        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2"
+                                    >
+                                        <div
+                                            v-for="reporte in cartera.reportes"
+                                            :key="reporte.id"
+                                            class="flex items-center gap-2 bg-white rounded px-2 py-1 shadow-sm"
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                :id="
+                                                    'reporte-' +
+                                                    cartera.id +
+                                                    '-' +
+                                                    reporte.id
+                                                "
+                                                :checked="
+                                                    form.customReportes.some(
+                                                        (r) =>
+                                                            r.id === reporte.id
+                                                    )
+                                                "
+                                                @change="
+                                                    toggleReportePersonalizado(
+                                                        reporte,
+                                                        $event.target.checked
+                                                    )
+                                                "
+                                                class="accent-indigo-500"
+                                            />
+                                            <label
+                                                :for="
+                                                    'reporte-' +
+                                                    cartera.id +
+                                                    '-' +
+                                                    reporte.id
+                                                "
+                                                class="text-xs text-gray-700 cursor-pointer truncate max-w-[120px]"
+                                                :title="reporte.nombre"
+                                            >
+                                                {{ reporte.nombre }}
+                                                <span
+                                                    v-if="
+                                                        inheritedReportes.some(
+                                                            (r) =>
+                                                                r.id ===
+                                                                reporte.id
+                                                        )
+                                                    "
+                                                    class="text-[10px] ml-1 text-gray-400"
+                                                    title="Herencia del rol"
+                                                >
+                                                    (por rol)
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div
+                                    v-else
+                                    class="text-xs text-gray-400 italic mt-2"
+                                >
+                                    Esta cartera no tiene reportes disponibles.
+                                </div>
+                            </div>
+                            <p class="mt-2 text-xs text-gray-600">
+                                Total reportes asignados:
+                                {{ form.customReportes.length }}
+                            </p>
+                        </div>
+                    </div>
+                </template>
+            </ModalXts>
+
+            <!-- Listado de Usuarios -->
+            <div class="overflow-x-auto rounded border bg-gray-50 p-4">
+                <h1 class="text-xl font-semibold mb-4">Listado de Usuarios</h1>
+                <table class="min-w-full divide-y divide-gray-200 text-sm">
+                    <thead class="bg-indigo-100">
+                        <tr>
+                            <th class="px-4 py-2">ID</th>
+                            <th class="px-4 py-2">Nombre</th>
+                            <th class="px-4 py-2">Email</th>
+                            <th class="px-4 py-2">Rol</th>
+                            <th class="px-4 py-2">Estado</th>
+                            <th class="px-4 py-2 text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr
+                            v-for="(user, i) in users"
+                            :key="user.id"
+                            :class="i % 2 === 0 ? 'bg-white' : 'bg-indigo-50'"
+                            class="hover:bg-indigo-100 transition"
+                        >
+                            <td class="px-4 py-2">{{ user.id }}</td>
+                            <td class="px-4 py-2">{{ user.name }}</td>
+                            <td class="px-4 py-2">{{ user.email }}</td>
+                            <td class="px-4 py-2">
+                                <span
+                                    v-for="r in user.roles"
+                                    :key="r.id"
+                                    class="inline-block bg-indigo-100 text-indigo-700 rounded px-2 py-1 text-xs mr-1"
+                                >
+                                    {{ r.name }}
+                                </span>
+                                <span
+                                    v-if="!user.roles.length"
+                                    class="text-gray-400"
+                                    >—</span
+                                >
+                            </td>
+                            <td class="px-4 py-2">
+                                <StatusBadge :active="!!user.active" />
+                            </td>
+                            <td class="px-4 py-2 text-center">
+                                <Actions
+                                    :edit="true"
+                                    :remove="true"
+                                    @edit="abrirModalEditar(user)"
+                                    @delete="eliminarUsuario(user)"
+                                />
+                            </td>
+                        </tr>
+                        <tr v-if="!users.length">
+                            <td
+                                colspan="6"
+                                class="py-4 text-center text-gray-400"
+                            >
+                                No hay usuarios registrados.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </AuthenticatedLayout>

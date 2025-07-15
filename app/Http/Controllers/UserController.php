@@ -14,25 +14,21 @@ class UserController extends Controller
 {
     public function index()
     {
+        // 1) Eager‐load a nivel de usuario y de rol:
+        $users = User::with([
+            'carteras',                 // las carteras personalizadas del usuario
+            'reportes.cartera',         // los reportes personaliz. + su cartera
+            'roles.carteras',           // las carteras que vienen de cada rol
+            'roles.reportes.cartera',   // y los reportes que vienen de cada rol
+        ])->get();
 
-        $users = User::with(['reportes.cartera'])->get();
         $carteras = Cartera::with('reportes')->get();
+        $reportes = Reporte::all();
+        $roles    = Role::with(['carteras', 'reportes.cartera'])->get();
 
-        foreach ($users as $user) {
-            $user->carteras = $carteras->filter(function ($c) use ($user) {
-                return $user->reportes->contains(function ($r) use ($c) {
-                    return $r->cartera_id === $c->id;
-                });
-            })->values();
-        }
-        return Inertia::render('GestionarUsuarios', [
-            'users'      => User::with(['carteras', 'reportes', 'roles'])->get(),
-            'carteras'   => Cartera::with('reportes')->get(),
-            'reportes'   => Reporte::all(),
-            'roles'      => Role::all(),
-            'success'    => session('success'),
-        ]);
+        return Inertia::render('GestionarUsuarios', compact('users', 'carteras', 'reportes', 'roles'));
     }
+
 
     public function store(Request $request)
     {
@@ -56,9 +52,10 @@ class UserController extends Controller
             'active'   => $data['active'],
         ]);
 
+
+        $user->syncRoles($data['roles'] ?? []);
         $user->carteras()->sync($data['carteras'] ?? []);
         $user->reportes()->sync($data['reportes'] ?? []);
-        $user->syncRoles($data['roles'] ?? []);
         return redirect()
             ->route('users.index')
             ->with('success', "Usuario «{$user->name}» creado correctamente.");
@@ -78,18 +75,21 @@ class UserController extends Controller
             'roles'     => 'nullable|array',
             'roles.*'   => 'exists:roles,id',
         ]);
+        logger()->info('DATOS RECIBIDOS', $request->all());
 
         $user->update([
             'name'   => $data['name'],
             'email'  => $data['email'],
             'active' => $data['active'],
-            // Solo actualizamos contraseña si vino
-            ...($data['password'] ? ['password' => bcrypt($data['password'])] : [])
+            // contraseña si llegó…
+            ...($data['password'] ? ['password' => bcrypt($data['password'])] : []),
         ]);
+
+        $user->syncRoles($data['roles'] ?? []);
 
         $user->carteras()->sync($data['carteras'] ?? []);
         $user->reportes()->sync($data['reportes'] ?? []);
-        $user->syncRoles($data['roles'] ?? []);    // ← sincronizamos roles
+
 
         return redirect()
             ->route('users.index')

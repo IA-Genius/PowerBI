@@ -304,7 +304,7 @@
                                                 <span
                                                     v-for="c in role.carteras"
                                                     :key="c.id"
-                                                    class="inline-block bg-indigo-100 text-indigo-700 rounded-full px-2 py-0.5 text-xs font-medium shadow-sm whitespace-nowrap border border-indigo-200 flex items-center"
+                                                    class="bg-indigo-100 text-indigo-700 rounded-full px-2 py-0.5 text-xs font-medium shadow-sm whitespace-nowrap border border-indigo-200 flex items-center"
                                                     :title="c.nombre"
                                                 >
                                                     <svg
