@@ -216,7 +216,7 @@ function recargarReportes() {
         </template>
 
         <div class="py-8">
-            <div class="mx-auto max-w-7xl">
+            <div class="mx-auto w-full">
                 <div class="bg-white shadow-xl rounded-lg overflow-hidden">
                     <div class="p-6">
                         <ModalGestion

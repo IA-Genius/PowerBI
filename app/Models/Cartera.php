@@ -17,4 +17,8 @@ class Cartera extends Model
     {
         return $this->hasMany(Reporte::class);
     }
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'role_cartera');
+    }
 }

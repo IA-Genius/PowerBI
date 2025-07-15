@@ -21,7 +21,10 @@ class Reporte extends Model
     {
         return $this->belongsTo(Cartera::class);
     }
-
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'role_reporte');
+    }
     public function users()
     {
         return $this->belongsToMany(User::class, 'reporte_user');

@@ -7,16 +7,16 @@ use App\Models\Reporte;
 use App\Models\Cartera;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Auth;
+
 
 class UserController extends Controller
 {
     public function index()
     {
-        // Cargar carteras asignadas a cada usuario para el multiselect
+
         $users = User::with(['reportes.cartera'])->get();
         $carteras = Cartera::with('reportes')->get();
-        // Agregar carteras asignadas a cada usuario (solo objetos completos)
+
         foreach ($users as $user) {
             $user->carteras = $carteras->filter(function ($c) use ($user) {
                 return $user->reportes->contains(function ($r) use ($c) {
@@ -111,36 +111,5 @@ class UserController extends Controller
         $user->save();
 
         $user->reportes()->sync($data['reportes'] ?? []);
-    }
-
-    public function dashboard()
-    {
-        $user = Auth::user();
-        if (!$user) {
-            // Redirige o muestra error si no está autenticado
-            return redirect()->route('login');
-        }
-
-        // Mapear reportes del usuario
-        $reportes = $user->reportes ? $user->reportes->map(function ($reporte) {
-            return [
-                'id' => $reporte->id,
-                'nombre' => $reporte->nombre,
-                'src' => $reporte->link ?? '',
-                'cartera' => $reporte->cartera,
-            ];
-        }) : collect();
-
-        // Obtener carteras únicas de los reportes
-        $carteras = $user->reportes ? $user->reportes
-            ->filter(fn($r) => $r->cartera)
-            ->pluck('cartera')
-            ->unique('id')
-            ->values() : collect();
-
-        return Inertia::render('Dashboard', [
-            'reportes' => $reportes,
-            'carteras' => $carteras,
-        ]);
     }
 }

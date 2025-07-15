@@ -1,6 +1,6 @@
 <script setup>
-import ApplicationLogo from '@/Components/ApplicationLogo.vue';
-import { Link } from '@inertiajs/vue3';
+import ApplicationLogo from "@/Components/ApplicationLogo.vue";
+import { Link } from "@inertiajs/vue3";
 </script>
 
 <template>
@@ -12,7 +12,7 @@ import { Link } from '@inertiajs/vue3';
                 <ApplicationLogo class="fill-current text-gray-500" />
             </Link>
         </div>
-        
+
         <div
             class="mt-6 overflow-hidden bg-white px-6 py-4 shadow-md sm:max-w-md sm:rounded-lg w-full s"
         >
