@@ -63,7 +63,7 @@ function toggleMobileSidebar() {
 const reportesFiltrados = computed(() => {
     if (!selectedCarteraId.value) return [];
     return reportes.value.filter(
-        (r) => r.cartera?.id === selectedCarteraId.value
+        (r) => r.cartera_id === selectedCarteraId.value
     );
 });
 
@@ -84,6 +84,8 @@ onMounted(() => {
         }
     });
 });
+console.log("Carteras:", carteras.value);
+console.log("Reportes:", reportes.value);
 </script>
 
 <!-- =========================
