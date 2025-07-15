@@ -18,24 +18,5 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
-
-        Inertia::share([
-            'auth' => fn() => Auth::check() ? [
-                'id' => Auth::user()->id,
-                'name' => Auth::user()->name,
-                'email' => Auth::user()->email,
-            ] : null,
-
-            'userCarteras' => fn() => Auth::check()
-                ? User::with('reportes.cartera')->find(Auth::id())?->reportes
-                ->pluck('cartera')
-                ->unique('id')
-                ->values()
-                : [],
-
-            'userReportes' => fn() => Auth::check()
-                ? User::with('reportes.cartera')->find(Auth::id())?->reportes
-                : [],
-        ]);
     }
 }

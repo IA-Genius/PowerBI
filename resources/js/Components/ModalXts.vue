@@ -69,7 +69,7 @@
 
 <script setup>
 import { ref } from "vue";
-import axios from "axios";
+import { router } from "@inertiajs/vue3";
 
 const props = defineProps({
     show: Boolean,
@@ -87,22 +87,21 @@ const props = defineProps({
 const emit = defineEmits(["close", "success"]);
 const errors = ref({});
 
-async function handleSubmit() {
-    try {
-        const data = props.transform(props.form);
+function handleSubmit() {
+    errors.value = {};
+    const data = props.transform(props.form);
 
-        const response =
-            props.method === "put"
-                ? await axios.put(props.endpoint, data)
-                : await axios.post(props.endpoint, data);
-
-        emit(
-            "success",
-            response.data.message || "Operación realizada correctamente"
-        );
-    } catch (e) {
-        errors.value = e.response?.data?.errors || {};
-    }
+    router[props.method](props.endpoint, data, {
+        onSuccess: (page) => {
+            emit(
+                "success",
+                page.props.success || "Operación realizada correctamente"
+            );
+        },
+        onError: (err) => {
+            errors.value = err;
+        },
+    });
 }
 </script>
 

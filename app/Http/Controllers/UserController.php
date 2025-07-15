@@ -7,7 +7,8 @@ use App\Models\Reporte;
 use App\Models\Cartera;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-
+use App\Models\Role;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -25,63 +26,74 @@ class UserController extends Controller
             })->values();
         }
         return Inertia::render('GestionarUsuarios', [
-            'users' => $users,
-            'reportes' => Reporte::with('cartera')->get(),
-            'carteras' => $carteras,
-            'success' => session('success'),
+            'users'      => User::with(['carteras', 'reportes', 'roles'])->get(),
+            'carteras'   => Cartera::with('reportes')->get(),
+            'reportes'   => Reporte::all(),
+            'roles'      => Role::all(),
+            'success'    => session('success'),
         ]);
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|string|min:6',
-            'active' => 'required|boolean',
-            'reportes' => 'nullable|array',
+        $data = $request->validate([
+            'name'      => 'required|string|max:255',
+            'email'     => 'required|email|unique:users,email',
+            'password'  => 'required|string|min:6',
+            'active'    => 'boolean',
+            'carteras'  => 'nullable|array',
+            'carteras.*' => 'exists:carteras,id',
+            'reportes'  => 'nullable|array',
             'reportes.*' => 'exists:reportes,id',
+            'roles'     => 'nullable|array',
+            'roles.*'   => 'exists:roles,id',
         ]);
-        // Limpiar carteras si viene del frontend
-        unset($validated['carteras']);
 
-        $user = new User();
-        $this->saveUser($user, $validated);
+        $user = User::create([
+            'name'     => $data['name'],
+            'email'    => $data['email'],
+            'password' => bcrypt($data['password']),
+            'active'   => $data['active'],
+        ]);
 
-        if ($request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Usuario creado correctamente.',
-                'data' => $user->load('reportes.cartera'),
-            ], 201);
-        }
-
-        return redirect()->route('users.index')->with('success', 'Usuario creado correctamente.');
+        $user->carteras()->sync($data['carteras'] ?? []);
+        $user->reportes()->sync($data['reportes'] ?? []);
+        $user->syncRoles($data['roles'] ?? []);
+        return redirect()
+            ->route('users.index')
+            ->with('success', "Usuario «{$user->name}» creado correctamente.");
     }
 
     public function update(Request $request, User $user)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
-            'password' => 'nullable|string|min:6',
-            'active' => 'required|boolean',
-            'reportes' => 'nullable|array',
+        $data = $request->validate([
+            'name'      => 'required|string|max:255',
+            'email'     => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
+            'password'  => 'nullable|string|min:6',
+            'active'    => 'boolean',
+            'carteras'  => 'nullable|array',
+            'carteras.*' => 'exists:carteras,id',
+            'reportes'  => 'nullable|array',
             'reportes.*' => 'exists:reportes,id',
+            'roles'     => 'nullable|array',
+            'roles.*'   => 'exists:roles,id',
         ]);
-        unset($validated['carteras']);
 
-        $this->saveUser($user, $validated);
+        $user->update([
+            'name'   => $data['name'],
+            'email'  => $data['email'],
+            'active' => $data['active'],
+            // Solo actualizamos contraseña si vino
+            ...($data['password'] ? ['password' => bcrypt($data['password'])] : [])
+        ]);
 
-        if ($request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Usuario actualizado correctamente.',
-                'data' => $user->load('reportes.cartera'),
-            ]);
-        }
+        $user->carteras()->sync($data['carteras'] ?? []);
+        $user->reportes()->sync($data['reportes'] ?? []);
+        $user->syncRoles($data['roles'] ?? []);    // ← sincronizamos roles
 
-        return redirect()->route('users.index')->with('success', 'Usuario actualizado correctamente.');
+        return redirect()
+            ->route('users.index')
+            ->with('success', "Usuario «{$user->name}» actualizado correctamente.");
     }
 
     public function destroy(Request $request, User $user)

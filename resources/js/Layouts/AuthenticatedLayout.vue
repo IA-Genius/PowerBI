@@ -3,13 +3,12 @@
 ========================= -->
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
-import { usePage, router } from "@inertiajs/vue3";
+import { usePage, router, Link } from "@inertiajs/vue3";
 import ApplicationLogo from "@/Components/ApplicationLogo.vue";
 import ApplicationLogoMini from "@/Components/ApplicationLogoMini.vue";
 import Dropdown from "@/Components/Dropdown.vue";
 import DropdownLink from "@/Components/DropdownLink.vue";
 import NavLink from "@/Components/NavLink.vue";
-import { Link } from "@inertiajs/vue3";
 import {
     BriefcaseIcon,
     UsersIcon,
@@ -17,7 +16,11 @@ import {
     DocumentChartBarIcon,
 } from "@heroicons/vue/24/solid";
 
+// Inicializa primero usePage
 const page = usePage();
+const permissions = page.props.auth?.permissions || [];
+const { can } = page.props;
+const canDo = (key) => !!can[key];
 
 // Datos
 const reportes = computed(() => page.props.userReportes || []);
@@ -150,6 +153,7 @@ onMounted(() => {
                 </button>
 
                 <NavLink
+                    v-if="canDo('manageCarteras')"
                     :href="route('carteras.index')"
                     :active="route().current('carteras.index')"
                     class="w-full flex items-center px-3 py-3 hover:bg-gray-100"
@@ -164,6 +168,7 @@ onMounted(() => {
                 </NavLink>
 
                 <NavLink
+                    v-if="canDo('manageRoles')"
                     :href="route('roles.index')"
                     :active="route().current('roles.index')"
                     class="w-full flex items-center px-3 py-3 hover:bg-gray-100"
@@ -178,6 +183,7 @@ onMounted(() => {
                 </NavLink>
 
                 <NavLink
+                    v-if="canDo('manageUsers')"
                     :href="route('users.index')"
                     :active="route().current('users.index')"
                     class="w-full flex items-center px-3 py-3 hover:bg-gray-100"

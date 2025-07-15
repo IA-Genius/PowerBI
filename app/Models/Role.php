@@ -4,14 +4,23 @@ namespace App\Models;
 
 use Spatie\Permission\Models\Role as SpatieRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Models\Cartera;   // ← Importa
-use App\Models\Reporte;   // ← Importa
+use App\Models\Cartera;
+use App\Models\Reporte;
 
 class Role extends SpatieRole
 {
     use HasFactory;
 
-    protected $fillable = ['name'];
+    // Valor por defecto para guard_name si lo usas en la DB
+    protected $attributes = [
+        'guard_name' => 'web',
+    ];
+
+    // Permitir asignar 'guard_name' en mass assignment
+    protected $fillable = [
+        'name',
+        'guard_name',
+    ];
 
     public function carteras()
     {

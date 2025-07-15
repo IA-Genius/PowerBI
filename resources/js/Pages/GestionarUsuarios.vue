@@ -10,9 +10,7 @@ import Swal from "sweetalert2";
 import Multiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.css";
 
-const users = usePage().props.users;
-const success = usePage().props.success;
-const carteras = usePage().props.carteras || [];
+const { users, carteras, reportes, roles, success } = usePage().props;
 
 const showModal = ref(false);
 const usuarioEditar = ref(null);
@@ -25,6 +23,7 @@ const usuarioForm = reactive({
     active: true,
     carteras: [],
     reportes: [],
+    roles: [],
 });
 
 const reportesFiltradosPorCarteras = computed(() => {
@@ -57,12 +56,12 @@ function abrirModalAgregar() {
         active: true,
         carteras: [],
         reportes: [],
+        roles: [],
     });
     usuarioEditar.value = null;
     tabActiva.value = "basicos";
     showModal.value = true;
 }
-
 function abrirModalEditar(user) {
     usuarioEditar.value = user;
 
@@ -75,6 +74,9 @@ function abrirModalEditar(user) {
     const reportesDeCarteras = carterasSeleccionadas.flatMap(
         (c) => c.reportes || []
     );
+    const selectedRoles = roles.filter((r) =>
+        user.roles.some((ur) => ur.id === r.id)
+    );
 
     const reportesSeleccionados = reportesDeCarteras.filter((r) =>
         user.reportes.some((ur) => ur.id === r.id)
@@ -86,7 +88,8 @@ function abrirModalEditar(user) {
         password: "",
         active: !!user.active,
         carteras: carterasSeleccionadas,
-        reportes: reportesSeleccionados, // Esto ya estará sincronizado por id y referencia
+        reportes: reportesSeleccionados,
+        roles: selectedRoles,
     });
 
     tabActiva.value = "basicos";
@@ -249,6 +252,7 @@ function toggleReporteCartera(reporte, checked) {
                                     ...form,
                                     carteras: form.carteras.map((c) => c.id),
                                     reportes: form.reportes.map((r) => r.id),
+                                    roles: form.roles.map((r) => r.id),
                                 })
                             "
                             @close="cerrarModal"
@@ -326,6 +330,27 @@ function toggleReporteCartera(reporte, checked) {
                                                 Inactivo
                                             </option>
                                         </select>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label
+                                            class="block text-sm font-medium text-gray-700 mb-1"
+                                            >Roles</label
+                                        >
+                                        <Multiselect
+                                            v-model="usuarioForm.roles"
+                                            :options="roles"
+                                            :multiple="true"
+                                            :track-by="'id'"
+                                            :label="'name'"
+                                            placeholder="Selecciona uno o varios roles"
+                                            class="w-full"
+                                        />
+                                        <p
+                                            v-if="errors.roles"
+                                            class="text-red-600 text-sm"
+                                        >
+                                            {{ errors.roles }}
+                                        </p>
                                     </div>
                                 </div>
 
@@ -480,7 +505,7 @@ function toggleReporteCartera(reporte, checked) {
                         </ModalXts>
 
                         <!-- Listado de usuarios -->
-                        <div class="mt-6">
+                        <div>
                             <h1
                                 class="text-xl font-semibold text-gray-800 mb-4"
                             >
@@ -508,6 +533,11 @@ function toggleReporteCartera(reporte, checked) {
                                                 class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
                                             >
                                                 Email
+                                            </th>
+                                            <th
+                                                class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
+                                            >
+                                                Rol
                                             </th>
                                             <th
                                                 class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
@@ -546,6 +576,20 @@ function toggleReporteCartera(reporte, checked) {
                                                 class="px-4 py-2 text-gray-700 text-[13px]"
                                             >
                                                 {{ user.email }}
+                                            </td>
+                                            <td class="px-4 py-2">
+                                                <span
+                                                    v-for="role in user.roles"
+                                                    :key="role.id"
+                                                    class="inline-block bg-indigo-100 text-indigo-700 rounded px-2 py-1 text-xs mr-1 mb-1"
+                                                >
+                                                    {{ role.name }}
+                                                </span>
+                                                <span
+                                                    v-if="!user.roles.length"
+                                                    class="text-gray-400 text-xs"
+                                                    >—</span
+                                                >
                                             </td>
                                             <td
                                                 class="px-4 py-2 text-gray-700 text-[13px]"
