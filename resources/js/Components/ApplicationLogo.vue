@@ -1,3 +1,3 @@
 <template>
-    <img src="https://control.financiera.geatel-telecom.com/assets/logo-9d776287.png" alt="Geatel Telecon">
+    <img src="https://geatel-telecom.com/wp-content/uploads/2023/07/logogeatelblanco2.png" alt="Geatel Telecon">
 </template>

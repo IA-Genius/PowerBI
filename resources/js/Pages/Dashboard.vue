@@ -20,7 +20,7 @@ const reporteActual = computed(() => {
                 <iframe
                     v-if="reporteActual"
                     :key="reporteActual.id"
-                    class="w-full h-[700px] rounded-lg border border-indigo-100 shadow-md"
+                    class="w-full h-[90vh] rounded-lg border border-indigo-100 shadow-md"
                     :src="reporteActual.link"
                     frameborder="0"
                     allowfullscreen
