@@ -236,7 +236,7 @@ function resetearACarterasYReportesPorDefecto() {
 <template>
     <Head title="Listado de Usuarios" />
 
-    <AuthenticatedLayout>
+    <AuthenticatedLayout class="relleno">
         <template #header>
             <div class="flex items-center justify-between">
                 <h2 class="text-xl font-semibold tituloPag">Listado de Usuarios</h2>
@@ -415,10 +415,10 @@ function resetearACarterasYReportesPorDefecto() {
             </ModalXts>
 
             <!-- Listado de Usuarios -->
-            <div class="overflow-x-auto rounded border bg-gray-50 p-4">
+            <div class="overflow-x-auto rounded borderTable">
                 <!-- <h1 class="text-xl font-semibold mb-4">Listado de Usuarios</h1> -->
                 <table class="min-w-full divide-y divide-gray-200 text-sm">
-                    <thead class="bg-indigo-100">
+                    <thead class="bgHeadTable">
                         <tr>
                             <th class="px-4 py-2 text-left">ID</th>
                             <th class="px-4 py-2 text-left">Nombre</th>

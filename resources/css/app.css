@@ -210,6 +210,7 @@ PAGINAS
     position: relative;
     font-weight: bold;
     font-size: 25px;
+    top: -3px;
 }
 .tituloPag::before,
 .tituloPag:after {
@@ -231,9 +232,31 @@ PAGINAS
 }
 
 .rounded-full {
-  border-radius: 5px;
+    border-radius: 5px;
+}
+.rounded-fulls {
+    border-radius: 9999px;
 }
 
+.borderTable {
+  border-radius: 8px !important;
+  overflow: hidden;
+  border: none !important;
+}
+.borderTable th,
+.borderTable td {
+    border: 1px solid #ddd;
+}
+.bgHeadTable {
+    background: var(--colorPrincipal);
+    color: #fff;
+}
+
+.relleno .rellenoInternas {
+    background: #fff;
+    padding: 1.5rem 2rem;
+    border-radius: 6px;
+}
 /*===========
 ICONOS
 ===========*/
