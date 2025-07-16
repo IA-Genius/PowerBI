@@ -435,10 +435,10 @@ console.log(page.props);
                                 <!-- Trigger -->
                                 <template #trigger>
                                     <div
-                                        class="flex items-center gap-2 bg-white rounded-full px-2 py-1 shadow border border-gray-200 cursor-pointer relative"
+                                        class="flex items-center gap-2 bg-white rounded-fulls px-2 py-1 shadow border border-gray-200 cursor-pointer relative"
                                     >
                                         <div
-                                            class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-base uppercase shadow"
+                                            class="w-8 h-8 rounded-fulls bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-base uppercase shadow"
                                         >
                                             {{
                                                 $page.props.auth.user.name.charAt(
@@ -538,8 +538,8 @@ console.log(page.props);
             </header>
 
             <!-- ===== PAGE CONTENT ===== -->
-            <main class="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-100">
-                <div class="mx-auto">
+            <main class="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-100" style="padding: 1.5rem 2rem;">
+                <div class="mx-auto rellenoInternas">
                     <slot name="header" />
                     <slot />
                 </div>
