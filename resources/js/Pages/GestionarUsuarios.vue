@@ -239,12 +239,12 @@ function resetearACarterasYReportesPorDefecto() {
 </script>
 
 <template>
-    <Head title="Gestión de Usuarios" />
+    <Head title="Listado de Usuarios" />
 
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between">
-                <h2 class="text-xl font-semibold">Gestión de Usuarios</h2>
+                <h2 class="text-xl font-semibold tituloPag">Listado de Usuarios</h2>
                 <button
                     @click="abrirModalAgregar"
                     class="flex items-center gap-2 bg-green-500 text-white px-5 py-2 rounded shadow hover:bg-green-600 transition"
@@ -418,16 +418,16 @@ function resetearACarterasYReportesPorDefecto() {
             </ModalXts>
 
             <!-- Listado de Usuarios -->
-            <div class="overflow-x-auto rounded border bg-gray-50 p-4">
-                <h1 class="text-xl font-semibold mb-4">Listado de Usuarios</h1>
+            <div cl                     ass="overflow-x-auto rounded border bg-gray-50 p-4">
+                <!-- <h1 class="text-xl font-semibold mb-4">Listado de Usuarios</h1> -->
                 <table class="min-w-full divide-y divide-gray-200 text-sm">
                     <thead class="bg-indigo-100">
                         <tr>
-                            <th class="px-4 py-2">ID</th>
-                            <th class="px-4 py-2">Nombre</th>
-                            <th class="px-4 py-2">Email</th>
-                            <th class="px-4 py-2">Rol</th>
-                            <th class="px-4 py-2">Estado</th>
+                            <th class="px-4 py-2 text-left">ID</th>
+                            <th class="px-4 py-2 text-left">Nombre</th>
+                            <th class="px-4 py-2 text-left">Email</th>
+                            <th class="px-4 py-2 text-left">Rol</th>
+                            <th class="px-4 py-2 text-left">Estado</th>
                             <th class="px-4 py-2 text-center">Acciones</th>
                         </tr>
                     </thead>
