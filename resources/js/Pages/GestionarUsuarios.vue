@@ -28,7 +28,7 @@ const usuarioForm = reactive({
     customReportes: [],
 });
 
-const inheritedReportes = computed(() => usuarioForm.roles?.reportes || []);
+const inheritedReportes = computed(() => Array.isArray(usuarioForm.roles?.reportes) ? usuarioForm.roles.reportes : []);
 
 const carterasConReportes = computed(() =>
     usuarioForm.customCarteras.map((cSel) => {
@@ -199,6 +199,7 @@ function resetearACarterasYReportesPorDefecto() {
         if (result.isConfirmed) {
             ignorarWatchRol.value = true;
 
+            // Carteras del rol
             const carterasRol = (usuarioForm.roles.carteras || [])
                 .map((c) => {
                     const full = carteras.find((x) => x.id === c.id);
@@ -206,19 +207,13 @@ function resetearACarterasYReportesPorDefecto() {
                 })
                 .filter(Boolean);
 
-            const reportesDesdeCarteras = [
-                ...new Map(
-                    carterasRol
-                        .flatMap((c) => {
-                            const full = carteras.find((x) => x.id === c.id);
-                            return full?.reportes || [];
-                        })
-                        .map((r) => [r.id, r])
-                ).values(),
-            ];
+            // Reportes heredados del rol (no desde carteras)
+            const reportesRol = Array.isArray(usuarioForm.roles.reportes)
+                ? usuarioForm.roles.reportes
+                : [];
 
             usuarioForm.customCarteras = carterasRol;
-            usuarioForm.customReportes = reportesDesdeCarteras;
+            usuarioForm.customReportes = reportesRol;
 
             // Pequeño delay para evitar el watch tras el cambio
             setTimeout(() => {
@@ -396,7 +391,7 @@ function resetearACarterasYReportesPorDefecto() {
                             Selecciona un rol antes de restablecer permisos.
                         </p>
 
-                        <!-- Reportes personalizados agrupados por cartera -->
+                  
                         <!-- Reportes personalizados agrupados -->
                         <div v-if="form.customCarteras.length">
                             <label class="block text-sm font-medium mb-1">
@@ -406,6 +401,8 @@ function resetearACarterasYReportesPorDefecto() {
                             <CarteraReportesAccordion
                                 v-model="form.customReportes"
                                 :carteras="carterasConReportes"
+                                :inheritedReportes="inheritedReportes"
+
                             />
 
                             <p class="mt-2 text-xs text-gray-600">

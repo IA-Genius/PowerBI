@@ -1,3 +1,184 @@
+<script setup>
+import CarteraReportesAccordion from "@/Components/CarteraReportesAccordion.vue";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
+import ModalXts from "@/Components/ModalXts.vue";
+import Multiselect from "vue-multiselect";
+import { Head, usePage, router } from "@inertiajs/vue3";
+import { ref, reactive, onMounted } from "vue";
+import Swal from "sweetalert2";
+import "vue-multiselect/dist/vue-multiselect.css";
+import Actions from "@/Components/Actions.vue";
+const { roles, carteras, reportes, permissions, success } = usePage().props;
+
+const showModal = ref(false);
+const rolEditar = ref(null);
+
+
+import { computed } from "vue";
+
+const rolForm = reactive({
+    name: "",
+    carteras: [],
+    reportes: [],
+    permissions: [],
+});
+
+// modelValue para reportes, usando computed para asegurar reactividad
+const modelValue = computed({
+    get: () => rolForm.reportes,
+    set: (val) => {
+        rolForm.reportes = val;
+    },
+});
+
+const carterasConReportes = carteras.map((c) => ({
+    ...c,
+    reportes: reportes.filter((r) => r.cartera_id === c.id),
+}));
+
+onMounted(() => {
+    if (success) {
+        Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: "success",
+            title: success,
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true,
+        });
+    }
+
+    // Habilitar scroll horizontal con la rueda del mouse
+    document.querySelectorAll(".scrollbar-ghost").forEach((el) => {
+        el.addEventListener("wheel", function (e) {
+            if (e.deltaY !== 0) {
+                e.preventDefault();
+                el.scrollBy({
+                    left: e.deltaY,
+                    behavior: "smooth",
+                });
+            }
+        });
+    });
+});
+
+function abrirModalAgregar() {
+    Object.assign(rolForm, {
+        name: "",
+        carteras: [],
+        reportes: [],
+        permissions: [],
+    });
+    rolEditar.value = null;
+    showModal.value = true;
+}
+
+function abrirModalEditar(role) {
+    rolEditar.value = role;
+
+    const carterasSeleccionadas = carterasConReportes.filter((c) =>
+        role.carteras.some((uc) => uc.id === c.id)
+    );
+
+    const reportesSeleccionados = [];
+    carterasSeleccionadas.forEach((c) => {
+        c.reportes.forEach((r) => {
+            if (role.reportes.some((ur) => ur.id === r.id)) {
+                reportesSeleccionados.push(r);
+            }
+        });
+    });
+
+    Object.assign(rolForm, {
+        name: role.name,
+        carteras: carterasSeleccionadas,
+        reportes: reportesSeleccionados,
+        permissions: role.permissions.map((p) => p.name), // ← Aquí
+    });
+
+    showModal.value = true;
+}
+
+function cerrarModal() {
+    showModal.value = false;
+    rolEditar.value = null;
+}
+
+function handleSuccess(message) {
+    Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "success",
+        title: message,
+        showConfirmButton: false,
+        timer: 2000,
+        timerProgressBar: true,
+    });
+    recargar();
+}
+
+function recargar() {
+    router.visit(route("roles.index"), {
+        preserveScroll: true,
+        only: ["roles", "success"],
+        onFinish: () => cerrarModal(),
+    });
+}
+
+function eliminarRol(role) {
+    Swal.fire({
+        title: "¿Eliminar rol?",
+        text: `¿Estás seguro de eliminar el rol ${role.name}?`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Sí, eliminar",
+        cancelButtonText: "Cancelar",
+    }).then((result) => {
+        if (result.isConfirmed) {
+            router.delete(`/roles/${role.id}`, {
+                onSuccess: () => {
+                    Swal.fire({
+                        toast: true,
+                        position: "top-end",
+                        icon: "success",
+                        title: "Rol eliminado",
+                        showConfirmButton: false,
+                        timer: 2000,
+                        timerProgressBar: true,
+                    });
+                    recargar();
+                },
+                onError: () => {
+                    Swal.fire({
+                        toast: true,
+                        position: "top-end",
+                        icon: "error",
+                        title: "No se pudo eliminar el rol",
+                        showConfirmButton: false,
+                        timer: 2000,
+                        timerProgressBar: true,
+                    });
+                },
+            });
+        }
+    });
+}
+
+function toggleReporteCartera(reporte, checked) {
+    // Trabajar siempre con IDs únicos y objetos consistentes
+    if (checked) {
+        if (!rolForm.reportes.some((r) => r.id === reporte.id)) {
+            rolForm.reportes = [...rolForm.reportes, { ...reporte }];
+        }
+    } else {
+        rolForm.reportes = rolForm.reportes.filter((r) => r.id !== reporte.id);
+    }
+}
+</script>
+
 <template>
     <Head title="Gestión de Roles" />
     <AuthenticatedLayout>
@@ -123,14 +304,17 @@
                                             {{ errors.carteras }}
                                         </p>
                                     </div>
-                                    <CarteraReportesAccordion
-                                        v-if="form.carteras.length"
-                                        v-model="form.reportes"
-                                        :carteras="form.carteras"
-                                    />
+                                  <CarteraReportesAccordion
+                                    v-if="form.carteras.length"
+                                     :carteras="form.carteras"
+                                     :modelValue="form.reportes"
+                                    @update:modelValue="form.reportes = $event"
+                                />
 
                                     <div
-                                        v-if="form.reportes.length"
+
+
+                                         v-if="form.reportes.length"
                                         class="mt-2 flex items-center justify-start"
                                     >
                                         <label
@@ -309,176 +493,3 @@
 }
 </style>
 
-<script setup>
-import CarteraReportesAccordion from "@/Components/CarteraReportesAccordion.vue";
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
-import ModalXts from "@/Components/ModalXts.vue";
-import Multiselect from "vue-multiselect";
-import { Head, usePage, router } from "@inertiajs/vue3";
-import { ref, reactive, onMounted } from "vue";
-import Swal from "sweetalert2";
-import "vue-multiselect/dist/vue-multiselect.css";
-import Actions from "@/Components/Actions.vue";
-const { roles, carteras, reportes, permissions, success } = usePage().props;
-
-const showModal = ref(false);
-const rolEditar = ref(null);
-
-const rolForm = reactive({
-    name: "",
-    carteras: [],
-    reportes: [],
-    permissions: [],
-});
-
-const carterasConReportes = carteras.map((c) => ({
-    ...c,
-    reportes: reportes.filter((r) => r.cartera_id === c.id),
-}));
-
-onMounted(() => {
-    if (success) {
-        Swal.fire({
-            toast: true,
-            position: "top-end",
-            icon: "success",
-            title: success,
-            showConfirmButton: false,
-            timer: 2000,
-            timerProgressBar: true,
-        });
-    }
-
-    // Habilitar scroll horizontal con la rueda del mouse
-    document.querySelectorAll(".scrollbar-ghost").forEach((el) => {
-        el.addEventListener("wheel", function (e) {
-            if (e.deltaY !== 0) {
-                e.preventDefault();
-                el.scrollBy({
-                    left: e.deltaY,
-                    behavior: "smooth",
-                });
-            }
-        });
-    });
-});
-
-function abrirModalAgregar() {
-    Object.assign(rolForm, {
-        name: "",
-        carteras: [],
-        reportes: [],
-        permissions: [],
-    });
-    rolEditar.value = null;
-    showModal.value = true;
-}
-
-function abrirModalEditar(role) {
-    rolEditar.value = role;
-
-    const carterasSeleccionadas = carterasConReportes.filter((c) =>
-        role.carteras.some((uc) => uc.id === c.id)
-    );
-
-    const reportesSeleccionados = [];
-    carterasSeleccionadas.forEach((c) => {
-        c.reportes.forEach((r) => {
-            if (role.reportes.some((ur) => ur.id === r.id)) {
-                reportesSeleccionados.push(r);
-            }
-        });
-    });
-
-    Object.assign(rolForm, {
-        name: role.name,
-        carteras: carterasSeleccionadas,
-        reportes: reportesSeleccionados,
-        permissions: role.permissions.map((p) => p.name), // ← Aquí
-    });
-
-    showModal.value = true;
-}
-
-function cerrarModal() {
-    showModal.value = false;
-    rolEditar.value = null;
-}
-
-function handleSuccess(message) {
-    Swal.fire({
-        toast: true,
-        position: "top-end",
-        icon: "success",
-        title: message,
-        showConfirmButton: false,
-        timer: 2000,
-        timerProgressBar: true,
-    });
-    recargar();
-}
-
-function recargar() {
-    router.visit(route("roles.index"), {
-        preserveScroll: true,
-        only: ["roles", "success"],
-        onFinish: () => cerrarModal(),
-    });
-}
-
-function eliminarRol(role) {
-    Swal.fire({
-        title: "¿Eliminar rol?",
-        text: `¿Estás seguro de eliminar el rol ${role.name}?`,
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#3085d6",
-        cancelButtonColor: "#d33",
-        confirmButtonText: "Sí, eliminar",
-        cancelButtonText: "Cancelar",
-    }).then((result) => {
-        if (result.isConfirmed) {
-            router.delete(`/roles/${role.id}`, {
-                onSuccess: () => {
-                    Swal.fire({
-                        toast: true,
-                        position: "top-end",
-                        icon: "success",
-                        title: "Rol eliminado",
-                        showConfirmButton: false,
-                        timer: 2000,
-                        timerProgressBar: true,
-                    });
-                    recargar();
-                },
-                onError: () => {
-                    Swal.fire({
-                        toast: true,
-                        position: "top-end",
-                        icon: "error",
-                        title: "No se pudo eliminar el rol",
-                        showConfirmButton: false,
-                        timer: 2000,
-                        timerProgressBar: true,
-                    });
-                },
-            });
-        }
-    });
-}
-
-function toggleReporteCartera(reporte, checked) {
-    if (checked) {
-        // Añadir sin duplicados
-        if (!rolForm.reportes.some((r) => r.id === reporte.id)) {
-            rolForm.reportes.push(reporte);
-        }
-    } else {
-        // Encontrar el índice y eliminar con splice para que sea reactivo
-        const idx = rolForm.reportes.findIndex((r) => r.id === reporte.id);
-        if (idx !== -1) {
-            rolForm.reportes.splice(idx, 1);
-        }
-    }
-}
-</script>
