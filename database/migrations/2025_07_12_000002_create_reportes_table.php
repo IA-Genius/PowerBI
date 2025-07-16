@@ -13,6 +13,7 @@ return new class extends Migration
             $table->foreignId('cartera_id')->constrained('carteras')->onDelete('cascade');
             $table->string('nombre');
             $table->string('link');
+
             $table->integer('orden')->default(0);
             $table->timestamps();
         });
