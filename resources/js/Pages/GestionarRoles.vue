@@ -123,102 +123,12 @@
                                             {{ errors.carteras }}
                                         </p>
                                     </div>
-                                    <div
+                                    <CarteraReportesAccordion
                                         v-if="form.carteras.length"
-                                        class="space-y-6"
-                                        style="
-                                            max-height: 217px;
-                                            overflow-y: auto;
-                                        "
-                                    >
-                                        <div
-                                            v-for="cartera in form.carteras"
-                                            :key="cartera.id"
-                                            class="border border-indigo-100 rounded-lg p-4 bg-indigo-50/50 shadow-sm"
-                                        >
-                                            <div
-                                                class="font-semibold text-indigo-700 text-sm flex items-center gap-2 mb-2"
-                                            >
-                                                <svg
-                                                    class="w-4 h-4 text-indigo-400"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    stroke-width="2"
-                                                    viewBox="0 0 24 24"
-                                                >
-                                                    <path
-                                                        stroke-linecap="round"
-                                                        stroke-linejoin="round"
-                                                        d="M3 7h18"
-                                                    />
-                                                </svg>
-                                                {{ cartera.nombre }}
-                                            </div>
-                                            <div
-                                                v-if="
-                                                    cartera.reportes &&
-                                                    cartera.reportes.length
-                                                "
-                                            >
-                                                <div
-                                                    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2"
-                                                >
-                                                    <div
-                                                        v-for="reporte in cartera.reportes"
-                                                        :key="reporte.id"
-                                                        class="flex items-center gap-2 bg-white rounded px-2 py-1 shadow-sm"
-                                                    >
-                                                        <input
-                                                            type="checkbox"
-                                                            :id="
-                                                                'reporte-' +
-                                                                cartera.id +
-                                                                '-' +
-                                                                reporte.id
-                                                            "
-                                                            :checked="
-                                                                form.reportes.some(
-                                                                    (r) =>
-                                                                        r.id ===
-                                                                        reporte.id
-                                                                )
-                                                            "
-                                                            @change="
-                                                                toggleReporteCartera(
-                                                                    reporte,
-                                                                    $event
-                                                                        .target
-                                                                        .checked
-                                                                )
-                                                            "
-                                                            class="accent-indigo-500"
-                                                        />
-                                                        <label
-                                                            :for="
-                                                                'reporte-' +
-                                                                cartera.id +
-                                                                '-' +
-                                                                reporte.id
-                                                            "
-                                                            class="text-xs text-gray-700 cursor-pointer truncate max-w-[120px]"
-                                                            :title="
-                                                                reporte.nombre
-                                                            "
-                                                        >
-                                                            {{ reporte.nombre }}
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div
-                                                v-else
-                                                class="text-xs text-gray-400 italic mt-2"
-                                            >
-                                                Esta cartera no tiene reportes
-                                                disponibles.
-                                            </div>
-                                        </div>
-                                    </div>
+                                        v-model="form.reportes"
+                                        :carteras="form.carteras"
+                                    />
+
                                     <div
                                         v-if="form.reportes.length"
                                         class="mt-2 flex items-center justify-start"
@@ -400,6 +310,7 @@
 </style>
 
 <script setup>
+import CarteraReportesAccordion from "@/Components/CarteraReportesAccordion.vue";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import ModalXts from "@/Components/ModalXts.vue";
 import Multiselect from "vue-multiselect";

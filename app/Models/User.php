@@ -49,4 +49,19 @@ class User extends Authenticatable
         return $this
             ->belongsToMany(Cartera::class, 'cartera_user');
     }
+    public function getEffectiveCarteras()
+    {
+        return $this->roles->flatMap->carteras
+            ->merge($this->carteras)
+            ->unique('id')
+            ->values();
+    }
+
+    public function getEffectiveReportes()
+    {
+        return $this->roles->flatMap->reportes
+            ->merge($this->reportes)
+            ->unique('id')
+            ->values();
+    }
 }

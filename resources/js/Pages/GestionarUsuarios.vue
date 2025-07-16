@@ -6,32 +6,36 @@ import InputField from "@/Components/InputField.vue";
 import StatusBadge from "@/Components/StatusBadge.vue";
 import { Head, usePage, router } from "@inertiajs/vue3";
 import { reactive, ref, computed, onMounted, watch } from "vue";
-
 import Swal from "sweetalert2";
 import Multiselect from "vue-multiselect";
+import CarteraReportesAccordion from "@/Components/CarteraReportesAccordion.vue";
 import "vue-multiselect/dist/vue-multiselect.css";
 
-const { users, carteras, roles, success } = usePage().props;
+const { users, carteras, reportes, roles, success } = usePage().props;
 
 const showModal = ref(false);
 const usuarioEditar = ref(null);
 const tabActiva = ref("basicos");
-
+const cargandoDesdeEdicion = ref(false);
+const ignorarWatchRol = ref(false);
 const usuarioForm = reactive({
     name: "",
     email: "",
     password: "",
     active: true,
-    roles: null, // ahora es un solo objeto rol
+    roles: null,
     customCarteras: [],
     customReportes: [],
 });
 
-// Reportes heredados del rol seleccionado
-const inheritedReportes = computed(() => {
-    if (!usuarioForm.roles) return [];
-    return usuarioForm.roles.reportes || [];
-});
+const inheritedReportes = computed(() => usuarioForm.roles?.reportes || []);
+
+const carterasConReportes = computed(() =>
+    usuarioForm.customCarteras.map((cSel) => {
+        const full = carteras.find((c) => c.id === cSel.id);
+        return { ...cSel, reportes: full?.reportes || [] };
+    })
+);
 
 onMounted(() => {
     if (success) {
@@ -46,63 +50,23 @@ onMounted(() => {
         });
     }
 });
-function resetearACarterasYReportesPorDefecto() {
-    if (!usuarioForm.roles) return;
-
-    Swal.fire({
-        title: "¿Restablecer permisos?",
-        text: "Se reemplazarán las carteras y reportes actuales por los del rol seleccionado. ¿Deseas continuar?",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonText: "Sí, restablecer",
-        cancelButtonText: "Cancelar",
-    }).then((result) => {
-        if (result.isConfirmed) {
-            const carterasRol = usuarioForm.roles.carteras || [];
-
-            const carterasCompletas = carterasRol.map((cartera) => {
-                const encontrada = carteras.find((c) => c.id === cartera.id);
-                return encontrada ? { ...encontrada } : { ...cartera };
-            });
-
-            const reportesDesdeCarteras = carterasCompletas
-                .flatMap((c) => c.reportes || [])
-                .filter(
-                    (r, i, self) => self.findIndex((x) => x.id === r.id) === i
-                );
-
-            usuarioForm.customCarteras = carterasCompletas;
-            usuarioForm.customReportes = reportesDesdeCarteras;
-
-            Swal.fire({
-                toast: true,
-                position: "top-end",
-                icon: "success",
-                title: "Permisos restablecidos",
-                showConfirmButton: false,
-                timer: 1500,
-            });
-        }
-    });
-}
 
 watch(
     () => usuarioForm.roles,
     (nuevoRol) => {
-        if (!nuevoRol || cargandoDesdeEdicion.value) return;
+        if (!nuevoRol || cargandoDesdeEdicion.value || ignorarWatchRol.value)
+            return;
 
         const carterasRol = nuevoRol.carteras || [];
+        const reportesDesdeCarteras = [
+            ...new Map(
+                carterasRol
+                    .flatMap((c) => c.reportes || [])
+                    .map((r) => [r.id, r])
+            ).values(),
+        ];
 
-        const carterasCompletas = carterasRol.map((cartera) => {
-            const encontrada = carteras.find((c) => c.id === cartera.id);
-            return encontrada ? { ...encontrada } : { ...cartera };
-        });
-
-        const reportesDesdeCarteras = carterasCompletas
-            .flatMap((c) => c.reportes || [])
-            .filter((r, i, self) => self.findIndex((x) => x.id === r.id) === i);
-
-        usuarioForm.customCarteras = carterasCompletas;
+        usuarioForm.customCarteras = carterasRol;
         usuarioForm.customReportes = reportesDesdeCarteras;
     }
 );
@@ -121,38 +85,36 @@ function abrirModalAgregar() {
     tabActiva.value = "basicos";
     showModal.value = true;
 }
-const cargandoDesdeEdicion = ref(false);
+
 function abrirModalEditar(user) {
     cargandoDesdeEdicion.value = true;
-
     usuarioEditar.value = user;
+    const rol = user.roles?.[0] || null;
+    const agrupados = {};
 
-    const seleccionRol = roles.find((r) =>
-        user.roles && user.roles.length ? user.roles[0].id === r.id : false
-    );
-
-    const seleccionCarteras = (user.carteras || []).map((cartera) => {
-        const carteraCompleta = carteras.find((c) => c.id === cartera.id);
-        return carteraCompleta ? { ...carteraCompleta } : { ...cartera };
+    (user.effective_reportes || []).forEach((r) => {
+        if (!agrupados[r.cartera_id]) agrupados[r.cartera_id] = [];
+        agrupados[r.cartera_id].push(r);
     });
-
-    const seleccionReportes = user.reportes || [];
 
     Object.assign(usuarioForm, {
         name: user.name,
         email: user.email,
         password: "",
         active: !!user.active,
-        roles: seleccionRol || null,
-        customCarteras: seleccionCarteras,
-        customReportes: seleccionReportes,
+        roles: rol,
+        customCarteras: Object.keys(agrupados)
+            .map((id) => {
+                const c = carteras.find((c) => c.id == id);
+                return c ? { id: c.id, nombre: c.nombre } : null;
+            })
+            .filter(Boolean),
+        customReportes: user.effective_reportes || [],
     });
 
     tabActiva.value = "basicos";
     showModal.value = true;
-    setTimeout(() => {
-        cargandoDesdeEdicion.value = false;
-    }, 50);
+    setTimeout(() => (cargandoDesdeEdicion.value = false), 50);
 }
 
 function cerrarModal() {
@@ -176,6 +138,7 @@ function handleSuccess(message) {
 function recargar() {
     router.visit(route("users.index"), {
         preserveScroll: true,
+
         only: ["users", "success"],
         onFinish: cerrarModal,
     });
@@ -199,10 +162,9 @@ function eliminarUsuario(user) {
                         toast: true,
                         position: "top-end",
                         icon: "success",
-                        title: "Usuario eliminado",
+                        title: `Usuario ${user.name} eliminado`,
                         showConfirmButton: false,
                         timer: 2000,
-                        timerProgressBar: true,
                     });
                     recargar();
                 },
@@ -210,6 +172,7 @@ function eliminarUsuario(user) {
         }
     });
 }
+
 function toggleReportePersonalizado(reporte, checked) {
     if (checked) {
         if (!usuarioForm.customReportes.some((r) => r.id === reporte.id)) {
@@ -220,6 +183,58 @@ function toggleReportePersonalizado(reporte, checked) {
             (r) => r.id !== reporte.id
         );
     }
+}
+
+function resetearACarterasYReportesPorDefecto() {
+    if (!usuarioForm.roles) return;
+
+    Swal.fire({
+        title: "¿Restablecer permisos?",
+        text: "Se reemplazarán las carteras y reportes actuales por los del rol seleccionado. ¿Deseas continuar?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Sí, restablecer",
+        cancelButtonText: "Cancelar",
+    }).then((result) => {
+        if (result.isConfirmed) {
+            ignorarWatchRol.value = true;
+
+            const carterasRol = (usuarioForm.roles.carteras || [])
+                .map((c) => {
+                    const full = carteras.find((x) => x.id === c.id);
+                    return full ? { id: full.id, nombre: full.nombre } : null;
+                })
+                .filter(Boolean);
+
+            const reportesDesdeCarteras = [
+                ...new Map(
+                    carterasRol
+                        .flatMap((c) => {
+                            const full = carteras.find((x) => x.id === c.id);
+                            return full?.reportes || [];
+                        })
+                        .map((r) => [r.id, r])
+                ).values(),
+            ];
+
+            usuarioForm.customCarteras = carterasRol;
+            usuarioForm.customReportes = reportesDesdeCarteras;
+
+            // Pequeño delay para evitar el watch tras el cambio
+            setTimeout(() => {
+                ignorarWatchRol.value = false;
+            }, 100);
+
+            Swal.fire({
+                toast: true,
+                position: "top-end",
+                icon: "success",
+                title: "Permisos restablecidos",
+                showConfirmButton: false,
+                timer: 1500,
+            });
+        }
+    });
 }
 </script>
 
@@ -373,109 +388,26 @@ function toggleReportePersonalizado(reporte, checked) {
                             type="button"
                             @click="resetearACarterasYReportesPorDefecto"
                             class="text-xs text-indigo-600 hover:underline mt-2"
+                            :disabled="!form.roles"
                         >
                             Usar valores por defecto del rol
                         </button>
+                        <p v-if="!form.roles" class="text-xs text-red-500 mt-1">
+                            Selecciona un rol antes de restablecer permisos.
+                        </p>
 
                         <!-- Reportes personalizados agrupados por cartera -->
+                        <!-- Reportes personalizados agrupados -->
                         <div v-if="form.customCarteras.length">
                             <label class="block text-sm font-medium mb-1">
                                 Reportes personalizados
                             </label>
-                            <div
-                                v-for="cartera in form.customCarteras"
-                                :key="cartera.id"
-                                class="border border-indigo-100 rounded-lg p-3 mb-3 bg-indigo-50/50 shadow-sm"
-                            >
-                                <div
-                                    class="font-semibold text-indigo-700 text-sm mb-2 flex items-center gap-2"
-                                >
-                                    <svg
-                                        class="w-4 h-4 text-indigo-400"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M3 7h18"
-                                        />
-                                    </svg>
-                                    {{ cartera.nombre }}
-                                </div>
-                                <div
-                                    v-if="
-                                        cartera.reportes &&
-                                        cartera.reportes.length
-                                    "
-                                >
-                                    <div
-                                        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2"
-                                    >
-                                        <div
-                                            v-for="reporte in cartera.reportes"
-                                            :key="reporte.id"
-                                            class="flex items-center gap-2 bg-white rounded px-2 py-1 shadow-sm"
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                :id="
-                                                    'reporte-' +
-                                                    cartera.id +
-                                                    '-' +
-                                                    reporte.id
-                                                "
-                                                :checked="
-                                                    form.customReportes.some(
-                                                        (r) =>
-                                                            r.id === reporte.id
-                                                    )
-                                                "
-                                                @change="
-                                                    toggleReportePersonalizado(
-                                                        reporte,
-                                                        $event.target.checked
-                                                    )
-                                                "
-                                                class="accent-indigo-500"
-                                            />
-                                            <label
-                                                :for="
-                                                    'reporte-' +
-                                                    cartera.id +
-                                                    '-' +
-                                                    reporte.id
-                                                "
-                                                class="text-xs text-gray-700 cursor-pointer truncate max-w-[120px]"
-                                                :title="reporte.nombre"
-                                            >
-                                                {{ reporte.nombre }}
-                                                <span
-                                                    v-if="
-                                                        inheritedReportes.some(
-                                                            (r) =>
-                                                                r.id ===
-                                                                reporte.id
-                                                        )
-                                                    "
-                                                    class="text-[10px] ml-1 text-gray-400"
-                                                    title="Herencia del rol"
-                                                >
-                                                    (por rol)
-                                                </span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div
-                                    v-else
-                                    class="text-xs text-gray-400 italic mt-2"
-                                >
-                                    Esta cartera no tiene reportes disponibles.
-                                </div>
-                            </div>
+
+                            <CarteraReportesAccordion
+                                v-model="form.customReportes"
+                                :carteras="carterasConReportes"
+                            />
+
                             <p class="mt-2 text-xs text-gray-600">
                                 Total reportes asignados:
                                 {{ form.customReportes.length }}

@@ -14,21 +14,31 @@ class UserController extends Controller
 {
     public function index()
     {
-        // 1) Eager‐load a nivel de usuario y de rol:
         $users = User::with([
-            'carteras',                 // las carteras personalizadas del usuario
-            'reportes.cartera',         // los reportes personaliz. + su cartera
-            'roles.carteras',           // las carteras que vienen de cada rol
-            'roles.reportes.cartera',   // y los reportes que vienen de cada rol
-        ])->get();
+            'carteras',
+            'reportes.cartera',
+            'roles.carteras',
+            'roles.reportes.cartera',
+        ])->get()->map(function ($user) {
+            return [
+                ...$user->toArray(),
+                'effective_carteras' => $user->getEffectiveCarteras(),
+                'effective_reportes' => $user->getEffectiveReportes(),
+            ];
+        });
 
         $carteras = Cartera::with('reportes')->get();
         $reportes = Reporte::all();
         $roles    = Role::with(['carteras', 'reportes.cartera'])->get();
 
-        return Inertia::render('GestionarUsuarios', compact('users', 'carteras', 'reportes', 'roles'));
+        return Inertia::render('GestionarUsuarios', [
+            'users'     => $users,
+            'carteras'  => $carteras,
+            'reportes'  => $reportes,
+            'roles'     => $roles,
+            'success'   => session('success'),
+        ]);
     }
-
 
     public function store(Request $request)
     {
@@ -52,10 +62,21 @@ class UserController extends Controller
             'active'   => $data['active'],
         ]);
 
-
         $user->syncRoles($data['roles'] ?? []);
-        $user->carteras()->sync($data['carteras'] ?? []);
-        $user->reportes()->sync($data['reportes'] ?? []);
+
+        // Aplicar lógica de herencia en creación
+        $idsCarterasRol = $user->roles->flatMap->carteras->pluck('id')->unique();
+        $idsReportesRol = $user->roles->flatMap->reportes->pluck('id')->unique();
+
+        $carterasPersonalizadas = collect($data['carteras'] ?? [])
+            ->filter(fn($id) => !$idsCarterasRol->contains($id));
+
+        $reportesPersonalizados = collect($data['reportes'] ?? [])
+            ->filter(fn($id) => !$idsReportesRol->contains($id));
+
+        $user->carteras()->sync($carterasPersonalizadas);
+        $user->reportes()->sync($reportesPersonalizados);
+
         return redirect()
             ->route('users.index')
             ->with('success', "Usuario «{$user->name}» creado correctamente.");
@@ -75,21 +96,28 @@ class UserController extends Controller
             'roles'     => 'nullable|array',
             'roles.*'   => 'exists:roles,id',
         ]);
-        logger()->info('DATOS RECIBIDOS', $request->all());
 
         $user->update([
             'name'   => $data['name'],
             'email'  => $data['email'],
             'active' => $data['active'],
-            // contraseña si llegó…
             ...($data['password'] ? ['password' => bcrypt($data['password'])] : []),
         ]);
 
         $user->syncRoles($data['roles'] ?? []);
 
-        $user->carteras()->sync($data['carteras'] ?? []);
-        $user->reportes()->sync($data['reportes'] ?? []);
+        // Recalcular herencias
+        $idsCarterasRol = $user->roles->flatMap->carteras->pluck('id')->unique();
+        $idsReportesRol = $user->roles->flatMap->reportes->pluck('id')->unique();
 
+        $carterasPersonalizadas = collect($data['carteras'] ?? [])
+            ->filter(fn($id) => !$idsCarterasRol->contains($id));
+
+        $reportesPersonalizados = collect($data['reportes'] ?? [])
+            ->filter(fn($id) => !$idsReportesRol->contains($id));
+
+        $user->carteras()->sync($carterasPersonalizadas);
+        $user->reportes()->sync($reportesPersonalizados);
 
         return redirect()
             ->route('users.index')
@@ -110,6 +138,7 @@ class UserController extends Controller
         return redirect()->route('users.index')->with('success', 'Usuario eliminado correctamente.');
     }
 
+    // No se usa actualmente, pero lo dejamos como utilidad interna
     private function saveUser(User $user, array $data): void
     {
         $user->name = $data['name'];

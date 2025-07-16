@@ -20,6 +20,7 @@ import {
 // Inicializa primero usePage
 const page = usePage();
 const permissions = page.props.auth?.permissions || [];
+const role = page.props.auth?.role || null;
 const { can } = page.props;
 const canDo = (key) => !!can[key];
 
@@ -85,8 +86,7 @@ onMounted(() => {
         }
     });
 });
-console.log("Carteras:", carteras.value);
-console.log("Reportes:", reportes.value);
+console.log(page.props);
 </script>
 
 <!-- =========================
@@ -135,7 +135,7 @@ console.log("Reportes:", reportes.value);
                     <svg
                         v-if="isSidebarOpen"
                         class="svgMenu"
-                        style="width: 22px; height: 22px; color: #fff"
+                        style="width: 26px; height: 26px; color: #fff"
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 512 512"
                     >
@@ -147,7 +147,7 @@ console.log("Reportes:", reportes.value);
                     <svg
                         v-else
                         class="svgMenu"
-                        style="width: 22px; height: 22px; color: #fff"
+                        style="width: 26px; height: 26px; color: #fff"
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 448 512"
                     >
@@ -165,6 +165,10 @@ console.log("Reportes:", reportes.value);
                     class="separador separadorAdmin"
                     v-if="canDo('manageCarteras')"
                 ></div>
+                <link
+                    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded"
+                    rel="stylesheet"
+                />
 
                 <NavLink
                     v-if="canDo('manageCarteras')"
@@ -174,16 +178,16 @@ console.log("Reportes:", reportes.value);
                     :class="isSidebarOpen ? 'justify-start' : 'justify-center'"
                 >
                     <svg
-                        class="svgMenu"
-                        style="width: 20px; height: 20px; color: #fff"
+                        class="w-6 h-6 text-white"
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 512 512"
+                        fill="currentColor"
                     >
                         <path
-                            fill="white"
-                            d="M80 32C35.8 32 0 67.8 0 112L0 400c0 44.2 35.8 80 80 80l352 0c44.2 0 80-35.8 80-80l0-224c0-44.2-35.8-80-80-80L112 96c-8.8 0-16 7.2-16 16s7.2 16 16 16l320 0c26.5 0 48 21.5 48 48l0 224c0 26.5-21.5 48-48 48L80 448c-26.5 0-48-21.5-48-48l0-288c0-26.5 21.5-48 48-48l384 0c8.8 0 16-7.2 16-16s-7.2-16-16-16L80 32zM384 312a24 24 0 1 0 0-48 24 24 0 1 0 0 48z"
+                            d="M80 32C35.8 32 0 67.8 0 112L0 400c0 44.2 35.8 80 80 80h352c44.2 0 80-35.8 80-80V176c0-44.2-35.8-80-80-80H112c-8.8 0-16 7.2-16 16s7.2 16 16 16h320c26.5 0 48 21.5 48 48v224c0 26.5-21.5 48-48 48H80c-26.5 0-48-21.5-48-48V112c0-26.5 21.5-48 48-48h384c8.8 0 16-7.2 16-16s-7.2-16-16-16H80zM384 312a24 24 0 1 0 0-48 24 24 0 1 0 0 48z"
                         />
                     </svg>
+
                     <transition name="fade">
                         <span
                             v-if="isSidebarOpen"
@@ -202,7 +206,7 @@ console.log("Reportes:", reportes.value);
                 >
                     <svg
                         class="svgMenu"
-                        style="width: 20px; height: 20px; color: #fff"
+                        style="width: 26px; height: 26px; color: #fff"
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 640 512"
                     >
@@ -230,7 +234,7 @@ console.log("Reportes:", reportes.value);
                 >
                     <svg
                         class="svgMenu"
-                        style="width: 20px; height: 20px; color: #fff"
+                        style="width: 26px; height: 26px; color: #fff"
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 512 512"
                     >
@@ -275,8 +279,8 @@ console.log("Reportes:", reportes.value);
                                     <svg
                                         class="svgMenu"
                                         style="
-                                            width: 18px;
-                                            height: 18px;
+                                            width: 26px;
+                                            height: 26px;
                                             color: #fff;
                                         "
                                         xmlns="http://www.w3.org/2000/svg"
@@ -424,52 +428,81 @@ console.log("Reportes:", reportes.value);
 
                         <div class="flex-1"></div>
 
-                        <!-- User Menu -->
-                        <div class="flex items-center">
+                        <!-- Menú de Usuario -->
+                        <div class="flex items-center gap-2">
                             <Dropdown align="right" width="48">
+                                <!-- Trigger -->
                                 <template #trigger>
-                                    <span class="inline-flex rounded-md">
-                                        <button
-                                            type="button"
-                                            class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150"
+                                    <div
+                                        class="flex items-center gap-2 bg-white rounded-full px-2 py-1 shadow border border-gray-200 cursor-pointer relative"
+                                    >
+                                        <div
+                                            class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-base uppercase shadow"
+                                        >
+                                            {{
+                                                $page.props.auth.user.name.charAt(
+                                                    0
+                                                )
+                                            }}
+                                        </div>
+                                        <div
+                                            class="hidden sm:block text-gray-800 leading-tight"
+                                        >
+                                            <div class="font-semibold text-sm">
+                                                {{ $page.props.auth.user.name }}
+                                            </div>
+                                        </div>
+                                        <!-- Flecha caret -->
+                                        <svg
+                                            class="w-4 h-4 text-gray-400 ml-2 mr-1"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                d="M19 9l-7 7-7-7"
+                                            />
+                                        </svg>
+                                    </div>
+                                </template>
+
+                                <!-- Contenido del Dropdown -->
+                                <template #content>
+                                    <div
+                                        class="px-4 py-3 border-b border-gray-100 bg-white"
+                                    >
+                                        <div
+                                            class="font-semibold text-gray-800 text-base"
                                         >
                                             {{ $page.props.auth.user.name }}
+                                        </div>
+                                        <div
+                                            v-if="$page.props.auth.role"
+                                            class="inline-block mt-1 px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 text-xs font-semibold"
+                                        >
+                                            {{ $page.props.auth.role }}
+                                        </div>
+                                    </div>
+
+                                    <DropdownLink :href="route('profile.edit')">
+                                        <div class="flex items-center gap-2">
                                             <svg
-                                                class="-me-0.5 ms-2 h-4 w-4"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                viewBox="0 0 20 20"
-                                                fill="currentColor"
+                                                class="w-5 h-5 text-indigo-500"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="2"
+                                                viewBox="0 0 24 24"
                                             >
                                                 <path
-                                                    fill-rule="evenodd"
-                                                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                    clip-rule="evenodd"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                                                 />
                                             </svg>
-                                        </button>
-                                    </span>
-                                </template>
-                                <template #content>
-                                    <DropdownLink :href="route('profile.edit')">
-                                        <div class="flex items-center">
-                                            <svg
-                                                width="24"
-                                                height="24"
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                class="text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300"
-                                            >
-                                                <path
-                                                    fill-rule="evenodd"
-                                                    clip-rule="evenodd"
-                                                    d="M10.4858 3.5L13.5182 3.5C13.9233 3.5 14.2518 3.82851 14.2518 4.23377C14.2518 5.9529 16.1129 7.02795 17.602 6.1682C17.9528 5.96567 18.4014 6.08586 18.6039 6.43667L20.1203 9.0631C20.3229 9.41407 20.2027 9.86286 19.8517 10.0655C18.3625 10.9253 18.3625 13.0747 19.8517 13.9345C20.2026 14.1372 20.3229 14.5859 20.1203 14.9369L18.6039 17.5634C18.4013 17.9142 17.9528 18.0344 17.602 17.8318C16.1129 16.9721 14.2518 18.0471 14.2518 19.7663C14.2518 20.1715 13.9233 20.5 13.5182 20.5H10.4858C10.0804 20.5 9.75182 20.1714 9.75182 19.766C9.75182 18.0461 7.88983 16.9717 6.40067 17.8314C6.04945 18.0342 5.60037 17.9139 5.39767 17.5628L3.88167 14.937C3.67903 14.586 3.79928 14.1372 4.15026 13.9346C5.63949 13.0748 5.63946 10.9253 4.15025 10.0655C3.79926 9.86282 3.67901 9.41401 3.88165 9.06303L5.39764 6.43725C5.60034 6.08617 6.04943 5.96581 6.40065 6.16858C7.88982 7.02836 9.75182 5.9539 9.75182 4.23399C9.75182 3.82862 10.0804 3.5 10.4858 3.5ZM13.5182 2L10.4858 2C9.25201 2 8.25182 3.00019 8.25182 4.23399C8.25182 4.79884 7.64013 5.15215 7.15065 4.86955C6.08213 4.25263 4.71559 4.61859 4.0986 5.68725L2.58261 8.31303C1.96575 9.38146 2.33183 10.7477 3.40025 11.3645C3.88948 11.647 3.88947 12.3531 3.40026 12.6355C2.33184 13.2524 1.96578 14.6186 2.58263 15.687L4.09863 18.3128C4.71562 19.3814 6.08215 19.7474 7.15067 19.1305C7.64015 18.8479 8.25182 19.2012 8.25182 19.766C8.25182 20.9998 9.25201 22 10.4858 22H13.5182C14.7519 22 15.7518 20.9998 15.7518 19.7663C15.7518 19.2015 16.3632 18.8487 16.852 19.1309C17.9202 19.7476 19.2862 19.3816 19.9029 18.3134L21.4193 15.6869C22.0361 14.6185 21.6701 13.2523 20.6017 12.6355C20.1125 12.3531 20.1125 11.647 20.6017 11.3645C21.6701 10.7477 22.0362 9.38152 21.4193 8.3131L19.903 5.68667C19.2862 4.61842 17.9202 4.25241 16.852 4.86917C16.3632 5.15138 15.7518 4.79856 15.7518 4.23377C15.7518 3.00024 14.7519 2 13.5182 2ZM9.6659 11.9999C9.6659 10.7103 10.7113 9.66493 12.0009 9.66493C13.2905 9.66493 14.3359 10.7103 14.3359 11.9999C14.3359 13.2895 13.2905 14.3349 12.0009 14.3349C10.7113 14.3349 9.6659 13.2895 9.6659 11.9999ZM12.0009 8.16493C9.88289 8.16493 8.1659 9.88191 8.1659 11.9999C8.1659 14.1179 9.88289 15.8349 12.0009 15.8349C14.1189 15.8349 15.8359 14.1179 15.8359 11.9999C15.8359 9.88191 14.1189 8.16493 12.0009 8.16493Z"
-                                                    fill="currentColor"
-                                                ></path>
-                                            </svg>
-                                            <span style="margin-left: 10px"
-                                                >Perfil</span
-                                            >
+                                            <span>Perfil</span>
                                         </div>
                                     </DropdownLink>
 
@@ -478,25 +511,21 @@ console.log("Reportes:", reportes.value);
                                         method="post"
                                         as="button"
                                     >
-                                        <div class="flex items-center">
+                                        <div class="flex items-center gap-2">
                                             <svg
-                                                width="24"
-                                                height="24"
-                                                viewBox="0 0 24 24"
+                                                class="w-5 h-5 text-red-500"
                                                 fill="none"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                class="text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300"
+                                                stroke="currentColor"
+                                                stroke-width="2"
+                                                viewBox="0 0 24 24"
                                             >
                                                 <path
-                                                    fill-rule="evenodd"
-                                                    clip-rule="evenodd"
-                                                    d="M15.1007 19.247C14.6865 19.247 14.3507 18.9112 14.3507 18.497L14.3507 14.245H12.8507V18.497C12.8507 19.7396 13.8581 20.747 15.1007 20.747H18.5007C19.7434 20.747 20.7507 19.7396 20.7507 18.497L20.7507 5.49609C20.7507 4.25345 19.7433 3.24609 18.5007 3.24609H15.1007C13.8581 3.24609 12.8507 4.25345 12.8507 5.49609V9.74501L14.3507 9.74501V5.49609C14.3507 5.08188 14.6865 4.74609 15.1007 4.74609L18.5007 4.74609C18.9149 4.74609 19.2507 5.08188 19.2507 5.49609L19.2507 18.497C19.2507 18.9112 18.9149 19.247 18.5007 19.247H15.1007ZM3.25073 11.9984C3.25073 12.2144 3.34204 12.4091 3.48817 12.546L8.09483 17.1556C8.38763 17.4485 8.86251 17.4487 9.15549 17.1559C9.44848 16.8631 9.44863 16.3882 9.15583 16.0952L5.81116 12.7484L16.0007 12.7484C16.4149 12.7484 16.7507 12.4127 16.7507 11.9984C16.7507 11.5842 16.4149 11.2484 16.0007 11.2484L5.81528 11.2484L9.15585 7.90554C9.44864 7.61255 9.44847 7.13767 9.15547 6.84488C8.86248 6.55209 8.3876 6.55226 8.09481 6.84525L3.52309 11.4202C3.35673 11.5577 3.25073 11.7657 3.25073 11.9984Z"
-                                                    fill="currentColor"
-                                                ></path>
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    d="M17 16l4-4m0 0l-4-4m4 4H3"
+                                                />
                                             </svg>
-                                            <span style="margin-left: 10px"
-                                                >Cerrar Sesión</span
-                                            >
+                                            <span>Cerrar Sesión</span>
                                         </div>
                                     </DropdownLink>
                                 </template>
