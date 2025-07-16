@@ -415,7 +415,7 @@ function resetearACarterasYReportesPorDefecto() {
             </ModalXts>
 
             <!-- Listado de Usuarios -->
-            <div cl                     ass="overflow-x-auto rounded border bg-gray-50 p-4">
+            <div class="overflow-x-auto rounded border bg-gray-50 p-4">
                 <!-- <h1 class="text-xl font-semibold mb-4">Listado de Usuarios</h1> -->
                 <table class="min-w-full divide-y divide-gray-200 text-sm">
                     <thead class="bg-indigo-100">
