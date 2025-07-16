@@ -17,8 +17,11 @@ COLORES
 .bgPrincipal {
     background: var(--colorPrincipal);
 }
+.tituloPag {
+    color: var(--colorPrincipal);
+}
 
-a {
+a,button {
     transition: 200ms;
 }
 
@@ -36,6 +39,19 @@ MENU
 }
 .menuActivado * {
     color: #fff;
+}
+.menuAbierto .toolTip{
+    display: none !important;
+}
+.menuAbierto .linkCarteras,
+.menuAbierto .linkMenu {
+    padding-left: 20px;
+    padding-right: 20px;
+}
+label.linkCarteras {
+    margin: 0;
+    padding-top: 20px;
+    padding-bottom: 10px;
 }
 .customMenu nav {
     overflow: visible;
@@ -56,6 +72,26 @@ MENU
 .separadorAdmin {
     margin: 0 !important;
 }
+.rollBar {
+    font-size: 11px;
+    display: block;
+    line-height: 1;
+    color: gray;
+    position: relative;
+    top: -4px;
+    text-transform: capitalize;
+}
+
+/* .h-90 {
+    overflow: hidden;
+    height: 71%;
+}
+.overflowHijo {
+    overflow-y: scroll;
+    overflow-x: hidden;
+    max-height: 100%;
+    width: calc(100% + 17px);
+} */
 
 /*==============
 LOGIN
@@ -163,4 +199,83 @@ svg.mySVG {
     border-radius: 100%;
     margin: -10px 7px -10px 0;
     border: 3px solid #ffffff1c;
+}
+
+
+
+/*============
+PAGINAS
+============*/
+.tituloPag {
+    position: relative;
+    font-weight: bold;
+    font-size: 25px;
+}
+.tituloPag::before,
+.tituloPag:after {
+    content: "";
+    position: absolute;
+    bottom: -10px;
+}
+.tituloPag::before {
+    width: 30px;
+    height: 2px;
+    border: 2px dashed var(--colorPrincipal);
+}
+.tituloPag:after {
+    background: var(--colorPrincipal);
+    width: 60px;
+    height: 4px;
+    left: 35px;
+    border-radius: 2px;
+}
+
+.rounded-full {
+  border-radius: 5px;
+}
+
+/*===========
+ICONOS
+===========*/
+
+
+.bg-green-500 {
+    --tw-bg-opacity: 1;
+    background-color: var(--colorPrincipal);
+    padding-bottom: 11px !important;
+}
+.bg-green-500:hover {
+    background-color: var(--colorSecundario) !important;
+}
+.bg-green-500 svg {
+    position: relative;
+    top: 1px;
+}
+
+
+
+
+
+
+
+.svgIcon {
+    color: #fff;
+    fill: #fff
+}
+.bgIconTrash,
+.bgIconEdit {
+    border-radius: 5px;
+    padding: 7px;
+}
+
+.bgIconEdit {
+    background: green;
+}
+.bgIconTrash {
+  background: #b00;
+}
+
+.bgIconEdit:hover,
+.bgIconTrash:hover {
+  background: var(--colorSecundario);
 }

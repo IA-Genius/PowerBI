@@ -108,7 +108,7 @@ console.log(page.props);
                 mobileSidebarOpen
                     ? 'translate-x-0'
                     : '-translate-x-full lg:translate-x-0',
-                isSidebarOpen ? 'w-64' : 'w-20',
+                isSidebarOpen ? 'w-64 menuAbierto' : 'w-20',
             ]"
         >
             <!-- Logo -->
@@ -126,7 +126,7 @@ console.log(page.props);
             </div>
 
             <!-- Menu -->
-            <nav class="flex-1 overflow-y-auto py-2">
+            <nav class="flex-1 overflow-y-auto">
                 <button
                     @click="toggleSidebar"
                     class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition"
@@ -254,19 +254,19 @@ console.log(page.props);
 
                 <div class="separador"></div>
 
-                <div>
+                <div class="h-90">
                     <label
                         v-if="isSidebarOpen && selectedCartera"
-                        class="block text-xs text-white mt-4 mb-2"
+                        class="block text-xs text-white mt-4 mb-2 linkCarteras"
                     >
                         Reportes de {{ selectedCartera.nombre }}
                     </label>
-                    <ul v-if="reportesFiltrados.length">
+                    <ul v-if="reportesFiltrados.length" class="overflowHijo">
                         <li v-for="r in reportesFiltrados" :key="r.id">
                             <div class="relative group">
                                 <button
                                     @click="seleccionarReporte(r)"
-                                    class="w-full flex items-center px-3 py-3 transition hover:bg-white/10 focus:outline-none"
+                                    class="w-full flex items-center px-3 py-3 transition hover:bg-white/10 focus:outline-none linkCarteras"
                                     :class="[
                                         isSidebarOpen
                                             ? 'justify-start'
@@ -303,7 +303,7 @@ console.log(page.props);
                                 </button>
                                 <!-- Tooltip solo en desktop -->
                                 <div
-                                    class="invisible absolute opacity-0 transition-opacity duration-300 group-hover:visible group-hover:opacity-100 left-full top-1/2 z-50"
+                                    class="toolTip invisible absolute opacity-0 transition-opacity duration-300 group-hover:visible group-hover:opacity-100 left-full top-1/2 z-50"
                                     style="
                                         pointer-events: none;
                                         transform: translateY(-50%)
@@ -368,7 +368,8 @@ console.log(page.props);
                         >
                             <svg
                                 class="w-6 h-6"
-                                fill="none"
+                                fill="#000"
+                                style="color: #000;"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
                             >
@@ -450,6 +451,7 @@ console.log(page.props);
                                         >
                                             <div class="font-semibold text-sm">
                                                 {{ $page.props.auth.user.name }}
+                                                <span class="rollBar">{{ $page.props.auth.role }}</span>
                                             </div>
                                         </div>
                                         <!-- Flecha caret -->
@@ -471,7 +473,7 @@ console.log(page.props);
 
                                 <!-- Contenido del Dropdown -->
                                 <template #content>
-                                    <div
+                                    <!-- <div
                                         class="px-4 py-3 border-b border-gray-100 bg-white"
                                     >
                                         <div
@@ -485,7 +487,7 @@ console.log(page.props);
                                         >
                                             {{ $page.props.auth.role }}
                                         </div>
-                                    </div>
+                                    </div> -->
 
                                     <DropdownLink :href="route('profile.edit')">
                                         <div class="flex items-center gap-2">
