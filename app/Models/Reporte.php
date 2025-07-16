@@ -8,7 +8,9 @@ class Reporte extends Model
 {
     protected $fillable = [
         'nombre',
-        'link',
+        'link_desktop',
+        'link_mobile',
+        'icon', 
         'orden',
         'cartera_id',
     ];

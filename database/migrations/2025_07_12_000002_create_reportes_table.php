@@ -12,8 +12,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('cartera_id')->constrained('carteras')->onDelete('cascade');
             $table->string('nombre');
-            $table->string('link');
-
+            $table->string('link_desktop')->nullable();
+            $table->string('link_mobile')->nullable();
+            $table->string('icon')->nullable();
             $table->integer('orden')->default(0);
             $table->timestamps();
         });

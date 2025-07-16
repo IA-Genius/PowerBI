@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import ModalGestion from "@/Components/ModalGestion.vue";
-import GestReportes from "@/Components/GestReportes.vue";
+import ModalReporte from "@/Components/ModalReporte.vue";
 import Actions from "@/Components/Actions.vue";
 import InputField from "@/Components/InputField.vue";
 import StatusBadge from "@/Components/StatusBadge.vue";
@@ -14,10 +14,27 @@ const reportes = usePage().props.reportes;
 const success = usePage().props.success;
 
 const showModal = ref(false);
-const showModalReportes = ref(false);
-const keyReportes = ref(Date.now());
-const reportesFiltrados = ref([]);
+const showModalReporte = ref(false);
+const editandoReporte = ref(false);
+const reporteForm = ref({
+    id: null,
+    nombre: "",
+    link_desktop: "",
+    link_mobile: "",
+    icon: "",
+    orden: 0,
+    cartera_id: null,
+});
+
 const carteraSeleccionada = ref(null);
+
+function mostrarListadoCartera(cartera) {
+    carteraSeleccionada.value = cartera;
+}
+
+function verTodosLosReportes() {
+    carteraSeleccionada.value = null;
+}
 
 const carteraEditar = ref(null);
 const carteraForm = ref({
@@ -133,44 +150,36 @@ function eliminarCartera(cartera) {
     });
 }
 
-function abrirModalReportes(cartera = null) {
-    // Siempre usar los props más recientes
-    const allReportes = usePage().props.reportes;
-    if (cartera) {
-        carteraSeleccionada.value = cartera;
-        reportesFiltrados.value = allReportes.filter(
-            (r) => r.cartera_id === cartera.id
-        );
-    } else {
-        carteraSeleccionada.value = null;
-        reportesFiltrados.value = allReportes;
-    }
-    showModalReportes.value = true;
+function abrirModalCrearReporte(carteraId = null) {
+    editandoReporte.value = false;
+    reporteForm.value = {
+        id: null,
+        nombre: "",
+        link_desktop: "",
+        link_mobile: "",
+        icon: "",
+        orden: 0,
+        cartera_id: carteraId || null,
+    };
+    showModalReporte.value = true;
 }
 
-function cerrarModalReportes() {
-    showModalReportes.value = false;
+function abrirModalEditarReporte(reporte) {
+    editandoReporte.value = true;
+    reporteForm.value = {
+        id: reporte.id,
+        nombre: reporte.nombre,
+        link_desktop: reporte.link_desktop,
+        link_mobile: reporte.link_mobile,
+        icon: reporte.icon,
+        orden: reporte.orden,
+        cartera_id: reporte.cartera_id,
+    };
+    showModalReporte.value = true;
 }
 
-function recargarReportes() {
-    router.visit(route("carteras.index"), {
-        preserveScroll: true,
-        preserveState: true,
-        only: ["reportes", "carteras", "success"],
-        onFinish: () => {
-            const allReportes = usePage().props.reportes;
-
-            if (carteraSeleccionada.value) {
-                reportesFiltrados.value = allReportes.filter(
-                    (r) => r.cartera_id === carteraSeleccionada.value.id
-                );
-            } else {
-                reportesFiltrados.value = allReportes;
-            }
-
-            showModalReportes.value = true;
-        },
-    });
+function cerrarModalReporte() {
+    showModalReporte.value = false;
 }
 </script>
 
@@ -279,137 +288,405 @@ function recargarReportes() {
                             </template>
                         </ModalGestion>
 
-                        <GestReportes
-                            :key="keyReportes"
-                            :show="showModalReportes"
-                            :carteras="carteras"
-                            :reportes="reportesFiltrados"
-                            :cartera-seleccionada="carteraSeleccionada"
-                            @close="cerrarModalReportes"
-                            @recargarReportes="recargarReportes"
-                        />
-
-                        <div class="flex items-center justify-between mb-4">
-                            <h1 class="text-xl font-semibold text-gray-800">
-                                Listado de Carteras
-                            </h1>
-                            <button
-                                @click="abrirModalReportes(null)"
-                                class="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-indigo-700 text-white px-4 py-1.5 rounded-md shadow-md hover:shadow-lg hover:brightness-110 hover:-translate-y-0.5 transition-all duration-300 ease-out"
-                            >
-                                <span class="font-bold text-xs tracking-wide"
-                                    >VER TODOS REPORTES</span
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <!-- Listado de Carteras -->
+                            <div>
+                                <h1
+                                    class="text-xl font-semibold text-gray-800 mb-4"
                                 >
-                            </button>
-                        </div>
-
-                        <div
-                            class="overflow-x-auto rounded-xl border border-gray-100 bg-gray-50"
-                        >
-                            <table
-                                class="min-w-full divide-y divide-gray-200 text-sm"
-                            >
-                                <thead class="bg-indigo-100">
-                                    <tr>
-                                        <th
-                                            class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
-                                        >
-                                            ID
-                                        </th>
-                                        <th
-                                            class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
-                                        >
-                                            Nombre
-                                        </th>
-                                        <th
-                                            class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
-                                        >
-                                            Descripción
-                                        </th>
-                                        <th
-                                            class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
-                                        >
-                                            Orden
-                                        </th>
-                                        <th
-                                            class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
-                                        >
-                                            Estado
-                                        </th>
-                                        <th
-                                            class="px-4 py-2 text-center text-xs font-bold text-indigo-700 uppercase"
-                                        >
-                                            Acciones
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr
-                                        v-for="cartera in carteras"
-                                        :key="cartera.id"
-                                        :class="[
-                                            'bg-white',
-                                            'even:bg-indigo-50',
-                                            'hover:bg-indigo-100 transition',
-                                        ]"
+                                    Listado de Carteras
+                                </h1>
+                                <div
+                                    class="overflow-x-auto rounded-xl border border-gray-100 bg-gray-50"
+                                >
+                                    <table
+                                        class="min-w-full divide-y divide-gray-200 text-sm"
                                     >
-                                        <td
-                                            class="px-4 py-2 text-gray-700 text-[13px]"
-                                        >
-                                            {{ cartera.id }}
-                                        </td>
-                                        <td
-                                            class="px-4 py-2 text-gray-800 text-[13px]"
-                                        >
-                                            {{ cartera.nombre }}
-                                        </td>
-                                        <td
-                                            class="px-4 py-2 text-gray-700 text-[13px]"
-                                        >
-                                            {{ cartera.descripcion }}
-                                        </td>
-                                        <td
-                                            class="px-4 py-2 text-gray-700 text-[13px]"
-                                        >
-                                            {{ cartera.orden }}
-                                        </td>
-                                        <td
-                                            class="px-4 py-2 text-gray-700 text-[13px]"
-                                        >
-                                            <StatusBadge
-                                                :active="!!cartera.estado"
-                                            />
-                                        </td>
-                                        <td
-                                            class="px-4 py-2 text-center text-[13px]"
-                                        >
-                                            <Actions
-                                                :edit="true"
-                                                :remove="true"
-                                                :list="true"
-                                                @edit="
-                                                    abrirModalEditar(cartera)
-                                                "
-                                                @delete="
-                                                    eliminarCartera(cartera)
-                                                "
-                                                @list="
-                                                    abrirModalReportes(cartera)
-                                                "
-                                            />
-                                        </td>
-                                    </tr>
-                                    <tr v-if="carteras.length === 0">
-                                        <td
-                                            colspan="6"
-                                            class="text-center py-4 text-gray-400 text-lg"
-                                        >
-                                            No hay carteras registradas.
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                                        <thead class="bg-indigo-100">
+                                            <tr>
+                                                <th
+                                                    class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
+                                                >
+                                                    ID
+                                                </th>
+                                                <th
+                                                    class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
+                                                >
+                                                    Nombre
+                                                </th>
+                                                <th
+                                                    class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
+                                                >
+                                                    Descripción
+                                                </th>
+                                                <th
+                                                    class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
+                                                >
+                                                    Orden
+                                                </th>
+                                                <th
+                                                    class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
+                                                >
+                                                    Estado
+                                                </th>
+                                                <th
+                                                    class="px-4 py-2 text-center text-xs font-bold text-indigo-700 uppercase"
+                                                >
+                                                    Acciones
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr
+                                                v-for="cartera in carteras"
+                                                :key="cartera.id"
+                                                :class="[
+                                                    'bg-white',
+                                                    'even:bg-indigo-50',
+                                                    'hover:bg-indigo-100 transition',
+                                                ]"
+                                            >
+                                                <td
+                                                    class="px-4 py-2 text-gray-700 text-[13px]"
+                                                >
+                                                    {{ cartera.id }}
+                                                </td>
+                                                <td
+                                                    class="px-4 py-2 text-gray-800 text-[13px]"
+                                                >
+                                                    {{ cartera.nombre }}
+                                                </td>
+                                                <td
+                                                    class="px-4 py-2 text-gray-700 text-[13px]"
+                                                >
+                                                    {{ cartera.descripcion }}
+                                                </td>
+                                                <td
+                                                    class="px-4 py-2 text-gray-700 text-[13px]"
+                                                >
+                                                    {{ cartera.orden }}
+                                                </td>
+                                                <td
+                                                    class="px-4 py-2 text-gray-700 text-[13px]"
+                                                >
+                                                    <StatusBadge
+                                                        :active="
+                                                            !!cartera.estado
+                                                        "
+                                                    />
+                                                </td>
+                                                <td
+                                                    class="px-4 py-2 text-center text-[13px]"
+                                                >
+                                                    <Actions
+                                                        :edit="true"
+                                                        :remove="true"
+                                                        :list="true"
+                                                        @list="
+                                                            mostrarListadoCartera(
+                                                                cartera
+                                                            )
+                                                        "
+                                                        @edit="
+                                                            abrirModalEditar(
+                                                                cartera
+                                                            )
+                                                        "
+                                                        @delete="
+                                                            eliminarCartera(
+                                                                cartera
+                                                            )
+                                                        "
+                                                    />
+                                                </td>
+                                            </tr>
+                                            <tr v-if="carteras.length === 0">
+                                                <td
+                                                    colspan="6"
+                                                    class="text-center py-4 text-gray-400 text-lg"
+                                                >
+                                                    No hay carteras registradas.
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <!-- Listado de Reportes -->
+                            <div>
+                                <h1
+                                    class="text-xl font-semibold text-gray-800 mb-4"
+                                >
+                                    Listado de Reportes
+                                </h1>
+                                <div class="flex gap-2 mb-2">
+                                    <button
+                                        class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg font-semibold"
+                                        @click="abrirModalCrearReporte()"
+                                    >
+                                        Nuevo Reporte
+                                    </button>
+                                </div>
+                                <div
+                                    class="overflow-x-auto rounded-xl border border-gray-100 bg-gray-50"
+                                >
+                                    <table
+                                        class="min-w-full divide-y divide-gray-200 text-sm"
+                                    >
+                                        <thead class="bg-indigo-100">
+                                            <tr>
+                                                <th
+                                                    class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
+                                                >
+                                                    ID
+                                                </th>
+                                                <th
+                                                    class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
+                                                >
+                                                    Nombre
+                                                </th>
+                                                <th
+                                                    class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
+                                                >
+                                                    Desktop
+                                                </th>
+                                                <th
+                                                    class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
+                                                >
+                                                    Mobile
+                                                </th>
+                                                <th
+                                                    class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
+                                                >
+                                                    Icono
+                                                </th>
+                                                <th
+                                                    class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
+                                                >
+                                                    Orden
+                                                </th>
+                                                <th
+                                                    class="px-4 py-2 text-left text-xs font-bold text-indigo-700 uppercase"
+                                                >
+                                                    Cartera
+                                                </th>
+                                                <th
+                                                    class="px-4 py-2 text-center text-xs font-bold text-indigo-700 uppercase"
+                                                >
+                                                    Acciones
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr
+                                                v-for="reporte in reportes.filter(
+                                                    (r) =>
+                                                        !carteraSeleccionada ||
+                                                        r.cartera_id ===
+                                                            carteraSeleccionada.id
+                                                )"
+                                                :key="reporte.id"
+                                                class="bg-white even:bg-indigo-50 hover:bg-indigo-100 transition"
+                                            >
+                                                <td
+                                                    class="px-4 py-2 text-gray-700 text-[13px]"
+                                                >
+                                                    {{ reporte.id }}
+                                                </td>
+                                                <td
+                                                    class="px-4 py-2 text-gray-700 text-[13px]"
+                                                >
+                                                    {{ reporte.nombre }}
+                                                </td>
+                                                <td
+                                                    class="px-4 py-2 text-gray-700 text-[13px]"
+                                                >
+                                                    <a
+                                                        v-if="
+                                                            reporte.link_desktop
+                                                        "
+                                                        :href="
+                                                            reporte.link_desktop
+                                                        "
+                                                        target="_blank"
+                                                        class="text-indigo-600 underline"
+                                                        >Desktop</a
+                                                    >
+                                                </td>
+                                                <td
+                                                    class="px-4 py-2 text-gray-700 text-[13px]"
+                                                >
+                                                    <a
+                                                        v-if="
+                                                            reporte.link_mobile
+                                                        "
+                                                        :href="
+                                                            reporte.link_mobile
+                                                        "
+                                                        target="_blank"
+                                                        class="text-indigo-600 underline"
+                                                        >Mobile</a
+                                                    >
+                                                </td>
+                                                <td
+                                                    class="px-4 py-2 text-gray-700 text-[13px]"
+                                                >
+                                                    <span
+                                                        v-if="
+                                                            reporte.icon &&
+                                                            reporte.icon.startsWith(
+                                                                '<svg'
+                                                            )
+                                                        "
+                                                        v-html="reporte.icon"
+                                                    ></span>
+                                                    <span
+                                                        v-else-if="reporte.icon"
+                                                        class="text-xs text-gray-400"
+                                                        >SVG</span
+                                                    >
+                                                </td>
+                                                <td
+                                                    class="px-4 py-2 text-gray-700 text-[13px]"
+                                                >
+                                                    {{ reporte.orden }}
+                                                </td>
+                                                <td
+                                                    class="px-4 py-2 text-gray-700 text-[13px]"
+                                                >
+                                                    <span
+                                                        class="inline-block px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold"
+                                                    >
+                                                        {{
+                                                            carteras.find(
+                                                                (c) =>
+                                                                    c.id ===
+                                                                    reporte.cartera_id
+                                                            )?.nombre ??
+                                                            "Sin cartera"
+                                                        }}
+                                                    </span>
+                                                </td>
+                                                <td
+                                                    class="px-4 py-2 text-center"
+                                                >
+                                                    <div
+                                                        class="flex justify-center gap-2"
+                                                    >
+                                                        <Actions
+                                                            :edit="true"
+                                                            :remove="true"
+                                                            @edit="
+                                                                abrirModalEditarReporte(
+                                                                    reporte
+                                                                )
+                                                            "
+                                                            @delete="
+                                                                eliminarCartera(
+                                                                    reporte
+                                                                )
+                                                            "
+                                                        />
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr v-if="reportes.length === 0">
+                                                <td
+                                                    colspan="8"
+                                                    class="text-center py-6 text-gray-400 text-lg"
+                                                >
+                                                    No hay reportes registrados.
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
+                        <ModalGestion
+                            :show="showModalReporte"
+                            :title="
+                                editandoReporte
+                                    ? 'Editar Reporte'
+                                    : 'Agregar Reporte'
+                            "
+                            submitLabel="Guardar"
+                            :initialForm="reporteForm"
+                            :endpoint="
+                                editandoReporte
+                                    ? `/reportes/${reporteForm.id}`
+                                    : '/reportes'
+                            "
+                            :method="editandoReporte ? 'put' : 'post'"
+                            @close="cerrarModalReporte"
+                            @success="handleSuccess"
+                        >
+                            <template #default="{ form, errors }">
+                                <InputField
+                                    label="Nombre"
+                                    v-model="form.nombre"
+                                    name="reporte_nombre"
+                                    placeholder="Nombre del reporte"
+                                    :error="errors.nombre"
+                                />
+                                <InputField
+                                    label="Link Desktop"
+                                    v-model="form.link_desktop"
+                                    name="reporte_link_desktop"
+                                    placeholder="https://ejemplo.com/desktop"
+                                    :error="errors.link_desktop"
+                                />
+                                <InputField
+                                    label="Link Mobile"
+                                    v-model="form.link_mobile"
+                                    name="reporte_link_mobile"
+                                    placeholder="https://ejemplo.com/mobile"
+                                    :error="errors.link_mobile"
+                                />
+                                <InputField
+                                    label="Icono SVG"
+                                    v-model="form.icon"
+                                    name="reporte_icon"
+                                    type="textarea"
+                                    placeholder="Pega aquí el SVG"
+                                    :error="errors.icon"
+                                />
+                                <InputField
+                                    label="Orden"
+                                    v-model="form.orden"
+                                    name="reporte_orden"
+                                    type="number"
+                                    :min="0"
+                                    :error="errors.orden"
+                                />
+                                <div>
+                                    <label
+                                        class="block text-sm font-medium text-gray-700 mb-1"
+                                        for="cartera_id"
+                                        >Cartera</label
+                                    >
+                                    <select
+                                        id="cartera_id"
+                                        v-model="form.cartera_id"
+                                        class="border border-gray-300 px-3 py-2 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                                    >
+                                        <option
+                                            v-for="c in carteras"
+                                            :key="c.id"
+                                            :value="c.id"
+                                        >
+                                            {{ c.nombre }}
+                                        </option>
+                                    </select>
+                                    <p
+                                        v-if="errors.cartera_id"
+                                        class="text-red-600 text-sm"
+                                    >
+                                        {{ errors.cartera_id }}
+                                    </p>
+                                </div>
+                            </template>
+                        </ModalGestion>
                     </div>
                 </div>
             </div>
