@@ -2,15 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-
 /*==============
 COLORES
 ==============*/
 
 :root {
-    --colorPrincipal: #5F5FFFFC;
+    --colorPrincipal: #5f5ffffc;
     --colortTxt: #4d4a48;
-    --colorSecundario: #FF7E00;
+    --colorSecundario: #ff7e00;
 }
 .colorMorado {
     color: var(--colorPrincipal);
@@ -22,7 +21,6 @@ COLORES
 a {
     transition: 200ms;
 }
-
 
 /*==============
 MENU
@@ -54,12 +52,10 @@ MENU
     width: 100%;
     height: 1px;
     background: #fff;
-    margin: 0 0 13px !important;
 }
 .separadorAdmin {
     margin: 0 !important;
 }
-
 
 /*==============
 LOGIN
@@ -74,18 +70,18 @@ LOGIN
     width: auto;
     max-width: 325px;
 } */
- .center {
+.center {
     text-align: center;
- }
- .geatelLogo {
+}
+.geatelLogo {
     width: auto;
     max-width: 415px;
     background: #fff;
-    background-color: #FFF;
+    background-color: #fff;
     margin: 0;
     padding: 2rem 2.5rem 1rem;
     box-sizing: border-box;
-    border: solid 1px #DDD;
+    border: solid 1px #ddd;
     border-radius: 0.5em 0.5em 0 0;
     border-bottom-width: 0;
 }
@@ -93,7 +89,6 @@ LOGIN
 .geatelLogo img {
     width: 100%;
 }
-
 
 .tituloPrincipal {
     font-weight: 600;
@@ -115,16 +110,14 @@ form label.block {
 .mt-6.w-full.overflow-hidden {
     width: 100%;
     max-width: 415px;
-    background-color: #FFF;
+    background-color: #fff;
     margin: 0;
     padding: 0 2.5rem 2.5rem;
     box-sizing: border-box;
-    border: solid 1px #DDD;
+    border: solid 1px #ddd;
     border-radius: 0 0 0.5em 0.5em;
     border-top-width: 0;
 }
-
-
 
 button.btnFull {
     width: 100%;
@@ -159,9 +152,6 @@ button.btn {
     font-family: inherit;
     transition: box-shadow 0.2s linear, border-color 0.25s ease-out;
 }
-
-
-
 
 svg.mySVG {
     position: relative;
