@@ -9,7 +9,7 @@ use App\Http\Controllers\DashboardController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-
+use Illuminate\Support\Facades\Auth;
 // ===================
 // PÁGINAS PRINCIPALES
 // ===================
@@ -42,33 +42,47 @@ Route::middleware('auth')->group(function () {
     // ===================
     // ROLES
     // ===================
+
+    Route::middleware('can:gestionar roles')->group(function () {
     Route::get('/roles',            [RoleController::class, 'index'])->name('roles.index');
-    Route::post('/roles',            [RoleController::class, 'store'])->name('roles.store');
+    Route::post('/roles',           [RoleController::class, 'store'])->name('roles.store');
     Route::put('/roles/{role}',     [RoleController::class, 'update'])->name('roles.update');
-    Route::delete('/roles/{role}',     [RoleController::class, 'destroy'])->name('roles.destroy');
+    Route::delete('/roles/{role}',  [RoleController::class, 'destroy'])->name('roles.destroy');
+    });
+
     // ===================
     // USUARIOS
     // ===================
-    Route::get('/users', [UserController::class, 'index'])->name('users.index');
-    Route::post('/users', [UserController::class, 'store'])->name('users.store');
-    Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
-    Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
+    Route::middleware('can:gestionar usuarios')->group(function () {
+        Route::get('/users',            [UserController::class, 'index'])->name('users.index');
+        Route::post('/users',           [UserController::class, 'store'])->name('users.store');
+        Route::put('/users/{user}',     [UserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{user}',  [UserController::class, 'destroy'])->name('users.destroy');
+    });
 
     // ===================
     // CARTERAS
     // ===================
-    Route::get('/carteras', [CarterasController::class, 'index'])->name('carteras.index');
-    Route::post('/carteras', [CarterasController::class, 'store'])->name('carteras.store');
-    Route::put('/carteras/{cartera}', [CarterasController::class, 'update'])->name('carteras.update');
-    Route::delete('/carteras/{cartera}', [CarterasController::class, 'destroy'])->name('carteras.destroy');
 
+    Route::middleware('can:gestionar carteras')->group(function () {
+        Route::get('/carteras',               [CarterasController::class, 'index'])->name('carteras.index');
+        Route::post('/carteras',              [CarterasController::class, 'store'])->name('carteras.store');
+        Route::put('/carteras/{cartera}',     [CarterasController::class, 'update'])->name('carteras.update');
+        Route::delete('/carteras/{cartera}',  [CarterasController::class, 'destroy'])->name('carteras.destroy');
+    });
 
     // ===================
     // REPORTES
     // ===================
-    Route::get('/reportes', [ReportesController::class, 'index'])->name('reportes.index');
-    Route::post('/reportes', [ReportesController::class, 'store'])->name('reportes.store');
-    Route::put('/reportes/{reporte}', [ReportesController::class, 'update'])->name('reportes.update');
-    Route::delete('/reportes/{reporte}', [ReportesController::class, 'destroy'])->name('reportes.destroy');
+    Route::middleware('can:gestionar reportes')->group(function () {
+        Route::get('/reportes',               [ReportesController::class, 'index'])->name('reportes.index');
+        Route::post('/reportes',              [ReportesController::class, 'store'])->name('reportes.store');
+        Route::put('/reportes/{reporte}',     [ReportesController::class, 'update'])->name('reportes.update');
+        Route::delete('/reportes/{reporte}',  [ReportesController::class, 'destroy'])->name('reportes.destroy');
+    });
+});
+
+Route::fallback(function () {
+    return redirect()->route(auth()->check() ? 'dashboard' : 'login');
 });

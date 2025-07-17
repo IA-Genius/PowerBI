@@ -20,9 +20,9 @@ defineProps({
             transform: translateY(-50%) translateX(10px);
         "
     >
-        <div class="relative flex items-center">
+        <div class="relative flex items-center justify-center">
             <div
-                class="text-gray-800 whitespace-nowrap rounded-lg px-4 py-2 text-xs shadow-lg border border-gray-200"
+                class="text-gray-800 whitespace-nowrap rounded-lg px-4 py-2 text-sm shadow-lg border border-gray-200"
                 style="background: rgb(95, 97, 255); min-width: max-content"
             >
                 {{ label }}

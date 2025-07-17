@@ -428,10 +428,11 @@ ICONOS
 }
 
 .bgIconEdit {
-    background: green;
+    background: #00c853; /* Verde brillante (tipo "Success") */
 }
+
 .bgIconTrash {
-    background: #b00;
+    background: #d50000; /* Rojo intenso (tipo "Error") */
 }
 
 .bgIconEdit:hover,

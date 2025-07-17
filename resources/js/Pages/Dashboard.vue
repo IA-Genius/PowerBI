@@ -29,10 +29,12 @@ const linkReporte = computed(() => {
     return reporteActual.value.link_desktop || null;
 });
 </script>
+
 <template>
     <AuthenticatedLayout>
         <div class="w-full">
             <transition name="fade" mode="out-in">
+                <!-- Si hay reporte, muestra el iframe -->
                 <iframe
                     v-if="reporteActual && linkReporte"
                     :key="reporteActual.id"
@@ -42,16 +44,71 @@ const linkReporte = computed(() => {
                     allowfullscreen
                     sandbox="allow-scripts allow-same-origin allow-popups"
                 ></iframe>
+
+                <!-- Si no hay reporte, muestra la bienvenida -->
                 <div
                     v-else
                     key="sin-reporte"
-                    class="text-center text-gray-400 py-12"
+                    class="flex flex-col items-center justify-center text-gray-500 py-12 transition-all duration-500 animate-fade-in"
                 >
-                    <p class="text-lg font-medium">
-                        Selecciona un reporte para visualizar
-                    </p>
+                    <!-- Texto de bienvenida animado -->
+                    <div
+                        class="mt-6 text-center px-4 animate-slide-up transition-opacity duration-700 ease-in-out"
+                    >
+                        <h2
+                            class="text-4xl font-extrabold text-indigo-600 drop-shadow"
+                        >
+                            ¡Bienvenido!
+                        </h2>
+                        <p
+                            class="mt-3 text-base md:text-lg text-gray-500 max-w-xl mx-auto font-light"
+                        >
+                            Selecciona un reporte del menú lateral para comenzar
+                            a explorar tus datos.
+                        </p>
+                    </div>
+
+                    <!-- Animación Lottie -->
+                    <lottie-player
+                        src="/animation/analytics.json"
+                        background="transparent"
+                        speed="1"
+                        style="width: 100%; max-width: 1520px; height: 620px"
+                        loop
+                        autoplay
+                        class="animate-fade-in"
+                    ></lottie-player>
                 </div>
             </transition>
         </div>
     </AuthenticatedLayout>
 </template>
+<style scoped>
+@keyframes fade-in {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes slide-up {
+    0% {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.animate-fade-in {
+    animation: fade-in 0.6s ease-out both;
+}
+
+.animate-slide-up {
+    animation: slide-up 0.8s ease-out both;
+}
+</style>
