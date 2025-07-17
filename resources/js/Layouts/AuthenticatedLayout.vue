@@ -108,7 +108,7 @@ console.log(page.props);
         <!-- ===== SIDEBAR ===== -->
         <aside
             :class="[
-                'bgPrincipal customMenu fixed inset-y-0 left-0 z-50 shadow-lg flex flex-col transition-all duration-300 ease-in-out overflow-hidden',
+                'bgPrincipal customMenu fixed inset-y-0 left-0 z-50 shadow-lg flex flex-col transition-all duration-300 ease-in-out ',
                 mobileSidebarOpen
                     ? 'translate-x-0'
                     : '-translate-x-full lg:translate-x-0',
