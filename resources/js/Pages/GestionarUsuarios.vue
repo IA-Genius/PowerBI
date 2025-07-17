@@ -28,7 +28,9 @@ const usuarioForm = reactive({
     customReportes: [],
 });
 
-const inheritedReportes = computed(() => Array.isArray(usuarioForm.roles?.reportes) ? usuarioForm.roles.reportes : []);
+const inheritedReportes = computed(() =>
+    Array.isArray(usuarioForm.roles?.reportes) ? usuarioForm.roles.reportes : []
+);
 
 const carterasConReportes = computed(() =>
     usuarioForm.customCarteras.map((cSel) => {
@@ -231,6 +233,16 @@ function resetearACarterasYReportesPorDefecto() {
         }
     });
 }
+watch(
+    () => usuarioForm.customCarteras,
+    (nuevasCarteras) => {
+        const idsPermitidos = nuevasCarteras.map((c) => c.id);
+        usuarioForm.customReportes = usuarioForm.customReportes.filter((r) =>
+            idsPermitidos.includes(r.cartera_id)
+        );
+    },
+    { deep: true }
+);
 </script>
 
 <template>
@@ -239,7 +251,14 @@ function resetearACarterasYReportesPorDefecto() {
     <AuthenticatedLayout class="relleno">
         <template #header>
             <div class="flex items-center justify-between">
-                <h2 class="text-xl font-semibold tituloPag">Listado de Usuarios</h2>
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-semibold tituloPag">Usuarios</h2>
+                    <span
+                        class="ml-4 px-3 py-1 hidden sm:inline text-[11px] font-bold uppercase rounded-full shadow-sm text-white bgPrincipal"
+                    >
+                        {{ users.length }} usuarios
+                    </span>
+                </div>
                 <button
                     @click="abrirModalAgregar"
                     class="flex items-center gap-2 bg-green-500 text-white px-5 py-2 rounded shadow hover:bg-green-600 transition"
@@ -257,7 +276,7 @@ function resetearACarterasYReportesPorDefecto() {
                             d="M12 4v16m8-8H4"
                         />
                     </svg>
-                    Agregar Usuario
+                    Agregar
                 </button>
             </div>
         </template>
@@ -280,37 +299,20 @@ function resetearACarterasYReportesPorDefecto() {
                         reportes: form.customReportes.map((r) => r.id),
                     })
                 "
+                :tabs="[
+                    { value: 'basicos', label: 'Información', icon: UserIcon },
+                    {
+                        value: 'avanzado',
+                        label: 'Permisos',
+                        icon: SettingsIcon,
+                    },
+                ]"
+                :tabActiva="tabActiva"
+                @update:tabActiva="tabActiva = $event"
                 @close="cerrarModal"
                 @success="handleSuccess"
             >
                 <template #default="{ form, errors }">
-                    <!-- Tabs -->
-                    <nav class="flex mb-6 bg-indigo-50 rounded p-1">
-                        <button
-                            @click="tabActiva = 'basicos'"
-                            type="button"
-                            :class="
-                                tabActiva === 'basicos'
-                                    ? 'bg-white text-indigo-700 shadow px-6 py-2 rounded'
-                                    : 'text-gray-500 hover:bg-white hover:text-indigo-600 px-6 py-2 rounded'
-                            "
-                        >
-                            Datos Básicos
-                        </button>
-                        <button
-                            @click="tabActiva = 'avanzado'"
-                            type="button"
-                            :class="
-                                tabActiva === 'avanzado'
-                                    ? 'bg-white text-indigo-700 shadow px-6 py-2 rounded'
-                                    : 'text-gray-500 hover:bg-white hover:text-indigo-600 px-6 py-2 rounded'
-                            "
-                        >
-                            Avanzado
-                        </button>
-                    </nav>
-
-                    <!-- Datos Básicos -->
                     <div v-if="tabActiva === 'basicos'">
                         <InputField
                             label="Nombre"
@@ -331,6 +333,7 @@ function resetearACarterasYReportesPorDefecto() {
                             v-model="form.password"
                             type="password"
                             :error="errors.password"
+                            placeholder="Deja en blanco para no cambiar"
                         />
                         <div class="mb-4">
                             <label class="block text-sm font-medium mb-1"
@@ -356,18 +359,16 @@ function resetearACarterasYReportesPorDefecto() {
                                 placeholder="Selecciona un rol"
                                 class="w-full"
                             />
-
                             <p v-if="errors.roles" class="text-red-600 text-sm">
                                 {{ errors.roles }}
                             </p>
                         </div>
                     </div>
 
-                    <!-- Avanzado -->
                     <div v-if="tabActiva === 'avanzado'">
                         <div class="mb-4">
                             <label class="block text-sm font-medium mb-1"
-                                >Carteras personalizadas</label
+                                >Carteras</label
                             >
                             <Multiselect
                                 v-model="form.customCarteras"
@@ -379,32 +380,44 @@ function resetearACarterasYReportesPorDefecto() {
                                 class="w-full"
                             />
                         </div>
-                        <button
-                            type="button"
-                            @click="resetearACarterasYReportesPorDefecto"
-                            class="text-xs text-indigo-600 hover:underline mt-2"
-                            :disabled="!form.roles"
-                        >
-                            Usar valores por defecto del rol
-                        </button>
-                        <p v-if="!form.roles" class="text-xs text-red-500 mt-1">
-                            Selecciona un rol antes de restablecer permisos.
-                        </p>
+                        <div class="mt-5 mb-6" v-if="form.roles">
+                            <div
+                                class="rounded-lg border border-indigo-100 bg-indigo-50 p-3"
+                            >
+                                <button
+                                    type="button"
+                                    @click="
+                                        resetearACarterasYReportesPorDefecto
+                                    "
+                                    class="flex items-center gap-2 text-sm font-medium text-indigo-700 hover:text-indigo-900 transition"
+                                >
+                                    <svg
+                                        class="w-5 h-5"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="M4 4v6h6M20 20v-6h-6M4 20l6-6M20 4l-6 6"
+                                        />
+                                    </svg>
+                                    Usar valores por defecto del rol
+                                </button>
+                            </div>
+                        </div>
 
-                  
-                        <!-- Reportes personalizados agrupados -->
-                        <div v-if="form.customCarteras.length">
-                            <label class="block text-sm font-medium mb-1">
-                                Reportes personalizados
-                            </label>
-
+                        <div>
+                            <label class="block text-sm font-medium mb-1"
+                                >Reportes</label
+                            >
                             <CarteraReportesAccordion
                                 v-model="form.customReportes"
                                 :carteras="carterasConReportes"
                                 :inheritedReportes="inheritedReportes"
-
                             />
-
                             <p class="mt-2 text-xs text-gray-600">
                                 Total reportes asignados:
                                 {{ form.customReportes.length }}
@@ -414,11 +427,11 @@ function resetearACarterasYReportesPorDefecto() {
                 </template>
             </ModalXts>
 
-            <!-- Listado de Usuarios -->
-            <div class="overflow-x-auto rounded borderTable">
-                <!-- <h1 class="text-xl font-semibold mb-4">Listado de Usuarios</h1> -->
-                <table class="min-w-full divide-y divide-gray-200 text-sm">
-                    <thead class="bgHeadTable">
+            <div
+                class="overflow-x-auto rounded-xl border border-gray-100 bg-gray-50"
+            >
+                <table class="min-w-full text-sm text-gray-800">
+                    <thead class="text-white text-xs bgPrincipal">
                         <tr>
                             <th class="px-4 py-2 text-left">ID</th>
                             <th class="px-4 py-2 text-left">Nombre</th>
@@ -432,17 +445,17 @@ function resetearACarterasYReportesPorDefecto() {
                         <tr
                             v-for="(user, i) in users"
                             :key="user.id"
-                            :class="i % 2 === 0 ? 'bg-white' : 'bg-indigo-50'"
-                            class="hover:bg-indigo-100 transition"
+                            :class="i % 2 === 0 ? 'bg-white' : 'bg-gray-50'"
+                            class="bg-white even:bg-indigo-50 hover:bg-indigo-100 transition"
                         >
-                            <td class="px-4 py-2">{{ user.id }}</td>
-                            <td class="px-4 py-2">{{ user.name }}</td>
-                            <td class="px-4 py-2">{{ user.email }}</td>
-                            <td class="px-4 py-2">
+                            <td class="px-4 py-1.5">{{ user.id }}</td>
+                            <td class="px-4 py-1.5">{{ user.name }}</td>
+                            <td class="px-4 py-1.5">{{ user.email }}</td>
+                            <td class="px-4 py-1.5">
                                 <span
                                     v-for="r in user.roles"
                                     :key="r.id"
-                                    class="inline-block bg-indigo-100 text-indigo-700 rounded px-2 py-1 text-xs mr-1"
+                                    class="inline-block text-xs bg-gray-200 text-gray-700 rounded px-2 py-0.5 mr-1"
                                 >
                                     {{ r.name }}
                                 </span>
@@ -452,10 +465,10 @@ function resetearACarterasYReportesPorDefecto() {
                                     >—</span
                                 >
                             </td>
-                            <td class="px-4 py-2">
+                            <td class="px-4 py-1.5">
                                 <StatusBadge :active="!!user.active" />
                             </td>
-                            <td class="px-4 py-2 text-center">
+                            <td class="px-4 py-1.5 text-center">
                                 <Actions
                                     :edit="true"
                                     :remove="true"
@@ -467,7 +480,7 @@ function resetearACarterasYReportesPorDefecto() {
                         <tr v-if="!users.length">
                             <td
                                 colspan="6"
-                                class="py-4 text-center text-gray-400"
+                                class="px-4 py-4 text-center text-gray-400"
                             >
                                 No hay usuarios registrados.
                             </td>

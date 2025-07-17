@@ -9,13 +9,13 @@ use Inertia\Inertia;
 
 class ReportesController extends Controller
 {
-    // Listar carteras y reportes
+    // Mostrar lista de carteras y reportes
     public function index()
     {
         $reportes = Reporte::with('cartera')->get();
         $carteras = Cartera::all();
 
-        return Inertia::render('GestionarCarteras', [
+        return Inertia::render('GestionarReportes', [
             'reportes' => $reportes,
             'carteras' => $carteras,
             'success' => session('success'),
@@ -27,12 +27,21 @@ class ReportesController extends Controller
     {
         $request->validate([
             'nombre' => 'required|string|max:255',
-            'link' => 'required|string|max:255',
+            'link_desktop' => 'required|string|max:255',
+            'link_mobile' => 'nullable|string|max:255',
+            'icon' => 'nullable|string',
             'orden' => 'nullable|integer',
             'cartera_id' => 'required|exists:carteras,id',
         ]);
 
-        $reporte = Reporte::create($request->only('nombre', 'link', 'orden', 'cartera_id'));
+        $reporte = Reporte::create([
+            'nombre' => $request->nombre,
+            'link_desktop' => $request->link_desktop,
+            'link_mobile' => $request->link_mobile,
+            'icon' => $request->icon,
+            'orden' => $request->orden,
+            'cartera_id' => $request->cartera_id,
+        ]);
 
         return response()->json([
             'message' => 'Reporte creado correctamente.',
@@ -40,17 +49,26 @@ class ReportesController extends Controller
         ]);
     }
 
-    // Actualizar un reporte existente
+    // Actualizar un reporte
     public function update(Request $request, Reporte $reporte)
     {
         $request->validate([
             'nombre' => 'required|string|max:255',
-            'link' => 'required|string|max:255',
+            'link_desktop' => 'required|string|max:255',
+            'link_mobile' => 'nullable|string|max:255',
+            'icon' => 'nullable|string',
             'orden' => 'nullable|integer',
             'cartera_id' => 'required|exists:carteras,id',
         ]);
 
-        $reporte->update($request->only('nombre', 'link', 'orden', 'cartera_id'));
+        $reporte->update([
+            'nombre' => $request->nombre,
+            'link_desktop' => $request->link_desktop,
+            'link_mobile' => $request->link_mobile,
+            'icon' => $request->icon,
+            'orden' => $request->orden,
+            'cartera_id' => $request->cartera_id,
+        ]);
 
         return response()->json([
             'message' => 'Reporte actualizado correctamente.',

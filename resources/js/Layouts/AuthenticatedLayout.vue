@@ -9,7 +9,7 @@ import ApplicationLogoMini from "@/Components/ApplicationLogoMini.vue";
 import Dropdown from "@/Components/Dropdown.vue";
 import DropdownLink from "@/Components/DropdownLink.vue";
 import NavLink from "@/Components/NavLink.vue";
-
+import DataTool from "@/Components/DataTool.vue";
 import {
     BriefcaseIcon,
     UsersIcon,
@@ -17,18 +17,22 @@ import {
     DocumentChartBarIcon,
 } from "@heroicons/vue/24/solid";
 
-// Inicializa primero usePage
 const page = usePage();
 const permissions = page.props.auth?.permissions || [];
 const role = page.props.auth?.role || null;
 const { can } = page.props;
 const canDo = (key) => !!can[key];
 
-// Datos
+const getIconHTML = (icon) => {
+    if (!icon) return null;
+    return icon
+        .replace("<svg", '<svg class="w-[26px] h-[26px]" fill="white"')
+        .replace('stroke="currentColor"', 'stroke="currentColor"');
+};
+
 const reportes = computed(() => page.props.userReportes || []);
 const carteras = computed(() => page.props.userCarteras || []);
 
-// Selección persistida
 const getCarteraIdFromStorage = () => {
     const stored = localStorage.getItem("selectedCarteraId");
     return stored
@@ -40,6 +44,8 @@ const getCarteraIdFromStorage = () => {
 const selectedCarteraId = ref(
     page.props.selectedCarteraId ?? getCarteraIdFromStorage()
 );
+const selectedReporteId = computed(() => page.props.selectedReporteId || null);
+
 watch(
     selectedCarteraId,
     (val) => {
@@ -51,7 +57,6 @@ const selectedCartera = computed(
     () => carteras.value.find((c) => c.id === selectedCarteraId.value) || null
 );
 
-// Sidebar estados
 const isSidebarOpen = ref(false);
 const mobileSidebarOpen = ref(false);
 function toggleSidebar() {
@@ -61,7 +66,6 @@ function toggleMobileSidebar() {
     mobileSidebarOpen.value = !mobileSidebarOpen.value;
 }
 
-// Reportes filtrados
 const reportesFiltrados = computed(() => {
     if (!selectedCarteraId.value) return [];
     return reportes.value.filter(
@@ -104,7 +108,7 @@ console.log(page.props);
         <!-- ===== SIDEBAR ===== -->
         <aside
             :class="[
-                'bgPrincipal customMenu fixed inset-y-0 left-0 z-50 shadow-lg flex flex-col transition-transform duration-300 ease-in-out',
+                'bgPrincipal customMenu fixed inset-y-0 left-0 z-50 shadow-lg flex flex-col transition-all duration-300 ease-in-out overflow-hidden',
                 mobileSidebarOpen
                     ? 'translate-x-0'
                     : '-translate-x-full lg:translate-x-0',
@@ -116,8 +120,10 @@ console.log(page.props);
                 <Link :href="route('dashboard')" class="flex items-center">
                     <ApplicationLogo
                         v-if="isSidebarOpen"
-                        class="block h-9 w-auto text-white"
+                        :variant="'white'"
+                        class="block h-9 w-auto"
                     />
+
                     <ApplicationLogoMini
                         v-else
                         class="block h-9 w-auto text-white"
@@ -174,11 +180,11 @@ console.log(page.props);
                     v-if="canDo('manageCarteras')"
                     :href="route('carteras.index')"
                     :active="route().current('carteras.index')"
-                    class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition"
+                    class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition group relative"
                     :class="isSidebarOpen ? 'justify-start' : 'justify-center'"
                 >
                     <svg
-                        class="w-6 h-6 text-white"
+                        class="w-6 h-6 text-white flex-shrink-0"
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 512 512"
                         fill="currentColor"
@@ -188,24 +194,63 @@ console.log(page.props);
                         />
                     </svg>
 
-                    <transition name="fade">
+                    <!-- Contenedor del texto -->
+                    <transition name="fade-slide">
+                        <span
+                            v-if="isSidebarOpen"
+                            class="ml-3 text-sm text-white whitespace-nowrap"
+                        >
+                            Gestión de Carteras
+                        </span>
+                    </transition>
+
+                    <!-- Tooltip en modo colapsado -->
+                    <DataTool
+                        :label="'Gestión de Carteras'"
+                        :show="!isSidebarOpen"
+                    />
+                </NavLink>
+
+                <NavLink
+                    v-if="canDo('manageReportes')"
+                    :href="route('reportes.index')"
+                    :active="route().current('reportes.index')"
+                    class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition group relative"
+                    :class="isSidebarOpen ? 'justify-start' : 'justify-center'"
+                >
+                    <svg
+                        class="w-6 h-6 text-white flex-shrink-0"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 512 512"
+                        fill="currentColor"
+                    >
+                        <path
+                            xmlns="http://www.w3.org/2000/svg"
+                            d="M32 96c0-17.7 14.3-32 32-32l64 0 0 176 0 32 0 176-64 0c-17.7 0-32-14.3-32-32L32 96zM160 272l320 0 0 144c0 17.7-14.3 32-32 32l-288 0 0-176zm320-32l-320 0 0-176 288 0c17.7 0 32 14.3 32 32l0 144zM0 416c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-320c0-35.3-28.7-64-64-64L64 32C28.7 32 0 60.7 0 96L0 416z"
+                        />
+                    </svg>
+                    <transition name="fade-slide">
                         <span
                             v-if="isSidebarOpen"
                             class="ml-3 text-sm text-white"
-                            >Gestión de Carteras</span
+                            >Gestión de Reportes</span
                         >
                     </transition>
+                    <DataTool
+                        :label="'Gestión de Reportes'"
+                        :show="!isSidebarOpen"
+                    />
                 </NavLink>
 
                 <NavLink
                     v-if="canDo('manageRoles')"
                     :href="route('roles.index')"
                     :active="route().current('roles.index')"
-                    class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition"
+                    class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition group relative"
                     :class="isSidebarOpen ? 'justify-start' : 'justify-center'"
                 >
                     <svg
-                        class="svgMenu"
+                        class="w-6 h-6 text-white flex-shrink-0"
                         style="width: 26px; height: 26px; color: #fff"
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 640 512"
@@ -215,7 +260,7 @@ console.log(page.props);
                             d="M544 32L96 32C78.3 32 64 46.3 64 64l0 165.5c-11.9 4.2-22.8 10.7-32 19L32 64C32 28.7 60.7 0 96 0L544 0c35.3 0 64 28.7 64 64l0 184.4c-9.2-8.3-20.1-14.8-32-19L576 64c0-17.7-14.3-32-32-32zM96 352a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm0-96a64 64 0 1 1 0 128 64 64 0 1 1 0-128zm224 96a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm0-96a64 64 0 1 1 0 128 64 64 0 1 1 0-128zm256 64a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm-96 0a64 64 0 1 1 128 0 64 64 0 1 1 -128 0zM32 480l0 16c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-16c0-35.3 28.7-64 64-64l64 0c35.3 0 64 28.7 64 64l0 16c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-16c0-17.7-14.3-32-32-32l-64 0c-17.7 0-32 14.3-32 32zm256-32c-17.7 0-32 14.3-32 32l0 16c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-16c0-35.3 28.7-64 64-64l64 0c35.3 0 64 28.7 64 64l0 16c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-16c0-17.7-14.3-32-32-32l-64 0zm192 32l0 16c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-16c0-35.3 28.7-64 64-64l64 0c35.3 0 64 28.7 64 64l0 16c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-16c0-17.7-14.3-32-32-32l-64 0c-17.7 0-32 14.3-32 32z"
                         />
                     </svg>
-                    <transition name="fade">
+                    <transition name="fade-slide">
                         <span
                             v-if="isSidebarOpen"
                             class="ml-3 text-sm text-white"
@@ -223,17 +268,21 @@ console.log(page.props);
                             Asignación de Roles
                         </span>
                     </transition>
+                    <DataTool
+                        :label="'Asignación de Roles'"
+                        :show="!isSidebarOpen"
+                    />
                 </NavLink>
 
                 <NavLink
                     v-if="canDo('manageUsers')"
                     :href="route('users.index')"
                     :active="route().current('users.index')"
-                    class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition"
+                    class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition group relative"
                     :class="isSidebarOpen ? 'justify-start' : 'justify-center'"
                 >
                     <svg
-                        class="svgMenu"
+                        class="w-6 h-6 text-white flex-shrink-0"
                         style="width: 26px; height: 26px; color: #fff"
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 512 512"
@@ -243,13 +292,17 @@ console.log(page.props);
                             d="M64 64C46.3 64 32 78.3 32 96l0 320c0 17.7 14.3 32 32 32l384 0c17.7 0 32-14.3 32-32l0-320c0-17.7-14.3-32-32-32L64 64zM0 96C0 60.7 28.7 32 64 32l384 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96zm288 96a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm-96 0a64 64 0 1 1 128 0 64 64 0 1 1 -128 0zM299.4 320l-86.9 0c-18.6 0-34 14-36.3 32l159.4 0c-2.2-18-17.6-32-36.3-32zm-86.9-32l43.4 0 43.4 0c37.9 0 68.6 30.7 68.6 68.6c0 15.1-12.3 27.4-27.4 27.4l-169.1 0c-15.1 0-27.4-12.3-27.4-27.4c0-37.9 30.7-68.6 68.6-68.6z"
                         />
                     </svg>
-                    <transition name="fade">
+                    <transition name="fade-slide">
                         <span
                             v-if="isSidebarOpen"
-                            class="ml-3 text-sm text-white"
+                            class="ml-3 text-sm text-white whitespace-nowrap"
                             >Gestión de Usuarios</span
                         >
                     </transition>
+                    <DataTool
+                        :label="'Gestion de Usuarios'"
+                        :show="!isSidebarOpen"
+                    />
                 </NavLink>
 
                 <div class="separador"></div>
@@ -268,33 +321,44 @@ console.log(page.props);
                                     @click="seleccionarReporte(r)"
                                     class="w-full flex items-center px-3 py-3 transition hover:bg-white/10 focus:outline-none linkCarteras"
                                     :class="[
+                                        'w-full flex items-center px-3 py-3 transition focus:outline-none linkCarteras',
                                         isSidebarOpen
                                             ? 'justify-start'
                                             : 'justify-center',
-                                        selectedCarteraId === r.id
-                                            ? 'bg-white/20'
-                                            : 'text-white',
+                                        selectedReporteId === r.id
+                                            ? 'menuActivado linkMenu'
+                                            : 'text-white linkMenu',
                                     ]"
                                 >
-                                    <svg
-                                        class="svgMenu"
-                                        style="
-                                            width: 26px;
-                                            height: 26px;
-                                            color: #fff;
-                                        "
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 576 512"
+                                    <div
+                                        class="w-[26px] h-[26px] flex items-center justify-center"
                                     >
-                                        <path
-                                            fill="white"
-                                            d="M320 480c17.7 0 32-14.3 32-32l0-10.7 23.8-5.9c2.8-.7 5.6-1.6 8.2-2.7l0 19.3c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 64C0 28.7 28.7 0 64 0L220.1 0c12.7 0 24.9 5.1 33.9 14.1L369.9 129.9c9 9 14.1 21.2 14.1 33.9l0 39.8-32 32 0-43.6-112 0c-26.5 0-48-21.5-48-48l0-112L64 32C46.3 32 32 46.3 32 64l0 384c0 17.7 14.3 32 32 32l256 0zM240 160l111.5 0c-.7-2.8-2.1-5.4-4.2-7.4L231.4 36.7c-2.1-2.1-4.6-3.5-7.4-4.2L224 144c0 8.8 7.2 16 16 16zM144 349l-9.8 32.8c-6.1 20.3-24.8 34.2-46 34.2L80 416c-8.8 0-16-7.2-16-16s7.2-16 16-16l8.2 0c7.1 0 13.3-4.6 15.3-11.4l14.9-49.5c3.4-11.3 13.8-19.1 25.6-19.1s22.2 7.7 25.6 19.1l12.6 42.1c7.1-8.3 17.5-13.1 28.5-13.1c14.2 0 27.2 8 33.5 20.7l5.6 11.3 41.7 0 15.7-62.6c2.1-8.4 6.5-16.1 12.6-22.3L473.5 145.4c18.7-18.7 49.1-18.7 67.9 0l17.4 17.4c18.7 18.7 18.7 49.1 0 67.9L405.1 384.3c-6.2 6.2-13.9 10.5-22.3 12.6l-74.9 18.7c-2 .5-4.1 .6-6.1 .3L240 416c-6.1 0-11.6-3.4-14.3-8.8L215.6 387c-.9-1.8-2.8-3-4.9-3c-1.7 0-3.3 .8-4.4 2.2l-17.6 23.4c-3.6 4.8-9.7 7.2-15.6 6.2s-10.8-5.4-12.5-11.2L144 349zM518.8 168c-6.2-6.2-16.4-6.2-22.6 0l-24.8 24.8 40 40L536.2 208c6.2-6.2 6.2-16.4 0-22.6L518.8 168zM342.5 321.7c-2.1 2.1-3.5 4.6-4.2 7.4l-12.3 49 49-12.3c2.8-.7 5.4-2.2 7.4-4.2L488.7 255.4l-40-40L342.5 321.7z"
-                                        />
-                                    </svg>
-                                    <transition name="fade">
+                                        <div
+                                            v-if="r.icon"
+                                            v-html="getIconHTML(r.icon)"
+                                        ></div>
+                                        <svg
+                                            v-else
+                                            class="w-6 h-6 text-white flex-shrink-0"
+                                            style="
+                                                width: 26px;
+                                                height: 26px;
+                                                color: #fff;
+                                            "
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 576 512"
+                                        >
+                                            <path
+                                                fill="white"
+                                                d="M320 480c17.7 0 32-14.3 32-32l0-10.7 23.8-5.9c2.8-.7 5.6-1.6 8.2-2.7l0 19.3c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 64C0 28.7 28.7 0 64 0L220.1 0c12.7 0 24.9 5.1 33.9 14.1L369.9 129.9c9 9 14.1 21.2 14.1 33.9l0 39.8-32 32 0-43.6-112 0c-26.5 0-48-21.5-48-48l0-112L64 32C46.3 32 32 46.3 32 64l0 384c0 17.7 14.3 32 32 32l256 0zM240 160l111.5 0c-.7-2.8-2.1-5.4-4.2-7.4L231.4 36.7c-2.1-2.1-4.6-3.5-7.4-4.2L224 144c0 8.8 7.2 16 16 16zM144 349l-9.8 32.8c-6.1 20.3-24.8 34.2-46 34.2L80 416c-8.8 0-16-7.2-16-16s7.2-16 16-16l8.2 0c7.1 0 13.3-4.6 15.3-11.4l14.9-49.5c3.4-11.3 13.8-19.1 25.6-19.1s22.2 7.7 25.6 19.1l12.6 42.1c7.1-8.3 17.5-13.1 28.5-13.1c14.2 0 27.2 8 33.5 20.7l5.6 11.3 41.7 0 15.7-62.6c2.1-8.4 6.5-16.1 12.6-22.3L473.5 145.4c18.7-18.7 49.1-18.7 67.9 0l17.4 17.4c18.7 18.7 18.7 49.1 0 67.9L405.1 384.3c-6.2 6.2-13.9 10.5-22.3 12.6l-74.9 18.7c-2 .5-4.1 .6-6.1 .3L240 416c-6.1 0-11.6-3.4-14.3-8.8L215.6 387c-.9-1.8-2.8-3-4.9-3c-1.7 0-3.3 .8-4.4 2.2l-17.6 23.4c-3.6 4.8-9.7 7.2-15.6 6.2s-10.8-5.4-12.5-11.2L144 349zM518.8 168c-6.2-6.2-16.4-6.2-22.6 0l-24.8 24.8 40 40L536.2 208c6.2-6.2 6.2-16.4 0-22.6L518.8 168zM342.5 321.7c-2.1 2.1-3.5 4.6-4.2 7.4l-12.3 49 49-12.3c2.8-.7 5.4-2.2 7.4-4.2L488.7 255.4l-40-40L342.5 321.7z"
+                                            />
+                                        </svg>
+                                    </div>
+
+                                    <transition name="fade-slide">
                                         <span
                                             v-if="isSidebarOpen"
-                                            class="ml-3 text-sm text-white truncate"
+                                            class="ml-3 text-sm text-white whitespace-nowrap"
                                             :title="r.nombre"
                                         >
                                             {{ r.nombre }}
@@ -302,44 +366,10 @@ console.log(page.props);
                                     </transition>
                                 </button>
                                 <!-- Tooltip solo en desktop -->
-                                <div
-                                    class="toolTip invisible absolute opacity-0 transition-opacity duration-300 group-hover:visible group-hover:opacity-100 left-full top-1/2 z-50"
-                                    style="
-                                        pointer-events: none;
-                                        transform: translateY(-50%)
-                                            translateX(10px);
-                                    "
-                                >
-                                    <div class="relative flex items-center">
-                                        <!-- Burbuja del mensaje -->
-                                        <div
-                                            class="text-gray-800 whitespace-nowrap rounded-lg px-4 py-2 text-xs shadow-lg border border-gray-200"
-                                            style="
-                                                min-width: max-content;
-                                                background: rgb(95, 97, 255);
-                                            "
-                                        >
-                                            {{ r.nombre }}
-                                        </div>
-                                        <!-- Flecha tipo mensaje -->
-                                        <span
-                                            class="absolute left-0 -translate-x-full top-1/2 -mt-2 w-0 h-0"
-                                            style="
-                                                border-top: 8px solid
-                                                    transparent;
-                                                border-bottom: 8px solid
-                                                    transparent;
-                                                border-right: 10px solid
-                                                    rgb(95, 97, 255);
-                                                filter: drop-shadow(
-                                                    0 1px 2px
-                                                        rgba(0, 0, 0, 0.08)
-                                                );
-                                                left: 3px;
-                                            "
-                                        ></span>
-                                    </div>
-                                </div>
+                                <DataTool
+                                    :label="r.nombre"
+                                    :show="!isSidebarOpen"
+                                />
                             </div>
                         </li>
                     </ul>
@@ -369,7 +399,7 @@ console.log(page.props);
                             <svg
                                 class="w-6 h-6"
                                 fill="#000"
-                                style="color: #000;"
+                                style="color: #000"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
                             >
@@ -451,7 +481,9 @@ console.log(page.props);
                                         >
                                             <div class="font-semibold text-sm">
                                                 {{ $page.props.auth.user.name }}
-                                                <span class="rollBar">{{ $page.props.auth.role }}</span>
+                                                <span class="rollBar">{{
+                                                    $page.props.auth.role
+                                                }}</span>
                                             </div>
                                         </div>
                                         <!-- Flecha caret -->
@@ -538,7 +570,10 @@ console.log(page.props);
             </header>
 
             <!-- ===== PAGE CONTENT ===== -->
-            <main class="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-100" style="padding: 1.5rem 2rem;">
+            <main
+                class="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-100"
+                style="padding: 1.5rem 2rem"
+            >
                 <div class="mx-auto rellenoInternas">
                     <slot name="header" />
                     <slot />
@@ -551,25 +586,7 @@ console.log(page.props);
 <!-- =========================
     3. STYLE
 ========================= -->
-<style>
-/* Transiciones */
-.fade-enter-active,
-.fade-leave-active {
-    transition: opacity 0.2s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-    opacity: 0;
-}
-
-/* Enlaces activos */
-.router-link-active {
-    @apply bg-purple-50 text-purple-600;
-}
-.router-link-active svg {
-    @apply text-purple-600;
-}
-
+<style scoped>
 /* Menú colapsado */
 [style*="width: 80px"] .dropdown-content {
     left: 80px;

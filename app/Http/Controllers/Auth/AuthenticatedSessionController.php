@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Validation\ValidationException;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -27,14 +28,29 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request)
     {
-        $request->authenticate();
+        // Detectar si hay un mensaje de bloqueo en sesión
+        if (session()->has('auth_lockout')) {
+            return Inertia::render('Auth/Login', [
+                'errors' => [
+                    'email' => session('auth_lockout'),
+                ],
+            ]);
+        }
 
-        $request->session()->regenerate();
+        try {
+            $request->authenticate();
+            $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+            return redirect()->intended(route('dashboard'));
+        } catch (ValidationException $e) {
+            return Inertia::render('Auth/Login', [
+                'errors' => $e->errors(),
+            ]);
+        }
     }
+
 
     /**
      * Destroy an authenticated session.

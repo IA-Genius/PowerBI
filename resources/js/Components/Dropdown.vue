@@ -1,62 +1,82 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 const props = defineProps({
     align: {
         type: String,
-        default: 'right',
+        default: "right",
     },
-    width: {
+    minWidth: {
         type: String,
-        default: '48',
+        default: "180px", // Mínimo aceptable
+    },
+    maxWidth: {
+        type: String,
+        default: "220px", // Máximo aceptable
     },
     contentClasses: {
         type: String,
-        default: 'py-1 bg-white',
+        default: "py-1 bg-white",
     },
 });
 
+const open = ref(false);
+const triggerRef = ref(null);
+const dropdownRef = ref(null);
+
 const closeOnEscape = (e) => {
-    if (open.value && e.key === 'Escape') {
+    if (open.value && e.key === "Escape") {
         open.value = false;
     }
 };
 
-onMounted(() => document.addEventListener('keydown', closeOnEscape));
-onUnmounted(() => document.removeEventListener('keydown', closeOnEscape));
-
-const widthClass = computed(() => {
-    return {
-        48: 'w-48',
-    }[props.width.toString()];
+onMounted(() => {
+    document.addEventListener("keydown", closeOnEscape);
+});
+onUnmounted(() => {
+    document.removeEventListener("keydown", closeOnEscape);
 });
 
-const alignmentClasses = computed(() => {
-    if (props.align === 'left') {
-        return 'ltr:origin-top-left rtl:origin-top-right start-0';
-    } else if (props.align === 'right') {
-        return 'ltr:origin-top-right rtl:origin-top-left end-0';
-    } else {
-        return 'origin-top';
+watch(open, (isOpen) => {
+    if (isOpen && triggerRef.value && dropdownRef.value) {
+        const triggerWidth = triggerRef.value.offsetWidth;
+
+        // Aplicamos límites suaves entre min y max
+        const width = Math.max(
+            parseInt(props.minWidth),
+            Math.min(triggerWidth, parseInt(props.maxWidth))
+        );
+
+        dropdownRef.value.style.width = `${width}px`;
     }
 });
 
-const open = ref(false);
+const alignmentClasses = computed(() => {
+    if (props.align === "left") {
+        return "ltr:origin-top-left rtl:origin-top-right start-0";
+    } else if (props.align === "right") {
+        return "ltr:origin-top-right rtl:origin-top-left end-0";
+    } else {
+        return "origin-top";
+    }
+});
 </script>
 
 <template>
     <div class="relative">
-        <div @click="open = !open">
+        <!-- Trigger -->
+        <div ref="triggerRef" @click="open = !open">
             <slot name="trigger" />
         </div>
 
-        <!-- Full Screen Dropdown Overlay -->
+        <!-- Overlay -->
         <div
             v-show="open"
             class="fixed inset-0 z-40"
             @click="open = false"
         ></div>
 
+        <!-- Dropdown -->
         <Transition
             enter-active-class="transition ease-out duration-200"
             enter-from-class="opacity-0 scale-95"
@@ -66,9 +86,10 @@ const open = ref(false);
             leave-to-class="opacity-0 scale-95"
         >
             <div
+                ref="dropdownRef"
                 v-show="open"
                 class="absolute z-50 mt-2 rounded-md shadow-lg"
-                :class="[widthClass, alignmentClasses]"
+                :class="alignmentClasses"
                 style="display: none"
                 @click="open = false"
             >

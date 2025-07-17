@@ -21,7 +21,8 @@ COLORES
     color: var(--colorPrincipal);
 }
 
-a,button {
+a,
+button {
     transition: 200ms;
 }
 
@@ -40,7 +41,7 @@ MENU
 .menuActivado * {
     color: #fff;
 }
-.menuAbierto .toolTip{
+.menuAbierto .toolTip {
     display: none !important;
 }
 .menuAbierto .linkCarteras,
@@ -201,34 +202,74 @@ svg.mySVG {
     border: 3px solid #ffffff1c;
 }
 
-
-
 /*============
 PAGINAS
 ============*/
+@keyframes fadeSlideLeft {
+    0% {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+@keyframes drawDashed {
+    0% {
+        width: 0;
+        opacity: 0;
+    }
+    100% {
+        width: 30px;
+        opacity: 1;
+    }
+}
+
+@keyframes drawSolid {
+    0% {
+        width: 0;
+        opacity: 0;
+    }
+    100% {
+        width: 60px;
+        opacity: 1;
+    }
+}
+
 .tituloPag {
     position: relative;
     font-weight: bold;
     font-size: 25px;
     top: -3px;
+    animation: fadeSlideLeft 0.5s ease-out forwards;
+    animation-delay: 0.1s;
+    opacity: 0;
 }
+
 .tituloPag::before,
-.tituloPag:after {
+.tituloPag::after {
     content: "";
     position: absolute;
     bottom: -10px;
+    opacity: 0;
 }
+
 .tituloPag::before {
-    width: 30px;
     height: 2px;
     border: 2px dashed var(--colorPrincipal);
+    left: 0;
+    animation: drawDashed 0.5s ease-out forwards;
+    animation-delay: 0.6s;
 }
-.tituloPag:after {
-    background: var(--colorPrincipal);
-    width: 60px;
+
+.tituloPag::after {
     height: 4px;
+    background: var(--colorPrincipal);
     left: 35px;
     border-radius: 2px;
+    animation: drawSolid 0.5s ease-out forwards;
+    animation-delay: 0.8s;
 }
 
 .rounded-full {
@@ -239,9 +280,9 @@ PAGINAS
 }
 
 .borderTable {
-  border-radius: 8px !important;
-  overflow: hidden;
-  border: none !important;
+    border-radius: 8px !important;
+    overflow: hidden;
+    border: none !important;
 }
 .borderTable th,
 .borderTable td {
@@ -257,10 +298,92 @@ PAGINAS
     padding: 1.5rem 2rem;
     border-radius: 6px;
 }
+
+/*===========
+CAMBIOS AL MULTISELECT
+===========*/
+
+/* Etiquetas seleccionadas */
+.multiselect__tag {
+    background-color: #6366f1 !important; /* Indigo-500 */
+    padding: 4px 20px 4px 8px !important;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+/* Ícono de cierre (X) */
+.multiselect__tag-icon::after {
+    content: "×";
+    color: #ffffff !important;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* Contenedor de las opciones desplegables */
+.multiselect__content-wrapper {
+    max-height: 140px !important;
+    overflow-y: auto !important;
+    border-radius: 6px;
+    overscroll-behavior: contain;
+    border: 1px solid #e0e7ff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    background-color: #ffffff;
+}
+
+/* Input y zona de etiquetas */
+.multiselect__tags {
+    padding: 4px 8px !important;
+    gap: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    background-color: #f8fafc;
+    border-radius: 6px;
+    border: 1px solid #c7d2fe;
+}
+
+/* Opciones */
+.multiselect__element {
+    font-size: 14px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+.multiselect__option--highlight {
+    background-color: #eef2ff !important; /* Indigo-50 más suave */
+    color: #3730a3 !important; /* Indigo-700 */
+}
+
+/* Scrollbar tranquilo */
+.multiselect__content-wrapper::-webkit-scrollbar {
+    width: 5px;
+}
+.multiselect__content-wrapper::-webkit-scrollbar-thumb {
+    background-color: rgba(99, 102, 241, 0.3); /* Indigo */
+    border-radius: 4px;
+    transition: background 0.3s;
+}
+.multiselect__content-wrapper::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(99, 102, 241, 0.5);
+}
+
+/*===========
+CAMBIOS GLOBALES AL SCROLLBAR WEBKIT
+===========*/
+/* Scrollbar discreto para vue-multiselect */
+*::-webkit-scrollbar {
+    width: 6px;
+}
+
+*::-webkit-scrollbar-thumb {
+    background-color: rgba(100, 116, 139, 0.2); /* slate-500 transparente */
+    border-radius: 4px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
 /*===========
 ICONOS
 ===========*/
-
 
 .bg-green-500 {
     --tw-bg-opacity: 1;
@@ -275,15 +398,9 @@ ICONOS
     top: 1px;
 }
 
-
-
-
-
-
-
 .svgIcon {
     color: #fff;
-    fill: #fff
+    fill: #fff;
 }
 .bgIconTrash,
 .bgIconEdit {
@@ -295,10 +412,10 @@ ICONOS
     background: green;
 }
 .bgIconTrash {
-  background: #b00;
+    background: #b00;
 }
 
 .bgIconEdit:hover,
 .bgIconTrash:hover {
-  background: var(--colorSecundario);
+    background: var(--colorSecundario);
 }

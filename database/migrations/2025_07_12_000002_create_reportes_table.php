@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('nombre');
             $table->string('link_desktop')->nullable();
             $table->string('link_mobile')->nullable();
-            $table->string('icon')->nullable();
+            $table->text('icon')->nullable();
             $table->integer('orden')->default(0);
             $table->timestamps();
         });

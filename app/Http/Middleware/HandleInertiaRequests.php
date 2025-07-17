@@ -31,14 +31,14 @@ class HandleInertiaRequests extends Middleware
     {
         $user = $request->user();
 
-        return [
-            // todo lo que ya tienes de parent::share…
+        return array_merge(parent::share($request), [
+            'errors' => fn() => $request->session()->get('errors'),
+
             'auth' => [
                 'user' => $user ? $user->toArray() : null,
-                'role' => $user
-                    ? $user->getRoleNames()->first()
-                    : null,
+                'role' => $user ? $user->getRoleNames()->first() : null,
             ],
+
             'userCarteras' => fn() => $user
                 ? $user->getEffectiveCarteras()->each(function ($cartera) {
                     $cartera->load('reportes');
@@ -57,7 +57,6 @@ class HandleInertiaRequests extends Middleware
                 'manageCarteras' => $user ? $user->can('gestionar carteras') : false,
                 'manageReportes' => $user ? $user->can('gestionar reportes') : false,
             ],
-
-        ];
+        ]);
     }
 }

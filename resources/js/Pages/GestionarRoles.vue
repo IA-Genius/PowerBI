@@ -4,7 +4,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import ModalXts from "@/Components/ModalXts.vue";
 import Multiselect from "vue-multiselect";
 import { Head, usePage, router } from "@inertiajs/vue3";
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive, onMounted, watch } from "vue";
 import Swal from "sweetalert2";
 import "vue-multiselect/dist/vue-multiselect.css";
 import Actions from "@/Components/Actions.vue";
@@ -12,7 +12,6 @@ const { roles, carteras, reportes, permissions, success } = usePage().props;
 
 const showModal = ref(false);
 const rolEditar = ref(null);
-
 
 import { computed } from "vue";
 
@@ -177,274 +176,271 @@ function toggleReporteCartera(reporte, checked) {
         rolForm.reportes = rolForm.reportes.filter((r) => r.id !== reporte.id);
     }
 }
+
+watch(
+    () => rolForm.carteras,
+    (nuevasCarteras) => {
+        const nuevasCarterasIds = nuevasCarteras.map((c) => c.id);
+        rolForm.reportes = rolForm.reportes.filter((r) =>
+            nuevasCarterasIds.includes(r.cartera_id)
+        );
+    },
+    { deep: true }
+);
 </script>
 
 <template>
     <Head title="Gestión de Roles" />
-    <AuthenticatedLayout>
-        <template #header>
+    <AuthenticatedLayout class="relleno">
+        <div class="flex items-center justify-between">
             <div class="flex items-center justify-between">
-                <h2 class="text-xl font-semibold text-gray-800">
-                    Gestión de Roles
-                </h2>
-                <button
-                    @click="abrirModalAgregar"
-                    class="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-5 py-2 rounded-lg shadow-md hover:shadow-lg hover:brightness-110 hover:-translate-y-0.5 transition-all duration-300 ease-out"
+                <h2 class="text-xl font-semibold tituloPag">Roles</h2>
+                <span
+                    class="ml-4 px-3 py-1 hidden sm:inline text-[11px] font-bold uppercase rounded-full shadow-sm text-white bgPrincipal"
                 >
-                    Agregar Rol
-                </button>
+                    {{ roles.length }} roles
+                </span>
             </div>
-        </template>
-        <div class="py-8">
+            <button
+                @click="abrirModalAgregar"
+                class="flex items-center gap-2 bg-green-500 text-white px-5 py-2 rounded shadow hover:bg-green-600 transition"
+            >
+                <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M12 4v16m8-8H4"
+                    />
+                </svg>
+                Agregar
+            </button>
+        </div>
+        <div class="py-6">
             <div class="mx-auto w-full">
-                <div class="bg-white shadow-xl rounded-lg overflow-hidden">
-                    <div class="p-6">
-                        <!-- Modal para agregar/editar rol -->
-                        <ModalXts
-                            :show="showModal"
-                            :title="rolEditar ? 'Editar Rol' : 'Agregar Rol'"
-                            :submitLabel="
-                                rolEditar ? 'Actualizar' : 'Registrar'
-                            "
-                            :form="rolForm"
-                            :endpoint="
-                                rolEditar ? `/roles/${rolEditar.id}` : '/roles'
-                            "
-                            :method="rolEditar ? 'put' : 'post'"
-                            :transform="
-                                (form) => ({
-                                    ...form,
-                                    carteras: Array.isArray(form.carteras)
-                                        ? form.carteras.map((c) => c.id ?? c)
-                                        : [],
-                                    reportes: Array.isArray(form.reportes)
-                                        ? form.reportes.map((r) => r.id ?? r)
-                                        : [],
-                                    permissions: form.permissions,
-                                })
-                            "
-                            :carteras="carterasConReportes"
-                            :reportes="reportes"
-                            @close="cerrarModal"
-                            @success="handleSuccess"
-                        >
-                            <template #default="{ form, errors }">
-                                <div class="space-y-4">
-                                    <div>
-                                        <label
-                                            class="block text-sm font-medium text-gray-700"
-                                            >Nombre del rol</label
-                                        >
-                                        <input
-                                            v-model="form.name"
-                                            type="text"
-                                            required
-                                            class="mt-1 block w-full border-gray-300 rounded shadow-sm"
-                                        />
-                                        <p
-                                            v-if="errors.name"
-                                            class="text-red-600 text-sm"
-                                        >
-                                            {{ errors.name }}
-                                        </p>
-                                    </div>
+                <!-- Modal para agregar/editar rol -->
+                <ModalXts
+                    :show="showModal"
+                    :title="rolEditar ? 'Editar Rol' : 'Agregar Rol'"
+                    :submitLabel="rolEditar ? 'Actualizar' : 'Registrar'"
+                    :form="rolForm"
+                    :endpoint="rolEditar ? `/roles/${rolEditar.id}` : '/roles'"
+                    :method="rolEditar ? 'put' : 'post'"
+                    :transform="
+                        (form) => ({
+                            ...form,
+                            carteras: Array.isArray(form.carteras)
+                                ? form.carteras.map((c) => c.id ?? c)
+                                : [],
+                            reportes: Array.isArray(form.reportes)
+                                ? form.reportes.map((r) => r.id ?? r)
+                                : [],
+                            permissions: form.permissions,
+                        })
+                    "
+                    :carteras="carterasConReportes"
+                    :reportes="reportes"
+                    @close="cerrarModal"
+                    @success="handleSuccess"
+                >
+                    <template #default="{ form, errors }">
+                        <div class="space-y-4">
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-700"
+                                    >Nombre del rol</label
+                                >
+                                <input
+                                    v-model="form.name"
+                                    type="text"
+                                    required
+                                    class="mt-1 block w-full border-gray-300 rounded shadow-sm"
+                                />
+                                <p
+                                    v-if="errors.name"
+                                    class="text-red-600 text-sm"
+                                >
+                                    {{ errors.name }}
+                                </p>
+                            </div>
 
-                                    <div>
-                                        <label
-                                            class="block text-sm font-medium text-gray-700 mb-1"
-                                        >
-                                            Permisos
-                                        </label>
-                                        <div
-                                            class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2"
-                                        >
-                                            <label
-                                                v-for="perm in permissions"
-                                                :key="perm.id"
-                                                class="flex items-center gap-2 bg-gray-50 rounded px-2 py-1"
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    :value="perm.name"
-                                                    v-model="form.permissions"
-                                                    class="accent-indigo-600"
-                                                />
-                                                <span
-                                                    class="text-gray-700 uppercase text-[12px] font-bold"
-                                                >
-                                                    {{ perm.name }}
-                                                </span>
-                                            </label>
-                                        </div>
-                                        <p
-                                            v-if="errors.permissions"
-                                            class="text-red-600 text-sm"
-                                        >
-                                            {{ errors.permissions }}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <label
-                                            class="block text-sm font-medium text-gray-700 mb-1"
-                                            >Selecciona carteras</label
-                                        >
-                                        <Multiselect
-                                            v-model="form.carteras"
-                                            :options="carterasConReportes"
-                                            :multiple="true"
-                                            :track-by="'id'"
-                                            :label="'nombre'"
-                                            placeholder="Selecciona carteras"
-                                            class="w-full"
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 mb-1"
+                                >
+                                    Permisos
+                                </label>
+                                <div
+                                    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2"
+                                >
+                                    <label
+                                        v-for="perm in permissions"
+                                        :key="perm.id"
+                                        class="flex items-center gap-2 bg-gray-50 rounded px-2 py-1"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            :value="perm.name"
+                                            v-model="form.permissions"
+                                            class="accent-indigo-600"
                                         />
-                                        <p
-                                            v-if="errors.carteras"
-                                            class="text-red-600 text-sm"
+                                        <span
+                                            class="text-gray-700 uppercase text-[12px] font-bold"
                                         >
-                                            {{ errors.carteras }}
-                                        </p>
-                                    </div>
-                                  <CarteraReportesAccordion
+                                            {{ perm.name }}
+                                        </span>
+                                    </label>
+                                </div>
+                                <p
+                                    v-if="errors.permissions"
+                                    class="text-red-600 text-sm"
+                                >
+                                    {{ errors.permissions }}
+                                </p>
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 mb-1"
+                                    >Selecciona carteras</label
+                                >
+                                <Multiselect
+                                    v-model="form.carteras"
+                                    :options="carterasConReportes"
+                                    :multiple="true"
+                                    :track-by="'id'"
+                                    :label="'nombre'"
+                                    placeholder="Selecciona carteras"
+                                    class="w-full"
+                                />
+                                <p
+                                    v-if="errors.carteras"
+                                    class="text-red-600 text-sm"
+                                >
+                                    {{ errors.carteras }}
+                                </p>
+                            </div>
+                            <div>
+                                <CarteraReportesAccordion
                                     v-if="form.carteras.length"
-                                     :carteras="form.carteras"
-                                     :modelValue="form.reportes"
+                                    :carteras="form.carteras"
+                                    :modelValue="form.reportes"
                                     @update:modelValue="form.reportes = $event"
                                 />
+                                <p class="mt-2 text-xs text-gray-600">
+                                    Total reportes asignados:
+                                    {{ form.reportes.length }}
+                                </p>
+                            </div>
+                        </div>
+                    </template>
+                </ModalXts>
 
-                                    <div
-
-
-                                         v-if="form.reportes.length"
-                                        class="mt-2 flex items-center justify-start"
+                <!-- Listado de roles -->
+                <div>
+                    <div
+                        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+                    >
+                        <div
+                            v-for="role in roles"
+                            :key="role.id"
+                            class="rounded-lg border border-gray-200 bg-white/90 shadow-sm hover:shadow-md transition-all p-4 flex flex-col min-h-[110px]"
+                        >
+                            <div class="flex justify-between items-center mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span
+                                        class="w-8 h-8 rounded-full bgPrincipal text-white flex items-center justify-center text-base font-bold shadow"
                                     >
-                                        <label
-                                            class="block text-xs font-semibold text-gray-500 mb-1 mr-2"
-                                            >Cantidad de reportes
-                                            asignados:</label
+                                        <svg
+                                            class="w-4 h-4"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            viewBox="0 0 24 24"
                                         >
-                                        <span
-                                            class="bg-indigo-100 text-indigo-700 rounded px-2 py-1 text-xs"
-                                            >{{ form.reportes.length }}</span
-                                        >
-                                    </div>
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                d="M5.121 17.804A9 9 0 0112 15a9 9 0 016.879 2.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                                            />
+                                        </svg>
+                                    </span>
+                                    <span
+                                        class="text-base font-medium text-gray-900 truncate max-w-[110px]"
+                                        :title="role.name"
+                                    >
+                                        {{ role.name }}
+                                    </span>
                                 </div>
-                            </template>
-                        </ModalXts>
-
-                        <!-- Listado de roles -->
-                        <div>
-                            <h1
-                                class="text-xl font-semibold text-gray-800 mb-4 tracking-tight"
-                            >
-                                Listado de Roles
-                            </h1>
-                            <div
-                                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-                            >
-                                <div
-                                    v-for="role in roles"
-                                    :key="role.id"
-                                    class="rounded-lg border border-gray-200 bg-white/90 shadow-sm hover:shadow-md transition-all p-4 flex flex-col min-h-[110px]"
-                                >
-                                    <div
-                                        class="flex justify-between items-center mb-2"
+                                <Actions
+                                    :edit="true"
+                                    :remove="true"
+                                    @edit="abrirModalEditar(role)"
+                                    @delete="eliminarRol(role)"
+                                />
+                            </div>
+                            <div class="flex flex-wrap gap-1 mb-1">
+                                <template v-if="role.carteras.length">
+                                    <span
+                                        v-for="c in role.carteras"
+                                        :key="c.id"
+                                        class="flex items-center bg-gray-100 border border-gray-200 rounded-full px-2 py-0.5 text-xs text-gray-700 font-medium"
+                                        :title="c.nombre"
                                     >
-                                        <div class="flex items-center gap-2">
-                                            <span
-                                                class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-700 text-white flex items-center justify-center text-base font-bold shadow"
-                                            >
-                                                <svg
-                                                    class="w-4 h-4"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    stroke-width="2"
-                                                    viewBox="0 0 24 24"
-                                                >
-                                                    <path
-                                                        stroke-linecap="round"
-                                                        stroke-linejoin="round"
-                                                        d="M16 7a4 4 0 01-8 0m8 0a4 4 0 01-8 0m8 0V5a4 4 0 00-8 0v2m8 0v2a4 4 0 01-8 0V7"
-                                                    ></path>
-                                                </svg>
-                                            </span>
-                                            <span
-                                                class="text-base font-medium text-gray-900 truncate max-w-[110px]"
-                                                :title="role.name"
-                                            >
-                                                {{ role.name }}
-                                            </span>
-                                        </div>
-                                        <Actions
-                                            :edit="true"
-                                            :remove="true"
-                                            @edit="abrirModalEditar(role)"
-                                            @delete="eliminarRol(role)"
-                                        />
-                                    </div>
-                                    <div class="flex flex-wrap gap-1 mb-1">
-                                        <template v-if="role.carteras.length">
-                                            <span
-                                                v-for="c in role.carteras"
-                                                :key="c.id"
-                                                class="flex items-center bg-gray-100 border border-gray-200 rounded-full px-2 py-0.5 text-xs text-gray-700 font-medium"
-                                                :title="c.nombre"
-                                            >
-                                                <svg
-                                                    class="w-3 h-3 mr-1 text-indigo-400"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    stroke-width="2"
-                                                    viewBox="0 0 24 24"
-                                                >
-                                                    <path
-                                                        stroke-linecap="round"
-                                                        stroke-linejoin="round"
-                                                        d="M3 7h18"
-                                                    ></path>
-                                                </svg>
-                                                {{ c.nombre }}
-                                                <span
-                                                    class="ml-1 w-4 h-4 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold flex items-center justify-center border border-indigo-100"
-                                                >
-                                                    {{
-                                                        role.reportes.filter(
-                                                            (r) =>
-                                                                r.cartera_id ===
-                                                                c.id
-                                                        ).length
-                                                    }}
-                                                </span>
-                                            </span>
-                                        </template>
-                                        <span
-                                            v-else
-                                            class="text-gray-400 italic text-xs"
+                                        <svg
+                                            class="w-3 h-3 mr-1 text-indigo-400"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            viewBox="0 0 24 24"
                                         >
-                                            Sin carteras
-                                        </span>
-                                    </div>
-                                    <div
-                                        class="flex justify-between items-center border-t border-gray-100 pt-2 mt-auto"
-                                    >
-                                        <span class="text-[11px] text-gray-400">
-                                            ID: {{ role.id }}
-                                        </span>
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                d="M3 7h18"
+                                            ></path>
+                                        </svg>
+                                        {{ c.nombre }}
                                         <span
-                                            v-if="
-                                                role.permissions &&
-                                                role.permissions.length
-                                            "
-                                            class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100"
+                                            class="ml-1 w-4 h-4 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold flex items-center justify-center border border-indigo-100"
                                         >
-                                            {{ role.permissions.length }}
-                                            permiso{{
-                                                role.permissions.length > 1
-                                                    ? "s"
-                                                    : ""
+                                            {{
+                                                role.reportes.filter(
+                                                    (r) => r.cartera_id === c.id
+                                                ).length
                                             }}
                                         </span>
-                                    </div>
-                                </div>
+                                    </span>
+                                </template>
+                                <span
+                                    v-else
+                                    class="text-gray-400 italic text-xs"
+                                >
+                                    Sin carteras
+                                </span>
+                            </div>
+                            <div
+                                class="flex justify-between items-center border-t border-gray-100 pt-2 mt-auto"
+                            >
+                                <span class="text-[11px] text-gray-400">
+                                    ID: {{ role.id }}
+                                </span>
+                                <span
+                                    v-if="
+                                        role.permissions &&
+                                        role.permissions.length
+                                    "
+                                    class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100"
+                                >
+                                    {{ role.permissions.length }}
+                                    permiso{{
+                                        role.permissions.length > 1 ? "s" : ""
+                                    }}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -492,4 +488,3 @@ function toggleReporteCartera(reporte, checked) {
     }
 }
 </style>
-

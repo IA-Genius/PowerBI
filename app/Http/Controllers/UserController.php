@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Role;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
@@ -84,6 +85,7 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
+        Log::info('Datos recibidos en update()', $request->all());
         $data = $request->validate([
             'name'      => 'required|string|max:255',
             'email'     => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
@@ -97,12 +99,19 @@ class UserController extends Controller
             'roles.*'   => 'exists:roles,id',
         ]);
 
-        $user->update([
+        $updateData = [
             'name'   => $data['name'],
             'email'  => $data['email'],
             'active' => $data['active'],
-            ...($data['password'] ? ['password' => bcrypt($data['password'])] : []),
-        ]);
+        ];
+
+        if (array_key_exists('password', $data) && $data['password']) {
+            Log::info("Nueva contraseña para usuario {$user->id}: " . $data['password']);
+            $updateData['password'] = bcrypt($data['password']);
+        }
+
+        $user->update($updateData);
+
 
         $user->syncRoles($data['roles'] ?? []);
 

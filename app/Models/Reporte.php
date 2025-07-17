@@ -10,7 +10,7 @@ class Reporte extends Model
         'nombre',
         'link_desktop',
         'link_mobile',
-        'icon', 
+        'icon',
         'orden',
         'cartera_id',
     ];
