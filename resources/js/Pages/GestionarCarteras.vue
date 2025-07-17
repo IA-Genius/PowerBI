@@ -3,12 +3,12 @@
         <template #header>
             <div class="flex items-center justify-between">
                 <div class="flex items-center justify-between">
-                    <h2 class="text-xl font-semibold tituloPag">Carteras</h2>
-                    <span
+                    <h2 class="text-xl font-semibold tituloPag">Listado de Carteras</h2>
+                    <!-- <span
                         class="ml-4 px-3 py-1 hidden sm:inline text-[11px] font-bold uppercase rounded-full shadow-sm text-white bgPrincipal"
                     >
-                        {{ carteras.length }} carteras
-                    </span>
+                        {{ carteras.length }} Itens
+                    </span> -->
                 </div>
 
                 <button
@@ -105,42 +105,49 @@
         >
             <template #default="{ form, errors }">
                 <InputField
+                    class="modalInputs"
                     label="Nombre"
                     v-model="form.nombre"
                     name="cartera_nombre"
-                    placeholder="Nombre"
+                    placeholder="Telefonía, Etc"
                     :error="errors.nombre"
                 />
                 <InputField
+                    class="modalInputs"
                     label="Descripción"
                     v-model="form.descripcion"
                     name="cartera_descripcion"
                     type="textarea"
-                    placeholder="Descripción"
+                    placeholder="Breve descripción"
                     :error="errors.descripcion"
                 />
-                <InputField
-                    label="Orden"
-                    v-model="form.orden"
-                    name="cartera_orden"
-                    type="number"
-                    :min="0"
-                    :error="errors.orden"
-                />
-                <div>
-                    <label
-                        class="block text-sm font-medium text-gray-700 mb-1"
-                        for="estado"
-                        >Estado</label
-                    >
-                    <select
-                        id="estado"
-                        v-model="form.estado"
-                        class="border border-gray-300 px-3 py-2 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none"
-                    >
-                        <option :value="true">Activa</option>
-                        <option :value="false">Inactiva</option>
-                    </select>
+                <div class="flex" style="justify-content: space-between;">
+                    <div style="width: 48%;">
+                        <InputField
+                            class="modalInputs"
+                            label="Orden"
+                            v-model="form.orden"
+                            name="cartera_orden"
+                            type="number"
+                            :min="1"
+                            :error="errors.orden"
+                        />
+                    </div>
+                    <div style="width: 48%;" class="modalInputs">
+                        <label
+                            class="block text-sm font-medium text-gray-700 mb-1"
+                            for="estado"
+                            >Estado</label
+                        >
+                        <select
+                            id="estado"
+                            v-model="form.estado"
+                            class="border border-gray-300 px-3 py-2 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                        >
+                            <option :value="true">Activa</option>
+                            <option :value="false">Inactiva</option>
+                        </select>
+                    </div>
                 </div>
             </template>
         </ModalGestion>

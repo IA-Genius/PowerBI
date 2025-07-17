@@ -11,14 +11,12 @@ COLORES
     --colortTxt: #4d4a48;
     --colorSecundario: #ff7e00;
 }
+.tituloPag,
 .colorMorado {
     color: var(--colorPrincipal);
 }
 .bgPrincipal {
     background: var(--colorPrincipal);
-}
-.tituloPag {
-    color: var(--colorPrincipal);
 }
 
 a,
@@ -26,9 +24,12 @@ button {
     transition: 200ms;
 }
 
+
+
 /*==============
 MENU
 ==============*/
+
 .fixed.inset-y-0 {
     transition: 300ms;
 }
@@ -93,6 +94,16 @@ label.linkCarteras {
     max-height: 100%;
     width: calc(100% + 17px);
 } */
+
+.overflowHijo  {
+  overflow: scroll;     /* o auto */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+
+.overflowHijo::-webkit-scrollbar {
+  display: none; /* Chrome, Safari y Edge */
+}
 
 /*==============
 LOGIN
@@ -172,7 +183,9 @@ button.btn {
     text-transform: none;
     position: relative;
 }
-
+.modalInputs input,
+.modalInputs textarea,
+.modalInputs select,
 .inputs {
     display: block;
     margin: 0;
@@ -189,7 +202,13 @@ button.btn {
     font-family: inherit;
     transition: box-shadow 0.2s linear, border-color 0.25s ease-out;
 }
-
+.modalInputs textarea,
+.modalInputs select,
+.modalInputs input {
+  padding: 8px 15px 7px;
+  height: auto;
+  font-size: 15px;
+}
 svg.mySVG {
     position: relative;
     left: 0;
@@ -418,4 +437,44 @@ ICONOS
 .bgIconEdit:hover,
 .bgIconTrash:hover {
     background: var(--colorSecundario);
+}
+
+.modaleStyle {
+  background: #000000b2;
+  height: 100vh;
+  padding: 30px 20px;
+  overflow: scroll;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  align-items: flex-start;
+  flex: none !important;
+}
+
+.modaleStyle::-webkit-scrollbar {
+  display: none; /* Chrome, Safari y Edge */
+}
+.modaleStyle > div {
+    position: relative;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+    background: #fff !important;
+    
+}
+
+
+.modaleStyle > div label {
+  font-size: 13px;
+  font-weight: 100;
+}
+
+.from-blue-600 {
+  --tw-gradient-from: var(--colorPrincipal);
+  background: var(--colorPrincipal);
+}
+.from-blue-600:hover {
+  --tw-gradient-from: var(--colorSecundario);
+  background: var(--colorSecundario);
 }

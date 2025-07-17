@@ -43,7 +43,7 @@ class LoginRequest extends FormRequest
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'email' => 'Las credenciales ingresadas no son válidas. Verifica tu correo y contraseña.',
+                'email' => 'Oops, algo salio mal. Verifica tu Usuario y contraseña.',
             ]);
         }
 

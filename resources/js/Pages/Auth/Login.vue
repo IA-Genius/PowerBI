@@ -112,7 +112,7 @@ const submit = () => {
                     :class="{ 'opacity-25': form.processing }"
                     :disabled="form.processing"
                 >
-                    <svg
+                    <!-- <svg
                         class="mySVG"
                         xmlns="http://www.w3.org/2000/svg"
                         xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -526,7 +526,7 @@ const submit = () => {
                                 ></path>
                             </g>
                         </g>
-                    </svg>
+                    </svg> -->
                     Ingresar
                 </PrimaryButton>
 
