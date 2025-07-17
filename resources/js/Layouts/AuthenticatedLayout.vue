@@ -314,7 +314,8 @@ console.log(page.props);
                     >
                         Reportes de {{ selectedCartera.nombre }}
                     </label>
-                    <ul v-if="reportesFiltrados.length" class="overflowHijo">
+                    <ul v-if="reportesFiltrados.length">
+                        <!-- class="overflowHijo" -->
                         <li v-for="r in reportesFiltrados" :key="r.id">
                             <div class="relative group">
                                 <button
