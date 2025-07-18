@@ -448,7 +448,9 @@ console.log(page.props);
                             </template>
                             <template #content>
                                 <button
-                                    v-for="cartera in carteras"
+                                    v-for="cartera in [...carteras].sort(
+                                        (a, b) => a.orden - b.orden
+                                    )"
                                     :key="cartera.id"
                                     @click="selectedCarteraId = cartera.id"
                                     class="w-full text-left px-4 py-2 text-sm text-gray-700"
