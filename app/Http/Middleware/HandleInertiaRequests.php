@@ -51,12 +51,9 @@ class HandleInertiaRequests extends Middleware
                 })
                 : collect(),
 
-            'can' => [
-                'manageUsers'    => $user ? $user->can('gestionar usuarios') : false,
-                'manageRoles'    => $user ? $user->can('gestionar roles') : false,
-                'manageCarteras' => $user ? $user->can('gestionar carteras') : false,
-                'manageReportes' => $user ? $user->can('gestionar reportes') : false,
-            ],
+            'can' => $user
+                ? $user->getAllPermissions()->pluck('name')->mapWithKeys(fn($name) => [$name => true])
+                : [],
         ]);
     }
 }

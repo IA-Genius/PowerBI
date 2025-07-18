@@ -9,6 +9,8 @@ import Swal from "sweetalert2";
 import "vue-multiselect/dist/vue-multiselect.css";
 import Actions from "@/Components/Actions.vue";
 import InputField from "@/Components/InputField.vue";
+import ModuloPermisosAccordion from "@/Components/ModuloPermisosAccordion.vue";
+
 const { roles, carteras, reportes, permissions, success } = usePage().props;
 
 const showModal = ref(false);
@@ -189,6 +191,50 @@ watch(
     },
     { deep: true }
 );
+const showCrearModulo = ref(false);
+
+const nuevoModulo = reactive({
+    name: "",
+    permissions: [""], // empieza con un permiso vacío
+});
+
+function agregarPermisoInput() {
+    nuevoModulo.permissions.push("");
+}
+
+function eliminarPermisoInput(i) {
+    if (nuevoModulo.permissions.length > 1) {
+        nuevoModulo.permissions.splice(i, 1);
+    }
+}
+
+async function crearModulo() {
+    try {
+        const res = await axios.post("/modulos", {
+            name: nuevoModulo.name,
+            permissions: nuevoModulo.permissions.filter((p) => p.trim() !== ""),
+        });
+
+        permissions.push(...res.data.module.permissions);
+        handleSuccess("Módulo y permisos creados");
+        showCrearModulo.value = false;
+
+        // Limpiar
+        Object.assign(nuevoModulo, {
+            name: "",
+            permissions: [""],
+        });
+    } catch (e) {
+        Swal.fire("Error", "No se pudo crear el módulo", "error");
+    }
+}
+
+const tabActiva = ref("basico");
+
+const tabs = [
+    { value: "basico", label: "Datos Básicos", icon: null },
+    { value: "permisos", label: "Permisos Avanzados", icon: null },
+];
 </script>
 
 <template>
@@ -233,71 +279,25 @@ watch(
                     :form="rolForm"
                     :endpoint="rolEditar ? `/roles/${rolEditar.id}` : '/roles'"
                     :method="rolEditar ? 'put' : 'post'"
-                    :transform="
-                        (form) => ({
-                            ...form,
-                            carteras: Array.isArray(form.carteras)
-                                ? form.carteras.map((c) => c.id ?? c)
-                                : [],
-                            reportes: Array.isArray(form.reportes)
-                                ? form.reportes.map((r) => r.id ?? r)
-                                : [],
-                            permissions: form.permissions,
-                        })
-                    "
+                    :transform="transformarForm"
                     :carteras="carterasConReportes"
                     :reportes="reportes"
                     @close="cerrarModal"
                     @success="handleSuccess"
+                    v-model:tabActiva="tabActiva"
+                    :tabs="tabs"
                 >
                     <template #default="{ form, errors }">
-                        <div class="space-y-4">
-                            <div>
-                                <InputField
-                                    class="modalInputs"
-                                    label="Nombre del rol"
-                                    v-model="form.name"
-                                    name="reporte_link_desktop"
-                                    placeholder="role name"
-                                    :error="errors.name"
-                                    :required="true"
-                                />
-                            </div>
+                        <div v-if="tabActiva === 'basico'" class="space-y-4">
+                            <InputField
+                                class="modalInputs"
+                                label="Nombre del rol"
+                                v-model="form.name"
+                                placeholder="role name"
+                                :error="errors.name"
+                                :required="true"
+                            />
 
-                            <div>
-                                <label
-                                    class="block text-sm font-medium text-gray-700 mb-1"
-                                >
-                                    Permisos
-                                </label>
-                                <div
-                                    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2"
-                                >
-                                    <label
-                                        v-for="perm in permissions"
-                                        :key="perm.id"
-                                        class="flex items-center gap-2 bg-gray-50 rounded px-2 py-1"
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            :value="perm.name"
-                                            v-model="form.permissions"
-                                            class="accent-indigo-600"
-                                        />
-                                        <span
-                                            class="text-gray-700 uppercase text-[12px] font-bold"
-                                        >
-                                            {{ perm.name }}
-                                        </span>
-                                    </label>
-                                </div>
-                                <p
-                                    v-if="errors.permissions"
-                                    class="text-red-600 text-sm"
-                                >
-                                    {{ errors.permissions }}
-                                </p>
-                            </div>
                             <div>
                                 <label
                                     class="block text-sm font-medium text-gray-700 mb-1"
@@ -313,7 +313,6 @@ watch(
                                     placeholder="Selecciona carteras"
                                     class="w-full"
                                 />
-
                                 <p
                                     v-if="errors.carteras"
                                     class="text-red-600 text-sm"
@@ -321,6 +320,7 @@ watch(
                                     {{ errors.carteras }}
                                 </p>
                             </div>
+
                             <div>
                                 <CarteraReportesAccordion
                                     v-if="form.carteras.length"
@@ -333,6 +333,23 @@ watch(
                                     {{ form.reportes.length }}
                                 </p>
                             </div>
+                        </div>
+
+                        <div v-if="tabActiva === 'permisos'" class="space-y-4">
+                            <label
+                                class="block text-sm font-medium text-gray-700 mb-1"
+                                >Permisos</label
+                            >
+                            <ModuloPermisosAccordion
+                                v-model="form.permissions"
+                                :permissions="permissions"
+                            />
+                            <p
+                                v-if="errors.permissions"
+                                class="text-red-600 text-sm"
+                            >
+                                {{ errors.permissions }}
+                            </p>
                         </div>
                     </template>
                 </ModalXts>
@@ -389,18 +406,18 @@ watch(
                                         :title="c.nombre"
                                     >
                                         <!-- <svg
-                                            class="w-3 h-3 mr-1 text-indigo-400"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            stroke-width="2"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                d="M3 7h18"
-                                            ></path>
-                                        </svg> -->
+                                                class="w-3 h-3 mr-1 text-indigo-400"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="2"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    d="M3 7h18"
+                                                ></path>
+                                            </svg> -->
                                         {{ c.nombre }}
                                         <span
                                             class="ml-1 w-4 h-4 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold flex items-center justify-center border border-indigo-100"

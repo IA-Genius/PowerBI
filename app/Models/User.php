@@ -54,8 +54,10 @@ class User extends Authenticatable
         return $this->roles->flatMap->carteras
             ->merge($this->carteras)
             ->unique('id')
+            ->filter(fn($cartera) => $cartera->estado)
             ->values();
     }
+
 
     public function getEffectiveReportes()
     {

@@ -169,7 +169,7 @@ console.log(page.props);
 
                 <div
                     class="separador separadorAdmin"
-                    v-if="canDo('manageCarteras')"
+                    v-if="canDo('carteras.index')"
                 ></div>
                 <link
                     href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded"
@@ -177,7 +177,7 @@ console.log(page.props);
                 />
 
                 <NavLink
-                    v-if="canDo('manageCarteras')"
+                    v-if="canDo('carteras.index')"
                     :href="route('carteras.index')"
                     :active="route().current('carteras.index')"
                     class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition group relative"
@@ -212,7 +212,7 @@ console.log(page.props);
                 </NavLink>
 
                 <NavLink
-                    v-if="canDo('manageReportes')"
+                    v-if="canDo('reportes.index')"
                     :href="route('reportes.index')"
                     :active="route().current('reportes.index')"
                     class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition group relative"
@@ -243,7 +243,7 @@ console.log(page.props);
                 </NavLink>
 
                 <NavLink
-                    v-if="canDo('manageRoles')"
+                    v-if="canDo('roles.index')"
                     :href="route('roles.index')"
                     :active="route().current('roles.index')"
                     class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition group relative"
@@ -275,7 +275,7 @@ console.log(page.props);
                 </NavLink>
 
                 <NavLink
-                    v-if="canDo('manageUsers')"
+                    v-if="canDo('usuarios.index')"
                     :href="route('users.index')"
                     :active="route().current('users.index')"
                     class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition group relative"

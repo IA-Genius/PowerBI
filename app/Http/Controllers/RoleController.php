@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
-use Spatie\Permission\Models\Permission;
+use App\Models\Permission;
 use Illuminate\Support\Facades\Log;
 
 class RoleController extends Controller
@@ -23,7 +23,7 @@ class RoleController extends Controller
             'roles'       => Role::with(['carteras', 'reportes', 'permissions'])->get(),
             'carteras'    => Cartera::all(),
             'reportes'    => Reporte::with('cartera')->get(),
-            'permissions' => Permission::all(),
+            'permissions' => Permission::with('module')->get(),
             'success'     => session('success'),
         ]);
     }
