@@ -10,6 +10,7 @@ use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Permission;
+use Illuminate\Support\Facades\Log;
 
 class RoleController extends Controller
 {
@@ -32,15 +33,22 @@ class RoleController extends Controller
      */
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'name'        => 'required|string|max:255|unique:roles,name',
-            'carteras'    => 'nullable|array',
-            'carteras.*'  => 'exists:carteras,id',
-            'reportes'    => 'nullable|array',
-            'reportes.*'  => 'exists:reportes,id',
-            'permissions' => 'nullable|array',
-            'permissions.*' => 'exists:permissions,name',
-        ]);
+        Log::debug('📥 Datos recibidos en store', $request->all());
+
+        try {
+            $data = $request->validate([
+                'name'        => 'required|string|max:255|unique:roles,name',
+                'carteras'    => 'nullable|array',
+                'carteras.*'  => 'exists:carteras,id',
+                'reportes'    => 'nullable|array',
+                'reportes.*'  => 'exists:reportes,id',
+                'permissions' => 'nullable|array',
+                'permissions.*' => 'exists:permissions,name',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('❌ Validación fallida', $e->errors());
+            throw $e; // Re-lanza para que Inertia los reciba
+        }
 
         $role = Role::create([
             'name'       => $data['name'],
@@ -65,7 +73,7 @@ class RoleController extends Controller
     public function update(Request $request, Role $role)
     {
         $data = $request->validate([
-            'name'        => [
+            'name' => [
                 'required',
                 'string',
                 'max:255',
@@ -80,26 +88,19 @@ class RoleController extends Controller
         ]);
 
         $role->update([
-            'name'       => $data['name'],
+            'name' => $data['name'],
             'guard_name' => 'web',
         ]);
 
-        // Sincronizar relaciones pivot
         $role->carteras()->sync($data['carteras'] ?? []);
         $role->reportes()->sync($data['reportes'] ?? []);
-
-        // Sincronizar permisos
         $role->syncPermissions($data['permissions'] ?? []);
-
-        // Responder adecuadamente a Inertia o peticiones normales
-        if ($request->inertia()) {
-            return redirect()->back()->with('success', "Rol «{$role->name}» actualizado correctamente.");
-        }
 
         return redirect()
             ->route('roles.index')
             ->with('success', "Rol «{$role->name}» actualizado correctamente.");
     }
+
 
     /**
      * Remove the specified role from storage.

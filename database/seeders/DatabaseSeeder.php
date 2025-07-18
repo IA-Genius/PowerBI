@@ -39,7 +39,7 @@ class DatabaseSeeder extends Seeder
 
         // 3. Asignar roles a usuarios
         $rolAdmin = Role::where('name', 'admin')->first();
-        $rolWebie = Role::where('name', 'webie')->first();
+        $rolWebie = Role::where('name', 'asesor')->first();
 
         if ($rolAdmin) {
             $admin->assignRole($rolAdmin);

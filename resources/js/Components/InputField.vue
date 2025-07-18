@@ -15,6 +15,7 @@ const props = defineProps({
     },
     min: Number,
     error: String,
+    required: Boolean,
 });
 
 const emit = defineEmits(["update:modelValue"]);
@@ -36,6 +37,7 @@ const emit = defineEmits(["update:modelValue"]);
                 :autocomplete="autocomplete"
                 :value="modelValue"
                 @input="emit('update:modelValue', $event.target.value)"
+                :required="required"
                 class="border border-gray-300 px-3 py-2 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none resize-none"
             ></textarea>
         </template>
@@ -49,6 +51,9 @@ const emit = defineEmits(["update:modelValue"]);
                 :min="min"
                 :value="modelValue"
                 @input="emit('update:modelValue', $event.target.value)"
+                :required="required"
+                autocomplete="off
+                "
                 class="border border-gray-300 px-3 py-2 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none"
             />
         </template>

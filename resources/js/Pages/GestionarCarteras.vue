@@ -3,7 +3,9 @@
         <template #header>
             <div class="flex items-center justify-between">
                 <div class="flex items-center justify-between">
-                    <h2 class="text-xl font-semibold tituloPag">Listado de Carteras</h2>
+                    <h2 class="text-xl font-semibold tituloPag">
+                        Listado de Carteras
+                    </h2>
                     <!-- <span
                         class="ml-4 px-3 py-1 hidden sm:inline text-[11px] font-bold uppercase rounded-full shadow-sm text-white bgPrincipal"
                     >
@@ -111,6 +113,7 @@
                     name="cartera_nombre"
                     placeholder="Telefonía, Etc"
                     :error="errors.nombre"
+                    :required="true"
                 />
                 <InputField
                     class="modalInputs"
@@ -121,8 +124,8 @@
                     placeholder="Breve descripción"
                     :error="errors.descripcion"
                 />
-                <div class="flex" style="justify-content: space-between;">
-                    <div style="width: 48%;">
+                <div class="flex" style="justify-content: space-between">
+                    <div style="width: 48%">
                         <InputField
                             class="modalInputs"
                             label="Orden"
@@ -133,7 +136,7 @@
                             :error="errors.orden"
                         />
                     </div>
-                    <div style="width: 48%;" class="modalInputs">
+                    <div style="width: 48%" class="modalInputs">
                         <label
                             class="block text-sm font-medium text-gray-700 mb-1"
                             for="estado"

@@ -123,11 +123,21 @@ function eliminarReporte(reporte) {
 
 const carteraSeleccionada = ref(null);
 
+const filtroNombreReporte = ref("");
+
 const reportesFiltrados = computed(() => {
-    if (!carteraSeleccionada.value) return reportes.value;
-    return reportes.value.filter(
-        (r) => r.cartera_id === carteraSeleccionada.value
-    );
+    let lista = reportes.value;
+
+    if (carteraSeleccionada.value) {
+        lista = lista.filter((r) => r.cartera_id === carteraSeleccionada.value);
+    }
+
+    if (filtroNombreReporte.value.trim() !== "") {
+        const texto = filtroNombreReporte.value.toLowerCase();
+        lista = lista.filter((r) => r.nombre.toLowerCase().includes(texto));
+    }
+
+    return lista;
 });
 </script>
 
@@ -149,6 +159,29 @@ const reportesFiltrados = computed(() => {
                 <div
                     class="flex flex-col sm:flex-row items-stretch gap-3 sm:gap-4 mt-4 sm:mt-0"
                 >
+                    <div class="relative sm:max-w-xs">
+                        <input
+                            v-model="filtroNombreReporte"
+                            type="text"
+                            placeholder="Buscar..."
+                            class="w-full pl-10 pr-4 py-2 rounded-md border border-gray-200 bg-white shadow-sm text-sm placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none focus:border-indigo-300 transition"
+                        />
+
+                        <svg
+                            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M21 21l-4.35-4.35M10 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"
+                            />
+                        </svg>
+                    </div>
+
                     <Dropdown>
                         <template #trigger>
                             <button
@@ -268,11 +301,15 @@ const reportesFiltrados = computed(() => {
             </div>
         </template>
         <div v-if="!vistaTabla" class="py-6">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <TransitionGroup
+                name="fade-slide"
+                tag="div"
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 min-h-[150px] grid-auto-rows-[minmax(110px,_auto)]"
+            >
                 <div
                     v-for="reporte in reportesFiltrados"
                     :key="reporte.id"
-                    class="rounded-lg border border-gray-200 bg-white/90 shadow-sm hover:shadow-md transition-all p-4 flex flex-col min-h-[110px]"
+                    class="transition-opacity duration-300 opacity-100 rounded-lg border border-gray-200 bg-white/90 shadow-sm hover:shadow-md p-4 flex flex-col min-h-[110px]"
                 >
                     <!-- Header -->
                     <div class="flex justify-between items-center mb-2">
@@ -346,7 +383,6 @@ const reportesFiltrados = computed(() => {
                             <svg
                                 class="w-4 h-4 text-indigo-500"
                                 fill="currentColor"
-                                xmlns="http://www.w3.org/2000/svg"
                                 viewBox="0 0 512 512"
                             >
                                 <path
@@ -364,7 +400,6 @@ const reportesFiltrados = computed(() => {
                             <svg
                                 class="w-4 h-4 text-indigo-500"
                                 fill="currentColor"
-                                xmlns="http://www.w3.org/2000/svg"
                                 viewBox="0 0 448 512"
                             >
                                 <path
@@ -384,11 +419,12 @@ const reportesFiltrados = computed(() => {
 
                 <div
                     v-if="reportesFiltrados.length === 0"
-                    class="col-span-full text-center py-8 text-gray-400 text-lg"
+                    key="no-data"
+                    class="col-span-full text-center py-8 text-gray-400 text-lg transition-opacity duration-300"
                 >
                     No hay reportes registrados.
                 </div>
-            </div>
+            </TransitionGroup>
         </div>
 
         <div
@@ -495,13 +531,16 @@ const reportesFiltrados = computed(() => {
             <template #default="{ form, errors }">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <InputField
+                        class="modalInputs"
                         label="Nombre"
                         v-model="form.nombre"
                         name="reporte_nombre"
                         placeholder="Nombre del reporte"
                         :error="errors.nombre"
+                        :required="true"
                     />
                     <InputField
+                        class="modalInputs"
                         label="Orden"
                         v-model="form.orden"
                         name="reporte_orden"
@@ -511,13 +550,16 @@ const reportesFiltrados = computed(() => {
                     />
 
                     <InputField
+                        class="modalInputs"
                         label="Link Desktop"
                         v-model="form.link_desktop"
                         name="reporte_link_desktop"
                         placeholder="https://ejemplo.com/desktop"
                         :error="errors.link_desktop"
+                        :required="true"
                     />
                     <InputField
+                        class="modalInputs"
                         label="Link Mobile"
                         v-model="form.link_mobile"
                         name="reporte_link_mobile"
@@ -534,7 +576,7 @@ const reportesFiltrados = computed(() => {
                         <SvgUploader v-model="form.icon" :error="errors.icon" />
                     </div>
 
-                    <div class="sm:col-span-2">
+                    <div class="modalInputs sm:col-span-2">
                         <label
                             class="block text-sm font-medium text-gray-700 mb-1"
                             for="cartera_id"
@@ -545,6 +587,7 @@ const reportesFiltrados = computed(() => {
                             id="cartera_id"
                             v-model="form.cartera_id"
                             class="border border-gray-300 px-3 py-2 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                            required
                         >
                             <option
                                 v-for="c in carteras"
@@ -566,3 +609,14 @@ const reportesFiltrados = computed(() => {
         </ModalGestion>
     </AuthenticatedLayout>
 </template>
+<style scoped>
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+    opacity: 0;
+    transform: scale(0.97);
+}
+</style>

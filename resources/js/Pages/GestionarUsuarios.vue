@@ -10,7 +10,7 @@ import Swal from "sweetalert2";
 import Multiselect from "vue-multiselect";
 import CarteraReportesAccordion from "@/Components/CarteraReportesAccordion.vue";
 import "vue-multiselect/dist/vue-multiselect.css";
-
+import FakePasswordInput from "@/Components/FakePasswordInput.vue";
 const { users, carteras, reportes, roles, success } = usePage().props;
 
 const showModal = ref(false);
@@ -314,28 +314,47 @@ watch(
             >
                 <template #default="{ form, errors }">
                     <div v-if="tabActiva === 'basicos'">
+                        <input
+                            type="text"
+                            name="fake_username"
+                            autocomplete="username"
+                            style="display: none"
+                        />
+                        <input
+                            type="password"
+                            name="fake_password"
+                            autocomplete="new-password"
+                            style="display: none"
+                        />
+
                         <InputField
+                            class="modalInputs"
                             label="Nombre"
                             v-model="form.name"
                             :error="errors.name"
+                            :required="true"
                         />
                         <InputField
+                            class="modalInputs"
                             label="Email"
                             v-model="form.email"
                             :error="errors.email"
+                            :required="true"
                         />
-                        <InputField
+                        <FakePasswordInput
+                            class="modalInputs"
                             :label="
                                 usuarioEditar
                                     ? 'Nueva contraseña (opcional)'
                                     : 'Contraseña'
                             "
                             v-model="form.password"
-                            type="password"
-                            :error="errors.password"
                             placeholder="Deja en blanco para no cambiar"
+                            :error="errors.password"
+                            :required="true"
                         />
-                        <div class="mb-4">
+
+                        <div class="modalInputs">
                             <label class="block text-sm font-medium mb-1"
                                 >Estado</label
                             >
@@ -347,7 +366,7 @@ watch(
                                 <option :value="false">Inactivo</option>
                             </select>
                         </div>
-                        <div>
+                        <div class="modalInputs" style="margin-top: 10px">
                             <label class="block text-sm font-medium mb-1"
                                 >Rol</label
                             >
@@ -358,6 +377,7 @@ watch(
                                 label="name"
                                 placeholder="Selecciona un rol"
                                 class="w-full"
+                                :searchable="false"
                             />
                             <p v-if="errors.roles" class="text-red-600 text-sm">
                                 {{ errors.roles }}
@@ -376,6 +396,7 @@ watch(
                                 :multiple="true"
                                 track-by="id"
                                 label="nombre"
+                                :searchable="false"
                                 placeholder="Selecciona carteras…"
                                 class="w-full"
                             />

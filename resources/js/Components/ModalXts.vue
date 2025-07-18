@@ -130,11 +130,11 @@ function handleSubmit() {
     errors.value = {};
     const data = props.transform(props.form);
     router[props.method](props.endpoint, data, {
-        onSuccess: (page) =>
-            emit(
-                "success",
-                page.props.success || "Operación realizada correctamente"
-            ),
+        onSuccess: (page) => {
+            if (page.props?.success) {
+                emit("success", page.props.success);
+            }
+        },
         onError: (err) => (errors.value = err),
     });
 }

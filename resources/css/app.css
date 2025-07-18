@@ -24,8 +24,6 @@ button {
     transition: 200ms;
 }
 
-
-
 /*==============
 MENU
 ==============*/
@@ -95,14 +93,14 @@ label.linkCarteras {
     width: calc(100% + 17px);
 } */
 
-.overflowHijo  {
-  overflow: scroll;     /* o auto */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE 10+ */
+.overflowHijo {
+    overflow: scroll; /* o auto */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE 10+ */
 }
 
 .overflowHijo::-webkit-scrollbar {
-  display: none; /* Chrome, Safari y Edge */
+    display: none; /* Chrome, Safari y Edge */
 }
 
 /*==============
@@ -149,11 +147,7 @@ LOGIN
 }
 
 form label.block {
-    margin: 0 0 3px;
-    display: block;
-    font-size: 1em;
     color: var(--colorPrincipal);
-    font-weight: 700;
 }
 .mt-6.w-full.overflow-hidden {
     width: 100%;
@@ -205,9 +199,9 @@ button.btn {
 .modalInputs textarea,
 .modalInputs select,
 .modalInputs input {
-  padding: 8px 15px 7px;
-  height: auto;
-  font-size: 15px;
+    padding: 8px 15px 7px;
+    height: auto;
+    font-size: 15px;
 }
 svg.mySVG {
     position: relative;
@@ -324,12 +318,20 @@ CAMBIOS AL MULTISELECT
 
 /* Etiquetas seleccionadas */
 .multiselect__tag {
-    background-color: #6366f1 !important; /* Indigo-500 */
+    position: relative;
+    display: inline-block;
+    border-radius: 5px;
+    margin-right: 10px;
+    color: #fff;
+    line-height: 1;
+    background: #6366f1 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    max-width: 100%;
+    text-overflow: ellipsis;
     padding: 4px 20px 4px 8px !important;
-    border-radius: 6px;
     font-size: 13px;
 }
-
 /* Ícono de cierre (X) */
 .multiselect__tag-icon::after {
     content: "×";
@@ -348,16 +350,37 @@ CAMBIOS AL MULTISELECT
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     background-color: #ffffff;
 }
-
+.multiselect__tags-wrap {
+    width: 90%;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: flex-start;
+}
+.multiselect__option::after {
+    top: 0;
+    right: 0;
+    position: absolute;
+    line-height: 25px !important;
+    padding-right: 12px;
+    padding-left: 20px;
+    font-size: 13px;
+}
 /* Input y zona de etiquetas */
 .multiselect__tags {
-    padding: 4px 8px !important;
-    gap: 6px;
+    min-height: 40px;
+    background: #fff;
+    font-size: 14px;
+    background-color: #f3fafddb;
+    border: solid 1px var(--colorPrincipal);
+    border-radius: 4px;
+    padding: 5px;
+    margin: 0;
     display: flex;
-    flex-wrap: wrap;
-    background-color: #f8fafc;
-    border-radius: 6px;
-    border: 1px solid #c7d2fe;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Opciones */
@@ -369,7 +392,17 @@ CAMBIOS AL MULTISELECT
     background-color: #eef2ff !important; /* Indigo-50 más suave */
     color: #3730a3 !important; /* Indigo-700 */
 }
-
+.multiselect__option {
+    display: block;
+    padding: 5px 10px !important;
+    min-height: 20px !important;
+    line-height: 16px;
+    text-decoration: none;
+    text-transform: none;
+    position: relative;
+    cursor: pointer;
+    white-space: nowrap;
+}
 /* Scrollbar tranquilo */
 .multiselect__content-wrapper::-webkit-scrollbar {
     width: 5px;
@@ -441,18 +474,18 @@ ICONOS
 }
 
 .modaleStyle {
-  background: #000000b2;
-  height: 100vh;
-  padding: 30px 20px;
-  overflow: scroll;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  align-items: flex-start;
-  flex: none !important;
+    background: #000000b2;
+    height: 100vh;
+    padding: 30px 20px;
+    overflow: scroll;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    align-items: flex-start;
+    flex: none !important;
 }
 
 .modaleStyle::-webkit-scrollbar {
-  display: none; /* Chrome, Safari y Edge */
+    display: none; /* Chrome, Safari y Edge */
 }
 .modaleStyle > div {
     position: relative;
@@ -462,20 +495,18 @@ ICONOS
     bottom: 0;
     margin: auto;
     background: #fff !important;
-    
 }
 
-
 .modaleStyle > div label {
-  font-size: 13px;
-  font-weight: 100;
+    font-size: 13px;
+    font-weight: 100;
 }
 
 .from-blue-600 {
-  --tw-gradient-from: var(--colorPrincipal);
-  background: var(--colorPrincipal);
+    --tw-gradient-from: var(--colorPrincipal);
+    background: var(--colorPrincipal);
 }
 .from-blue-600:hover {
-  --tw-gradient-from: var(--colorSecundario);
-  background: var(--colorSecundario);
+    --tw-gradient-from: var(--colorSecundario);
+    background: var(--colorSecundario);
 }
