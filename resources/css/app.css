@@ -18,7 +18,16 @@ COLORES
 .bgPrincipal {
     background: var(--colorPrincipal);
 }
-
+.bgSecundario {
+    background: #ebebeb;
+    color: #000;
+    padding: 5px 15px;
+    font-size: 15px;
+    border-radius: 10px;
+}
+.bgSecundario svg {
+    color: #000;
+}
 a,
 button {
     transition: 200ms;
@@ -147,7 +156,11 @@ LOGIN
 }
 
 form label.block {
+    margin: 0 0 3px;
+    display: block;
+    font-size: 1em;
     color: var(--colorPrincipal);
+    font-weight: 700;
 }
 .mt-6.w-full.overflow-hidden {
     width: 100%;
@@ -318,20 +331,12 @@ CAMBIOS AL MULTISELECT
 
 /* Etiquetas seleccionadas */
 .multiselect__tag {
-    position: relative;
-    display: inline-block;
-    border-radius: 5px;
-    margin-right: 10px;
-    color: #fff;
-    line-height: 1;
-    background: #6366f1 !important;
-    white-space: nowrap;
-    overflow: hidden;
-    max-width: 100%;
-    text-overflow: ellipsis;
+    background-color: #6366f1 !important; /* Indigo-500 */
     padding: 4px 20px 4px 8px !important;
+    border-radius: 6px;
     font-size: 13px;
 }
+
 /* Ícono de cierre (X) */
 .multiselect__tag-icon::after {
     content: "×";
@@ -350,37 +355,16 @@ CAMBIOS AL MULTISELECT
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     background-color: #ffffff;
 }
-.multiselect__tags-wrap {
-    width: 90%;
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-items: flex-start;
-}
-.multiselect__option::after {
-    top: 0;
-    right: 0;
-    position: absolute;
-    line-height: 25px !important;
-    padding-right: 12px;
-    padding-left: 20px;
-    font-size: 13px;
-}
+
 /* Input y zona de etiquetas */
 .multiselect__tags {
-    min-height: 40px;
-    background: #fff;
-    font-size: 14px;
-    background-color: #f3fafddb;
-    border: solid 1px var(--colorPrincipal);
-    border-radius: 4px;
-    padding: 5px;
-    margin: 0;
+    padding: 4px 8px !important;
+    gap: 6px;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    flex-wrap: wrap;
+    background-color: #f8fafc;
+    border-radius: 6px;
+    border: 1px solid #c7d2fe;
 }
 
 /* Opciones */
@@ -392,17 +376,7 @@ CAMBIOS AL MULTISELECT
     background-color: #eef2ff !important; /* Indigo-50 más suave */
     color: #3730a3 !important; /* Indigo-700 */
 }
-.multiselect__option {
-    display: block;
-    padding: 5px 10px !important;
-    min-height: 20px !important;
-    line-height: 16px;
-    text-decoration: none;
-    text-transform: none;
-    position: relative;
-    cursor: pointer;
-    white-space: nowrap;
-}
+
 /* Scrollbar tranquilo */
 .multiselect__content-wrapper::-webkit-scrollbar {
     width: 5px;
@@ -509,4 +483,42 @@ ICONOS
 .from-blue-600:hover {
     --tw-gradient-from: var(--colorSecundario);
     background: var(--colorSecundario);
+}
+
+.botonesTablaReportes button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 5px 15px;
+}
+.botonesTablaReportes
+    .bgIconEdit.text-white.shadow-md.transition.transform::after {
+    content: "Editar";
+    font-size: 15px;
+    margin-left: 10px;
+}
+
+.botonesTablaReportes
+    .bgIconTrash.text-white.shadow-md.transition.transform::after {
+    content: "Eliminar";
+    font-size: 12px;
+    margin-left: 8px;
+}
+
+.filtros > span {
+    position: relative;
+    top: 6px;
+}
+
+.customMenu span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    display: block;
+    text-align: left;
+}
+.p-m-10 {
+    padding: 10px;
+    margin-bottom: 10px;
 }

@@ -46,7 +46,7 @@ class RoleController extends Controller
                 'permissions.*' => 'exists:permissions,name',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('❌ Validación fallida', $e->errors());
+            Log::error(' Validación fallida', $e->errors());
             throw $e; // Re-lanza para que Inertia los reciba
         }
 
