@@ -155,7 +155,7 @@ const reportesFiltrados = computed(() => {
                 class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
             >
                 <div class="flex items-center">
-                    <h2 class="text-xl font-semibold tituloPag">Reportes</h2>
+                    <h2 class="text-xl font-semibold tituloPag">Gestionar Reportes</h2>
                     <span
                         class="ml-4 px-3 py-1 hidden sm:inline text-[11px] font-bold uppercase rounded-full shadow-sm text-white bgPrincipal"
                     >

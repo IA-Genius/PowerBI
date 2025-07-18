@@ -3,7 +3,7 @@
         <template #header>
             <div class="flex items-center justify-between">
                 <div class="flex items-center justify-between">
-                    <h2 class="text-xl font-semibold tituloPag">Carteras</h2>
+                    <h2 class="text-xl font-semibold tituloPag">Gestionar Carteras</h2>
                     <!-- <span
                         class="ml-4 px-3 py-1 hidden sm:inline text-[11px] font-bold uppercase rounded-full shadow-sm text-white bgPrincipal"
                     >

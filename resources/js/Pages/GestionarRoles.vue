@@ -196,7 +196,7 @@ watch(
     <AuthenticatedLayout class="relleno">
         <div class="flex items-center justify-between">
             <div class="flex items-center justify-between">
-                <h2 class="text-xl font-semibold tituloPag">Roles</h2>
+                <h2 class="text-xl font-semibold tituloPag">Gestionar Roles</h2>
                 <span
                     class="ml-4 px-3 py-1 hidden sm:inline text-[11px] font-bold uppercase rounded-full shadow-sm text-white bgPrincipal"
                 >
@@ -388,7 +388,7 @@ watch(
                                         class="flex items-center bg-gray-100 border border-gray-200 rounded-full px-2 py-0.5 text-xs text-gray-700 font-medium"
                                         :title="c.nombre"
                                     >
-                                        <svg
+                                        <!-- <svg
                                             class="w-3 h-3 mr-1 text-indigo-400"
                                             fill="none"
                                             stroke="currentColor"
@@ -400,7 +400,7 @@ watch(
                                                 stroke-linejoin="round"
                                                 d="M3 7h18"
                                             ></path>
-                                        </svg>
+                                        </svg> -->
                                         {{ c.nombre }}
                                         <span
                                             class="ml-1 w-4 h-4 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold flex items-center justify-center border border-indigo-100"
