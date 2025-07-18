@@ -279,8 +279,7 @@ const reportesFiltrados = computed(() => {
                     <div class="">
                         <div class="headerReportes">
                             <span
-                                class="rounded-full bgPrincipal flex items-center justify-center text-base font-bold shadow w-full"
-                                style="padding: 5px; margin-bottom: 10px;"
+                                class="rounded-full bgPrincipal flex items-center justify-center text-base font-bold shadow w-full p-m-10"
                             >
                                 <div
                                     class="w-10 h-10 [&_svg]:w-full [&_svg]:h-full [&_svg]:fill-white [&_svg]:stroke-white [&_svg]:color-white"
@@ -299,7 +298,7 @@ const reportesFiltrados = computed(() => {
                     </div>
 
                     <!-- Cartera -->
-                    <div class="flex flex-wrap gap-1 mb-1 justify-center" style="padding: 10px;">
+                    <div class="flex flex-wrap gap-1 mb-1 justify-center p-m-10">
                         <template v-if="reporte.cartera_id">
                             <span
                                 class="flex bgSecundario items-center bg-gray-100 border border-gray-200 rounded-full px-2 py-0.5 text-xs text-gray-700 font-medium"

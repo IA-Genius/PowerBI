@@ -525,3 +525,7 @@ ICONOS
     display: block; 
     text-align: left;
 }
+.p-m-10 {
+    padding: 10px;
+    margin-bottom: 10px;
+}
