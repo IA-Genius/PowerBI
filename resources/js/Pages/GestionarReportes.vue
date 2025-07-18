@@ -139,7 +139,7 @@ const reportesFiltrados = computed(() => {
                 class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
             >
                 <div class="flex items-center">
-                    <h2 class="text-xl font-semibold tituloPag">Reportes</h2>
+                    <h2 class="text-xl font-semibold tituloPag">Gestión de Reportes</h2>
                     <span
                         class="ml-4 px-3 py-1 hidden sm:inline text-[11px] font-bold uppercase rounded-full shadow-sm text-white bgPrincipal"
                     >
@@ -147,8 +147,9 @@ const reportesFiltrados = computed(() => {
                     </span>
                 </div>
                 <div
-                    class="flex flex-col sm:flex-row items-stretch gap-3 sm:gap-4 mt-4 sm:mt-0"
+                    class="flex flex-col sm:flex-row items-stretch gap-3 sm:gap-4 mt-4 sm:mt-0 filtros"
                 >
+                    <span>Filtrar por:</span>
                     <Dropdown>
                         <template #trigger>
                             <button
@@ -268,20 +269,21 @@ const reportesFiltrados = computed(() => {
             </div>
         </template>
         <div v-if="!vistaTabla" class="py-6">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-reportes center">
                 <div
                     v-for="reporte in reportesFiltrados"
                     :key="reporte.id"
-                    class="rounded-lg border border-gray-200 bg-white/90 shadow-sm hover:shadow-md transition-all p-4 flex flex-col min-h-[110px]"
+                    class="rounded-lg border border-gray-200 bg-white/90 shadow-sm hover:shadow-md transition-all p-4 flex flex-col min-h-[110px] "
                 >
                     <!-- Header -->
-                    <div class="flex justify-between items-center mb-2">
-                        <div class="flex items-center gap-2">
+                    <div class="">
+                        <div class="headerReportes">
                             <span
-                                class="w-8 h-8 rounded-full bgPrincipal flex items-center justify-center text-base font-bold shadow"
+                                class="rounded-full bgPrincipal flex items-center justify-center text-base font-bold shadow w-full"
+                                style="padding: 5px; margin-bottom: 10px;"
                             >
                                 <div
-                                    class="w-5 h-5 [&_svg]:w-full [&_svg]:h-full [&_svg]:fill-white [&_svg]:stroke-white"
+                                    class="w-10 h-10 [&_svg]:w-full [&_svg]:h-full [&_svg]:fill-white [&_svg]:stroke-white [&_svg]:color-white"
                                     v-html="reporte.icon"
                                 ></div>
                             </span>
@@ -293,38 +295,21 @@ const reportesFiltrados = computed(() => {
                             </span>
                         </div>
 
-                        <Actions
-                            :edit="true"
-                            :remove="true"
-                            @edit="abrirModalEditarReporte(reporte)"
-                            @delete="eliminarReporte(reporte)"
-                        />
+                        
                     </div>
 
                     <!-- Cartera -->
-                    <div class="flex flex-wrap gap-1 mb-1">
+                    <div class="flex flex-wrap gap-1 mb-1 justify-center" style="padding: 10px;">
                         <template v-if="reporte.cartera_id">
                             <span
-                                class="flex items-center bg-gray-100 border border-gray-200 rounded-full px-2 py-0.5 text-xs text-gray-700 font-medium"
+                                class="flex bgSecundario items-center bg-gray-100 border border-gray-200 rounded-full px-2 py-0.5 text-xs text-gray-700 font-medium"
                                 :title="
                                     carteras.find(
                                         (c) => c.id === reporte.cartera_id
                                     )?.nombre
                                 "
                             >
-                                <svg
-                                    class="w-3 h-3 mr-1 text-indigo-400"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M3 7h18"
-                                    />
-                                </svg>
+                                <svg data-v-f62e011f="" style="margin-right: 10px;" class="w-6 h-6 text-white flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor"><path data-v-f62e011f="" d="M80 32C35.8 32 0 67.8 0 112L0 400c0 44.2 35.8 80 80 80h352c44.2 0 80-35.8 80-80V176c0-44.2-35.8-80-80-80H112c-8.8 0-16 7.2-16 16s7.2 16 16 16h320c26.5 0 48 21.5 48 48v224c0 26.5-21.5 48-48 48H80c-26.5 0-48-21.5-48-48V112c0-26.5 21.5-48 48-48h384c8.8 0 16-7.2 16-16s-7.2-16-16-16H80zM384 312a24 24 0 1 0 0-48 24 24 0 1 0 0 48z"></path></svg>
                                 {{
                                     carteras.find(
                                         (c) => c.id === reporte.cartera_id
@@ -338,7 +323,7 @@ const reportesFiltrados = computed(() => {
                     </div>
 
                     <!-- Enlaces -->
-                    <LinkCopiable
+                    <!-- <LinkCopiable
                         :link="reporte.link_desktop"
                         title="Enlace Desktop"
                     >
@@ -372,15 +357,25 @@ const reportesFiltrados = computed(() => {
                                 />
                             </svg>
                         </template>
-                    </LinkCopiable>
+                    </LinkCopiable> -->
 
                     <!-- Footer -->
-                    <div
+                    <!-- <div
                         class="flex justify-between items-center border-t border-gray-100 pt-2 mt-auto text-[11px] text-gray-400"
                     >
                         <span>ID: {{ reporte.id }}</span>
-                    </div>
+                    </div> -->
+
+                    <Actions
+                        :edit="true"
+                        :remove="true"
+                        class="botonesTablaReportes"
+                        @edit="abrirModalEditarReporte(reporte)"
+                        @delete="eliminarReporte(reporte)"
+                    />
+                    
                 </div>
+
 
                 <div
                     v-if="reportesFiltrados.length === 0"
