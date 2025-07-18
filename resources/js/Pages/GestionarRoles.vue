@@ -8,6 +8,7 @@ import { ref, reactive, onMounted, watch } from "vue";
 import Swal from "sweetalert2";
 import "vue-multiselect/dist/vue-multiselect.css";
 import Actions from "@/Components/Actions.vue";
+import InputField from "@/Components/InputField.vue";
 const { roles, carteras, reportes, permissions, success } = usePage().props;
 
 const showModal = ref(false);
@@ -120,6 +121,7 @@ function handleSuccess(message) {
 function recargar() {
     router.visit(route("roles.index"), {
         preserveScroll: true,
+
         only: ["roles", "success"],
         onFinish: () => cerrarModal(),
     });
@@ -251,22 +253,15 @@ watch(
                     <template #default="{ form, errors }">
                         <div class="space-y-4">
                             <div>
-                                <label
-                                    class="block text-sm font-medium text-gray-700"
-                                    >Nombre del rol</label
-                                >
-                                <input
+                                <InputField
+                                    class="modalInputs"
+                                    label="Nombre del rol"
                                     v-model="form.name"
-                                    type="text"
-                                    required
-                                    class="mt-1 block w-full border-gray-300 rounded shadow-sm"
+                                    name="reporte_link_desktop"
+                                    placeholder="role name"
+                                    :error="errors.name"
+                                    :required="true"
                                 />
-                                <p
-                                    v-if="errors.name"
-                                    class="text-red-600 text-sm"
-                                >
-                                    {{ errors.name }}
-                                </p>
                             </div>
 
                             <div>
@@ -314,9 +309,11 @@ watch(
                                     :multiple="true"
                                     :track-by="'id'"
                                     :label="'nombre'"
+                                    :searchable="false"
                                     placeholder="Selecciona carteras"
                                     class="w-full"
                                 />
+
                                 <p
                                     v-if="errors.carteras"
                                     class="text-red-600 text-sm"

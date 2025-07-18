@@ -19,11 +19,11 @@ COLORES
     background: var(--colorPrincipal);
 }
 .bgSecundario {
-  background: #ebebeb;
-  color: #000;
-  padding: 5px 15px;
-  font-size: 15px;
-  border-radius: 10px;
+    background: #ebebeb;
+    color: #000;
+    padding: 5px 15px;
+    font-size: 15px;
+    border-radius: 10px;
 }
 .bgSecundario svg {
     color: #000;
@@ -32,8 +32,6 @@ a,
 button {
     transition: 200ms;
 }
-
-
 
 /*==============
 MENU
@@ -104,14 +102,14 @@ label.linkCarteras {
     width: calc(100% + 17px);
 } */
 
-.overflowHijo  {
-  overflow: scroll;     /* o auto */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE 10+ */
+.overflowHijo {
+    overflow: scroll; /* o auto */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE 10+ */
 }
 
 .overflowHijo::-webkit-scrollbar {
-  display: none; /* Chrome, Safari y Edge */
+    display: none; /* Chrome, Safari y Edge */
 }
 
 /*==============
@@ -214,9 +212,9 @@ button.btn {
 .modalInputs textarea,
 .modalInputs select,
 .modalInputs input {
-  padding: 8px 15px 7px;
-  height: auto;
-  font-size: 15px;
+    padding: 8px 15px 7px;
+    height: auto;
+    font-size: 15px;
 }
 svg.mySVG {
     position: relative;
@@ -450,18 +448,18 @@ ICONOS
 }
 
 .modaleStyle {
-  background: #000000b2;
-  height: 100vh;
-  padding: 30px 20px;
-  overflow: scroll;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  align-items: flex-start;
-  flex: none !important;
+    background: #000000b2;
+    height: 100vh;
+    padding: 30px 20px;
+    overflow: scroll;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    align-items: flex-start;
+    flex: none !important;
 }
 
 .modaleStyle::-webkit-scrollbar {
-  display: none; /* Chrome, Safari y Edge */
+    display: none; /* Chrome, Safari y Edge */
 }
 .modaleStyle > div {
     position: relative;
@@ -471,26 +469,21 @@ ICONOS
     bottom: 0;
     margin: auto;
     background: #fff !important;
-    
 }
 
-
 .modaleStyle > div label {
-  font-size: 13px;
-  font-weight: 100;
+    font-size: 13px;
+    font-weight: 100;
 }
 
 .from-blue-600 {
-  --tw-gradient-from: var(--colorPrincipal);
-  background: var(--colorPrincipal);
+    --tw-gradient-from: var(--colorPrincipal);
+    background: var(--colorPrincipal);
 }
 .from-blue-600:hover {
-  --tw-gradient-from: var(--colorSecundario);
-  background: var(--colorSecundario);
+    --tw-gradient-from: var(--colorSecundario);
+    background: var(--colorSecundario);
 }
-
-
-
 
 .botonesTablaReportes button {
     display: flex;
@@ -498,34 +491,30 @@ ICONOS
     align-items: center;
     padding: 5px 15px;
 }
-.botonesTablaReportes .bgIconEdit.text-white.shadow-md.transition.transform::after {
-  content: "Editar";
-  font-size: 15px;
-  margin-left: 10px;
+.botonesTablaReportes
+    .bgIconEdit.text-white.shadow-md.transition.transform::after {
+    content: "Editar";
+    font-size: 15px;
+    margin-left: 10px;
 }
 
-.botonesTablaReportes .bgIconTrash.text-white.shadow-md.transition.transform::after {
+.botonesTablaReportes
+    .bgIconTrash.text-white.shadow-md.transition.transform::after {
     content: "Eliminar";
-  font-size: 12px;
-  margin-left: 8px;
+    font-size: 12px;
+    margin-left: 8px;
 }
 
-
-.filtros > span {    
+.filtros > span {
     position: relative;
     top: 6px;
 }
-
 
 .customMenu span {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     width: 100%;
-    display: block; 
+    display: block;
     text-align: left;
-}
-.p-m-10 {
-    padding: 10px;
-    margin-bottom: 10px;
 }

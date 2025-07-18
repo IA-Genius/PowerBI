@@ -28,7 +28,7 @@ require __DIR__ . '/auth.php';
 // PERFIL (AUTENTICADO)
 // ===================
 Route::middleware('auth')->group(function () {
-    
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -40,10 +40,10 @@ Route::middleware('auth')->group(function () {
     // ===================
 
     Route::middleware('can:gestionar roles')->group(function () {
-    Route::get('/roles',            [RoleController::class, 'index'])->name('roles.index');
-    Route::post('/roles',           [RoleController::class, 'store'])->name('roles.store');
-    Route::put('/roles/{role}',     [RoleController::class, 'update'])->name('roles.update');
-    Route::delete('/roles/{role}',  [RoleController::class, 'destroy'])->name('roles.destroy');
+        Route::get('/roles',            [RoleController::class, 'index'])->name('roles.index');
+        Route::post('/roles',           [RoleController::class, 'store'])->name('roles.store');
+        Route::put('/roles/{role}',     [RoleController::class, 'update'])->name('roles.update');
+        Route::delete('/roles/{role}',  [RoleController::class, 'destroy'])->name('roles.destroy');
     });
 
     // ===================
@@ -80,5 +80,5 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::fallback(function () {
-    return redirect()->route(auth()->check() ? 'dashboard' : 'login');
+    return redirect()->route(auth()->user() ? 'dashboard' : 'login');
 });

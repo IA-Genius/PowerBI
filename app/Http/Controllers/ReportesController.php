@@ -44,10 +44,11 @@ class ReportesController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Reporte creado correctamente.',
+            'message' => "Reporte «{$reporte->nombre}» creado correctamente.",
             'reporte' => $reporte->load('cartera'),
         ]);
     }
+
 
     // Actualizar un reporte
     public function update(Request $request, Reporte $reporte)
@@ -71,7 +72,7 @@ class ReportesController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Reporte actualizado correctamente.',
+             'message' => "Reporte «{$reporte->nombre}»  actualizado correctamente.",
             'reporte' => $reporte->load('cartera'),
         ]);
     }
@@ -79,11 +80,14 @@ class ReportesController extends Controller
     // Eliminar un reporte
     public function destroy(Reporte $reporte)
     {
+        $nombre = $reporte->nombre;
         $reporte->delete();
 
         return response()->json([
-            'message' => 'Reporte eliminado correctamente.',
+            'message' => "Reporte «{$nombre}» eliminado correctamente.",
             'id' => $reporte->id,
         ]);
     }
+
+
 }
