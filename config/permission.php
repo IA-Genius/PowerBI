@@ -23,7 +23,7 @@ return [
          * The model you want to use as a Role model needs to implement the
          * `Spatie\Permission\Contracts\Role` contract.
          */
-
+        'permission' => App\Models\Permission::class,
         'role'       => App\Models\Role::class,
 
     ],
