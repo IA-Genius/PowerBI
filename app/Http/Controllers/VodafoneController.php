@@ -82,7 +82,7 @@ class VodafoneController extends Controller
         $user = Auth::user();
 
         if ($vodafone->user_id !== $user->id && !$user->can('vodafone.destroy')) {
-            abort(403, 'No autorizado');
+            abort(403, 'No autorizado defefef');
         }
 
         $vodafone->delete();

@@ -41,8 +41,7 @@ const updatePassword = () => {
             </h2>
 
             <p class="mt-1 text-sm text-gray-600">
-                Asegúrate de que tu cuenta esté usando una contraseña larga y
-                aleatoria para mantenerla segura.
+                Aquí podrás cambiar el nombre de la cuenta. 
             </p>
         </header>
 
@@ -55,8 +54,9 @@ const updatePassword = () => {
                     ref="currentPasswordInput"
                     v-model="form.current_password"
                     type="password"
-                    class="mt-1 block w-full"
+                    class="mt-1 block w-full inputs"
                     autocomplete="current-password"
+                    required
                 />
 
                 <InputError
@@ -73,7 +73,7 @@ const updatePassword = () => {
                     ref="passwordInput"
                     v-model="form.password"
                     type="password"
-                    class="mt-1 block w-full"
+                    class="mt-1 block w-full inputs"
                     autocomplete="new-password"
                 />
 
@@ -90,7 +90,7 @@ const updatePassword = () => {
                     id="password_confirmation"
                     v-model="form.password_confirmation"
                     type="password"
-                    class="mt-1 block w-full"
+                    class="mt-1 block w-full inputs"
                     autocomplete="new-password"
                 />
 
@@ -101,7 +101,7 @@ const updatePassword = () => {
             </div>
 
             <div class="flex items-center gap-4">
-                <PrimaryButton :disabled="form.processing"
+                <PrimaryButton :disabled="form.processing" class="btn"
                     >Guardar</PrimaryButton
                 >
 
@@ -113,7 +113,7 @@ const updatePassword = () => {
                 >
                     <p
                         v-if="form.recentlySuccessful"
-                        class="text-sm text-gray-600"
+                        class="text-sm text-gray-600 btn"
                     >
                         Guardado.
                     </p>

@@ -193,7 +193,7 @@ button.btn {
     display: block;
     margin: 0;
     padding: 0 1em 0;
-    background-color: #f3fafddb;
+    background-color: #f3fafddb !important;
     border: solid 1px var(--colorPrincipal);
     border-radius: 4px;
     box-sizing: border-box;
@@ -224,6 +224,9 @@ svg.mySVG {
     border: 3px solid #ffffff1c;
 }
 
+ .m-0 {
+    margin-bottom: 0 !important;
+ }
 /*============
 PAGINAS
 ============*/
@@ -525,4 +528,14 @@ ICONOS
 
 .headerReportes {
     text-align: center;
+}
+.width-50 {
+    width: 49%;
+}
+.width-49 > div {
+    width: 48%;
+}
+
+@media screen and (max-width: 992px) {
+  .width-50 { width: 100% !important;}
 }
