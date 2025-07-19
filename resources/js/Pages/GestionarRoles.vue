@@ -235,6 +235,14 @@ const tabs = [
     { value: "basico", label: "Datos Básicos", icon: null },
     { value: "permisos", label: "Permisos Avanzados", icon: null },
 ];
+
+function transformarForm(form) {
+    return {
+        ...form,
+        carteras: form.carteras.map((c) => c.id),
+        reportes: form.reportes.map((r) => r.id),
+    };
+}
 </script>
 
 <template>
