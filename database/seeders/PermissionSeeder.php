@@ -11,54 +11,20 @@ class PermissionSeeder extends Seeder
 {
     public function run(): void
     {
-
         $modulosConPermisos = [
-            'Roles' => [
-                'roles.index',
-                'roles.create',
-                'roles.store',
-                'roles.edit',
-                'roles.update',
-                'roles.destroy',
-            ],
-            'Usuarios' => [
-                'usuarios.index',
-                'usuarios.create',
-                'usuarios.store',
-                'usuarios.edit',
-                'usuarios.update',
-                'usuarios.destroy',
-            ],
-            'Carteras' => [
-                'carteras.index',
-                'carteras.create',
-                'carteras.store',
-                'carteras.edit',
-                'carteras.update',
-                'carteras.destroy',
-            ],
-            'Reportes' => [
-                'reportes.index',
-                'reportes.edit',
-                'reportes.update',
-                'reportes.create',
-            ],
-            'Vodafone' => [
-                'vodafone.index',
-                'vodafone.create',
-                'vodafone.store',
-                'vodafone.edit',
-                'vodafone.update',
-                'vodafone.destroy',
-                'vodafone.view-global', // 👈 nuevo permiso
-            ],
-
+            'Roles' => ['ver', 'crear', 'guardar', 'editar', 'actualizar', 'eliminar'],
+            'Usuarios' => ['ver', 'crear', 'guardar', 'editar', 'actualizar', 'eliminar'],
+            'Carteras' => ['ver', 'crear', 'guardar', 'editar', 'actualizar', 'eliminar'],
+            'Reportes' => ['ver', 'crear', 'editar', 'actualizar'],
+            'Vodafone' => ['ver', 'crear', 'guardar', 'editar', 'actualizar', 'eliminar', 'ver-global'],
         ];
 
-        foreach ($modulosConPermisos as $moduloNombre => $permisos) {
+        foreach ($modulosConPermisos as $moduloNombre => $acciones) {
             $modulo = Module::firstOrCreate(['name' => $moduloNombre]);
+            $moduloSlug = strtolower($moduloNombre);
 
-            foreach ($permisos as $permisoNombre) {
+            foreach ($acciones as $accion) {
+                $permisoNombre = "{$moduloSlug}.{$accion}";
                 Permission::firstOrCreate([
                     'name' => $permisoNombre,
                     'guard_name' => 'web',
@@ -78,17 +44,15 @@ class PermissionSeeder extends Seeder
             'name' => 'viewer',
             'guard_name' => 'web',
         ]);
-
-        $rolViewer->syncPermissions([]);
+        $rolViewer->syncPermissions([]); // sin permisos
 
         $rolSupervisor = Role::firstOrCreate([
             'name' => 'supervisor vodafone',
             'guard_name' => 'web',
         ]);
-
         $rolSupervisor->syncPermissions([
-            'vodafone.index',
-            'vodafone.view-global',
+            'vodafone.ver',
+            'vodafone.ver-global',
         ]);
     }
 }

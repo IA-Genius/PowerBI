@@ -70,13 +70,12 @@ const linkReporte = computed(() => {
 
                     <!-- Animación Lottie -->
                     <lottie-player
+                        id="analyticsLottie"
                         src="/animation/analytics.json"
                         background="transparent"
                         speed="1"
                         style="width: 100%; max-width: 1520px; height: 620px"
-                        loop
-                        autoplay
-                        class="animate-fade-in"
+                        class=""
                     ></lottie-player>
                 </div>
             </transition>

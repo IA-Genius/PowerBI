@@ -10,6 +10,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\CarterasController;
 use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\ModuleController;
+use App\Http\Controllers\VodafoneController;
 
 // ===================
 // RUTA INICIAL
@@ -39,57 +40,48 @@ Route::middleware('auth')->group(function () {
     // ===================
     // ROLES
     // ===================
-    Route::middleware('can:roles.index')->group(function () {
-        Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
-    });
-
-    Route::middleware('can:roles.create')->post('/roles', [RoleController::class, 'store'])->name('roles.store');
-    Route::middleware('can:roles.edit')->put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
-    Route::middleware('can:roles.destroy')->delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
+    Route::middleware('can:roles.ver')->get('/roles', [RoleController::class, 'index'])->name('roles.index');
+    Route::middleware('can:roles.crear')->post('/roles', [RoleController::class, 'store'])->name('roles.store');
+    Route::middleware('can:roles.editar')->put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
+    Route::middleware('can:roles.eliminar')->delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
 
     // ===================
     // USUARIOS
     // ===================
-    Route::middleware('can:usuarios.index')->group(function () {
-        Route::get('/users', [UserController::class, 'index'])->name('users.index');
-    });
-
-    Route::middleware('can:usuarios.create')->post('/users', [UserController::class, 'store'])->name('users.store');
-    Route::middleware('can:usuarios.edit')->put('/users/{user}', [UserController::class, 'update'])->name('users.update');
-    Route::middleware('can:usuarios.destroy')->delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+    Route::middleware('can:usuarios.ver')->get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::middleware('can:usuarios.crear')->post('/users', [UserController::class, 'store'])->name('users.store');
+    Route::middleware('can:usuarios.editar')->put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+    Route::middleware('can:usuarios.eliminar')->delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
     // ===================
     // CARTERAS
     // ===================
-    Route::middleware('can:carteras.index')->get('/carteras', [CarterasController::class, 'index'])->name('carteras.index');
-    Route::middleware('can:carteras.create')->post('/carteras', [CarterasController::class, 'store'])->name('carteras.store');
-    Route::middleware('can:carteras.edit')->put('/carteras/{cartera}', [CarterasController::class, 'update'])->name('carteras.update');
-    Route::middleware('can:carteras.destroy')->delete('/carteras/{cartera}', [CarterasController::class, 'destroy'])->name('carteras.destroy');
+    Route::middleware('can:carteras.ver')->get('/carteras', [CarterasController::class, 'index'])->name('carteras.index');
+    Route::middleware('can:carteras.crear')->post('/carteras', [CarterasController::class, 'store'])->name('carteras.store');
+    Route::middleware('can:carteras.editar')->put('/carteras/{cartera}', [CarterasController::class, 'update'])->name('carteras.update');
+    Route::middleware('can:carteras.eliminar')->delete('/carteras/{cartera}', [CarterasController::class, 'destroy'])->name('carteras.destroy');
 
     // ===================
     // REPORTES
     // ===================
-    Route::middleware('can:reportes.index')->get('/reportes', [ReportesController::class, 'index'])->name('reportes.index');
-    Route::middleware('can:reportes.create')->post('/reportes', [ReportesController::class, 'store'])->name('reportes.store');
-    Route::middleware('can:reportes.edit')->put('/reportes/{reporte}', [ReportesController::class, 'update'])->name('reportes.update');
-    Route::middleware('can:reportes.destroy')->delete('/reportes/{reporte}', [ReportesController::class, 'destroy'])->name('reportes.destroy');
+    Route::middleware('can:reportes.ver')->get('/reportes', [ReportesController::class, 'index'])->name('reportes.index');
+    Route::middleware('can:reportes.crear')->post('/reportes', [ReportesController::class, 'store'])->name('reportes.store');
+    Route::middleware('can:reportes.editar')->put('/reportes/{reporte}', [ReportesController::class, 'update'])->name('reportes.update');
+    Route::middleware('can:reportes.eliminar')->delete('/reportes/{reporte}', [ReportesController::class, 'destroy'])->name('reportes.destroy');
 
     // ===================
     // MÓDULOS (desde pestaña Roles)
     // ===================
-    Route::middleware('can:roles.create')->post('/modulos', [ModuleController::class, 'store'])->name('modules.store');
+    Route::middleware('can:roles.crear')->post('/modulos', [ModuleController::class, 'store'])->name('modules.store');
 
     // ===================
     // VODAFONE
     // ===================
-    Route::middleware('can:vodafone.index')->get('/vodafone', [\App\Http\Controllers\VodafoneController::class, 'index'])->name('vodafone.index');
-    Route::middleware('can:vodafone.create')->get('/vodafone/create', [\App\Http\Controllers\VodafoneController::class, 'create'])->name('vodafone.create');
-    Route::middleware('can:vodafone.store')->post('/vodafone', [\App\Http\Controllers\VodafoneController::class, 'store'])->name('vodafone.store');
-    Route::middleware('can:vodafone.edit')->get('/vodafone/{vodafone}/edit', [\App\Http\Controllers\VodafoneController::class, 'edit'])->name('vodafone.edit');
-    Route::middleware('can:vodafone.update')->put('/vodafone/{vodafone}', [\App\Http\Controllers\VodafoneController::class, 'update'])->name('vodafone.update');
-    Route::middleware('can:vodafone.destroy')->delete('/vodafone/{vodafone}', [\App\Http\Controllers\VodafoneController::class, 'destroy'])->name('vodafone.destroy');
+    Route::middleware('can:vodafone.ver')->get('/vodafone', [VodafoneController::class, 'index'])->name('vodafone.index');
+    Route::middleware('can:vodafone.guardar')->post('/vodafone', [VodafoneController::class, 'store'])->name('vodafone.store');
+    Route::middleware('can:vodafone.actualizar')->put('/vodafone/{vodafone}', [VodafoneController::class, 'update'])->name('vodafone.update');
+    Route::middleware('can:vodafone.eliminar')->delete('/vodafone/{vodafone}', [VodafoneController::class, 'destroy'])->name('vodafone.destroy');
 });
-
 
 // ===================
 // RUTA BACKUP SI FALLA

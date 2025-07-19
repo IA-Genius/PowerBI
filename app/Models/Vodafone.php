@@ -9,6 +9,7 @@ class Vodafone extends Model
     protected $table = 'vodafone';
 
     protected $fillable = [
+        'user_id',
         'dni_nif_cif',
         'id_cliente',
         'observacion_smart',

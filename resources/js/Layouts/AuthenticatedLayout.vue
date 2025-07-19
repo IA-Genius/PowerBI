@@ -10,16 +10,8 @@ import Dropdown from "@/Components/Dropdown.vue";
 import DropdownLink from "@/Components/DropdownLink.vue";
 import NavLink from "@/Components/NavLink.vue";
 import DataTool from "@/Components/DataTool.vue";
-import {
-    BriefcaseIcon,
-    UsersIcon,
-    ShieldCheckIcon,
-    DocumentChartBarIcon,
-} from "@heroicons/vue/24/solid";
 
 const page = usePage();
-const permissions = page.props.auth?.permissions || [];
-const role = page.props.auth?.role || null;
 const { can } = page.props;
 const canDo = (key) => !!can[key];
 
@@ -169,7 +161,7 @@ console.log(page.props);
 
                 <div
                     class="separador separadorAdmin"
-                    v-if="canDo('carteras.index')"
+                    v-if="canDo('carteras.ver')"
                 ></div>
                 <link
                     href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded"
@@ -177,7 +169,7 @@ console.log(page.props);
                 />
 
                 <NavLink
-                    v-if="canDo('carteras.index')"
+                    v-if="canDo('carteras.ver')"
                     :href="route('carteras.index')"
                     :active="route().current('carteras.index')"
                     class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition group relative"
@@ -212,7 +204,7 @@ console.log(page.props);
                 </NavLink>
 
                 <NavLink
-                    v-if="canDo('reportes.index')"
+                    v-if="canDo('reportes.ver')"
                     :href="route('reportes.index')"
                     :active="route().current('reportes.index')"
                     class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition group relative"
@@ -243,7 +235,7 @@ console.log(page.props);
                 </NavLink>
 
                 <NavLink
-                    v-if="canDo('roles.index')"
+                    v-if="canDo('roles.ver')"
                     :href="route('roles.index')"
                     :active="route().current('roles.index')"
                     class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition group relative"
@@ -275,7 +267,7 @@ console.log(page.props);
                 </NavLink>
 
                 <NavLink
-                    v-if="canDo('usuarios.index')"
+                    v-if="canDo('usuarios.ver')"
                     :href="route('users.index')"
                     :active="route().current('users.index')"
                     class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition group relative"
@@ -304,10 +296,44 @@ console.log(page.props);
                         :show="!isSidebarOpen"
                     />
                 </NavLink>
+                <NavLink
+                    v-if="canDo('vodafone.ver')"
+                    :href="route('vodafone.index')"
+                    :active="route().current('vodafone.index')"
+                    class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition group relative"
+                    :class="isSidebarOpen ? 'justify-start' : 'justify-center'"
+                >
+                    <svg
+                        class="w-6 h-6 text-white flex-shrink-0"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 512 512"
+                        fill="currentColor"
+                    >
+                        <path
+                            xmlns="http://www.w3.org/2000/svg"
+                            d="M416 240L32 240 32 64c0-17.7 14.3-32 32-32l320 0c17.7 0 32 14.3 32 32l0 176zM0 256l0 16L0 448c0 35.3 28.7 64 64 64l320 0c35.3 0 64-28.7 64-64l0-176 0-16 0-16 0-176c0-35.3-28.7-64-64-64L64 0C28.7 0 0 28.7 0 64L0 240l0 16zM416 448c0 17.7-14.3 32-32 32L64 480c-17.7 0-32-14.3-32-32l0-176 384 0 0 176zM160 96c-17.7 0-32 14.3-32 32l0 16c0 8.8 7.2 16 16 16s16-7.2 16-16l0-16 128 0 0 16c0 8.8 7.2 16 16 16s16-7.2 16-16l0-16c0-17.7-14.3-32-32-32L160 96zm0 256c-17.7 0-32 14.3-32 32l0 16c0 8.8 7.2 16 16 16s16-7.2 16-16l0-16 128 0 0 16c0 8.8 7.2 16 16 16s16-7.2 16-16l0-16c0-17.7-14.3-32-32-32l-128 0z"
+                        />
+                    </svg>
 
-                <div class="separador"></div>
+                    <!-- Contenedor del texto -->
+                    <transition name="fade-slide">
+                        <span
+                            v-if="isSidebarOpen"
+                            class="ml-3 text-sm text-white whitespace-nowrap"
+                        >
+                            Gestión Vodafone
+                        </span>
+                    </transition>
 
-                <div class="h-90">
+                    <!-- Tooltip en modo colapsado -->
+                    <DataTool
+                        :label="'Gestión Vodafone'"
+                        :show="!isSidebarOpen"
+                    />
+                </NavLink>
+                <div class="separador" v-if="reportes.length > 0"></div>
+
+                <div class="h-90" v-if="reportes.length > 0">
                     <label
                         v-if="isSidebarOpen && selectedCartera"
                         class="block text-xs text-white mt-4 mb-2 linkCarteras"
@@ -414,7 +440,11 @@ console.log(page.props);
                         </button>
 
                         <!-- Carteras Dropdown -->
-                        <Dropdown align="left" width="full">
+                        <Dropdown
+                            v-if="carteras.length > 0"
+                            align="left"
+                            width="full"
+                        >
                             <template #trigger>
                                 <button
                                     class="w-full flex items-center px-3 py-2 rounded-md"
@@ -508,8 +538,9 @@ console.log(page.props);
 
                                 <!-- Contenido del Dropdown -->
                                 <template #content>
-                                    <!-- <div
-                                        class="px-4 py-3 border-b border-gray-100 bg-white"
+                                    <!-- Solo visible en mobile -->
+                                    <div
+                                        class="block lg:hidden px-4 py-3 border-b border-gray-100 bg-white"
                                     >
                                         <div
                                             class="font-semibold text-gray-800 text-base"
@@ -522,7 +553,7 @@ console.log(page.props);
                                         >
                                             {{ $page.props.auth.role }}
                                         </div>
-                                    </div> -->
+                                    </div>
 
                                     <DropdownLink :href="route('profile.edit')">
                                         <div class="flex items-center gap-2">

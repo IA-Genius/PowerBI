@@ -98,9 +98,7 @@
             :title="carteraEditar ? 'Editar Cartera' : 'Agregar Cartera'"
             submitLabel="Guardar"
             :initialForm="carteraForm"
-            :endpoint="
-                carteraEditar ? `/carteras/${carteraEditar.id}` : '/carteras'
-            "
+           c
             :method="carteraEditar ? 'put' : 'post'"
             @close="cerrarModal"
             @success="handleSuccess"

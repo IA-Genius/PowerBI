@@ -17,83 +17,82 @@ class VodafoneController extends Controller
 
         $query = Vodafone::query();
 
-        if (!$user->can('vodafone.view-global')) {
+        if (!$user->can('vodafone.ver-global')) {
             $query->where('user_id', $user->id);
         }
 
         $items = $query->latest()->paginate(15);
 
-        return Inertia::render('Vodafone/Index', [
+        return Inertia::render('Vodafone', [
             'items' => $items,
             'success' => session('success'),
         ]);
     }
 
-    public function create()
-    {
-        return Inertia::render('Vodafone/Create');
-    }
+
 
     public function store(Request $request)
     {
         $data = $request->validate($this->validationRules());
 
-        /** @var \App\Models\User $user */
+
         $user = Auth::user();
         $data['user_id'] = $user->id;
 
         Vodafone::create($data);
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Datos creados correctamente.',
+                'vodafone' => $data,
+            ]);
+        }
+
         return redirect()->route('vodafone.index')->with('success', 'Registro creado correctamente.');
     }
 
-    public function show(Vodafone $vodafone)
-    {
-        return Inertia::render('Vodafone/Show', [
-            'vodafone' => $vodafone,
-        ]);
-    }
 
-    public function edit(Vodafone $vodafone)
-    {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-
-        if ($vodafone->user_id !== $user->id && !$user->can('vodafone.view-global')) {
-            abort(403, 'No autorizado');
-        }
-
-        return Inertia::render('Vodafone/Edit', [
-            'vodafone' => $vodafone,
-        ]);
-    }
 
     public function update(Request $request, Vodafone $vodafone)
     {
+        $data = $request->validate($this->validationRules());
         /** @var \App\Models\User $user */
         $user = Auth::user();
+        $data['user_id'] = $user->id;
 
-        if ($vodafone->user_id !== $user->id && !$user->can('vodafone.view-global')) {
-            abort(403, 'No autorizado');
-        }
 
-        $data = $request->validate($this->validationRules());
 
         $vodafone->update($data);
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Datos actualizados correctamente.',
+                'vodafone' => $data,
+            ]);
+        }
+
 
         return redirect()->route('vodafone.index')->with('success', 'Registro actualizado correctamente.');
     }
 
-    public function destroy(Vodafone $vodafone)
+    public function destroy(Request $request, Vodafone $vodafone)
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        if ($vodafone->user_id !== $user->id && !$user->can('vodafone.view-global')) {
+        if ($vodafone->user_id !== $user->id && !$user->can('vodafone.destroy')) {
             abort(403, 'No autorizado');
         }
 
         $vodafone->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Data eliminada correctamente.',
+            ]);
+        }
 
         return redirect()->route('vodafone.index')->with('success', 'Registro eliminado correctamente.');
     }
