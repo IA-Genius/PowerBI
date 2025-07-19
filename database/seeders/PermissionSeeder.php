@@ -41,6 +41,7 @@ class PermissionSeeder extends Seeder
                 'reportes.index',
                 'reportes.edit',
                 'reportes.update',
+                'reportes.create',
             ],
             'Vodafone' => [
                 'vodafone.index',

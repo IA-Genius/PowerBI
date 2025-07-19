@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 
 class VodafoneController extends Controller
 {
+
     public function index()
     {
         /** @var \App\Models\User $user */
