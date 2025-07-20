@@ -4,11 +4,11 @@ import InputLabel from "@/Components/InputLabel.vue";
 import PrimaryButton from "@/Components/PrimaryButton.vue";
 import TextInput from "@/Components/TextInput.vue";
 import { useForm } from "@inertiajs/vue3";
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 
 const passwordInput = ref(null);
 const currentPasswordInput = ref(null);
-
+const successMessage = ref(false);
 const form = useForm({
     current_password: "",
     password: "",
@@ -16,21 +16,28 @@ const form = useForm({
 });
 
 const updatePassword = () => {
-    form.put(route("password.update"), {
+    successMessage.value = false;
+
+    form.put(route("profile.password.update"), {
         preserveScroll: true,
-        onSuccess: () => form.reset(),
-        onError: () => {
-            if (form.errors.password) {
-                form.reset("password", "password_confirmation");
-                passwordInput.value.focus();
-            }
-            if (form.errors.current_password) {
-                form.reset("current_password");
-                currentPasswordInput.value.focus();
-            }
+        onSuccess: () => {
+            successMessage.value = true;
+            form.reset();
+        },
+        onError: (errors) => {
+            console.log("❌ Errores desde backend:", errors);
+            console.log("❌ Errores en form.errors:", form.errors);
+        },
+
+        onFinish: () => {
+            console.log("✅ Petición finalizada");
         },
     });
 };
+
+onMounted(() => {
+    successMessage.value = false;
+});
 </script>
 
 <template>
@@ -39,16 +46,14 @@ const updatePassword = () => {
             <h2 class="text-lg font-medium text-gray-900">
                 Actualizar contraseña
             </h2>
-
             <p class="mt-1 text-sm text-gray-600">
-                Aquí podrás cambiar el nombre de la cuenta. 
+                Aquí podrás cambiar tu contraseña de acceso.
             </p>
         </header>
 
         <form @submit.prevent="updatePassword" class="mt-6 space-y-6">
             <div>
                 <InputLabel for="current_password" value="Contraseña actual" />
-
                 <TextInput
                     id="current_password"
                     ref="currentPasswordInput"
@@ -58,7 +63,6 @@ const updatePassword = () => {
                     autocomplete="current-password"
                     required
                 />
-
                 <InputError
                     :message="form.errors.current_password"
                     class="mt-2"
@@ -67,7 +71,6 @@ const updatePassword = () => {
 
             <div>
                 <InputLabel for="password" value="Nueva contraseña" />
-
                 <TextInput
                     id="password"
                     ref="passwordInput"
@@ -75,8 +78,8 @@ const updatePassword = () => {
                     type="password"
                     class="mt-1 block w-full inputs"
                     autocomplete="new-password"
+                    required
                 />
-
                 <InputError :message="form.errors.password" class="mt-2" />
             </div>
 
@@ -85,15 +88,14 @@ const updatePassword = () => {
                     for="password_confirmation"
                     value="Confirmar contraseña"
                 />
-
                 <TextInput
                     id="password_confirmation"
                     v-model="form.password_confirmation"
                     type="password"
                     class="mt-1 block w-full inputs"
                     autocomplete="new-password"
+                    required
                 />
-
                 <InputError
                     :message="form.errors.password_confirmation"
                     class="mt-2"
@@ -101,9 +103,9 @@ const updatePassword = () => {
             </div>
 
             <div class="flex items-center gap-4">
-                <PrimaryButton :disabled="form.processing" class="btn"
-                    >Guardar</PrimaryButton
-                >
+                <PrimaryButton :disabled="form.processing" class="btn">
+                    Guardar
+                </PrimaryButton>
 
                 <Transition
                     enter-active-class="transition ease-in-out"
@@ -111,11 +113,8 @@ const updatePassword = () => {
                     leave-active-class="transition ease-in-out"
                     leave-to-class="opacity-0"
                 >
-                    <p
-                        v-if="form.recentlySuccessful"
-                        class="text-sm text-gray-600 btn"
-                    >
-                        Guardado.
+                    <p v-if="successMessage" class="text-sm text-green-600">
+                        Contraseña actualizada correctamente.
                     </p>
                 </Transition>
             </div>

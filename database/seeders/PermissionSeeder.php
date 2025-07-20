@@ -15,7 +15,7 @@ class PermissionSeeder extends Seeder
             'Roles' => ['ver', 'crear', 'guardar', 'editar', 'actualizar', 'eliminar'],
             'Usuarios' => ['ver', 'crear', 'guardar', 'editar', 'actualizar', 'eliminar'],
             'Carteras' => ['ver', 'crear', 'guardar', 'editar', 'actualizar', 'eliminar'],
-            'Reportes' => ['ver', 'crear', 'editar', 'actualizar'],
+            'Reportes' => ['ver', 'crear', 'guardar', 'editar', 'actualizar', 'eliminar'],
             'Vodafone' => ['ver', 'crear', 'guardar', 'editar', 'actualizar', 'eliminar', 'ver-global'],
         ];
 

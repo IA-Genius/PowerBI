@@ -13,6 +13,9 @@ import axios from "axios";
 const carteras = ref(usePage().props.carteras);
 const reportes = ref(usePage().props.reportes);
 const success = usePage().props.success;
+const page = usePage();
+const { can } = page.props;
+const canDo = (key) => !!can[key];
 
 const showModalReporte = ref(false);
 const editandoReporte = ref(false);
@@ -155,7 +158,9 @@ const reportesFiltrados = computed(() => {
                 class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
             >
                 <div class="flex items-center">
-                    <h2 class="text-xl font-semibold tituloPag">Gestionar Reportes</h2>
+                    <h2 class="text-xl font-semibold tituloPag">
+                        Gestionar Reportes
+                    </h2>
                     <span
                         class="ml-4 px-3 py-1 hidden sm:inline text-[11px] font-bold uppercase rounded-full shadow-sm text-white bgPrincipal"
                     >
@@ -285,6 +290,7 @@ const reportesFiltrados = computed(() => {
                     </button>
 
                     <button
+                        v-if="canDo('reportes.crear')"
                         @click="abrirModalCrearReporte()"
                         class="flex items-center justify-center gap-2 bg-green-500 text-white px-5 py-2 rounded-md shadow hover:bg-green-600 transition text-sm font-semibold"
                     >
@@ -338,7 +344,10 @@ const reportesFiltrados = computed(() => {
                     </div>
 
                     <!-- Cartera -->
-                    <div class="flex flex-wrap gap-1 mb-1 justify-center" style="padding: 10px;">
+                    <div
+                        class="flex flex-wrap gap-1 mb-1 justify-center"
+                        style="padding: 10px"
+                    >
                         <template v-if="reporte.cartera_id">
                             <span
                                 class="flex bgSecundario items-center bg-gray-100 border border-gray-200 rounded-full px-2 py-0.5 text-xs text-gray-700 font-medium"
@@ -418,15 +427,14 @@ const reportesFiltrados = computed(() => {
                     </div> -->
 
                     <Actions
-                        :edit="true"
-                        :remove="true"
+                        :edit="canDo('reportes.editar')"
+                        :remove="canDo('reportes.eliminar')"
                         class="botonesTablaReportes"
                         @edit="abrirModalEditarReporte(reporte)"
                         @delete="eliminarReporte(reporte)"
                     />
                 </div>
 
-                //version antigua
                 <!--<div
                     v-for="reporte in reportesFiltrados"
                     :key="reporte.id"
@@ -617,8 +625,8 @@ const reportesFiltrados = computed(() => {
                         </td>
                         <td class="px-4 py-2 text-center">
                             <Actions
-                                :edit="true"
-                                :remove="true"
+                                :edit="canDo('reportes.editar')"
+                                :remove="canDo('reportes.eliminar')"
                                 @edit="abrirModalEditarReporte(reporte)"
                                 @delete="eliminarReporte(reporte)"
                             />
