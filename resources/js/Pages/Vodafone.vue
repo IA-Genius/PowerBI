@@ -2,23 +2,21 @@
 import { ref, computed, onMounted } from "vue";
 import { usePage, router } from "@inertiajs/vue3";
 import Swal from "sweetalert2";
-
-// Layout y componentes
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import ModalGestion from "@/Components/ModalGestion.vue";
 import InputField from "@/Components/InputField.vue";
 import Actions from "@/Components/Actions.vue";
 
-// Props de backend
-const pagination = ref(usePage().props.items);
+const pageProps = usePage().props;
+const pagination = computed(() => pageProps.items);
 const items = computed(() => pagination.value?.data || []);
+const success = pageProps.success;
+const canViewGlobal = pageProps.canViewGlobal;
+const can = usePage().props.can || {};
+const canDo = (key) => !!can[key];
 
-const success = usePage().props.success;
-
-// Control de modal y formulario
 const showModal = ref(false);
 const registroEditar = ref(null);
-
 const form = ref({
     nombre_cliente: "",
     dni_nif_cif: "",
@@ -30,7 +28,6 @@ const form = ref({
     tipificaciones: "",
 });
 
-// Toast al cargar si hay success
 onMounted(() => {
     if (success) {
         Swal.fire({
@@ -44,24 +41,25 @@ onMounted(() => {
     }
 });
 
-// Funciones de acción
 function abrirModalAgregar() {
     registroEditar.value = null;
     form.value = {
-        nombre_cliente: "",
-        dni_nif_cif: "",
-        telefono_contacto: "",
-        direccion_instalacion: "",
-        operador_actual: "",
-        oferta_comercial: "",
-        observacion_smart: "",
-        tipificaciones: "",
+        ...form.value,
+        ...{
+            nombre_cliente: "",
+            dni_nif_cif: "",
+            telefono_contacto: "",
+            direccion_instalacion: "",
+            operador_actual: "",
+            oferta_comercial: "",
+            observacion_smart: "",
+            tipificaciones: "",
+        },
     };
     showModal.value = true;
 }
 
 function abrirModalEditar(item) {
-    if (!item.id) return;
     registroEditar.value = item;
     form.value = { ...item };
     showModal.value = true;
@@ -81,17 +79,10 @@ function handleSuccess(msg) {
         timer: 2000,
         showConfirmButton: false,
     });
-    recargar();
-}
-
-function recargar() {
     router.visit(route("vodafone.index"), {
         preserveScroll: true,
         only: ["items", "success"],
-        onFinish: () => {
-            items.value = usePage().props.items;
-            cerrarModal();
-        },
+        onFinish: cerrarModal,
     });
 }
 
@@ -121,18 +112,33 @@ function eliminar(item) {
         }
     });
 }
-</script>
 
+function mostrarInfoUsuario(user) {
+    Swal.fire({
+        title: user.name,
+        html: `<b>Email:</b> ${user.email}<br><b>Rol:</b> ${
+            user.roles?.map((r) => r.name).join(", ") || "Sin rol"
+        }`,
+        icon: "info",
+    });
+}
+
+function parseLabel(label) {
+    if (label === "&laquo; Previous") return "«";
+    if (label === "Next &raquo;") return "»";
+    return label.replace(/&laquo;|&raquo;/g, "").trim();
+}
+</script>
 
 <template>
     <AuthenticatedLayout class="relleno">
-        <!-- Header -->
         <template #header>
             <div class="flex items-center justify-between">
                 <h2 class="text-xl font-semibold tituloPag">
                     Gestionar Vodafone
                 </h2>
                 <button
+                    v-if="canDo('vodafone.crear')"
                     @click="abrirModalAgregar"
                     class="flex items-center gap-2 bg-green-500 text-white px-5 py-2 rounded shadow hover:bg-green-600 transition"
                 >
@@ -154,7 +160,6 @@ function eliminar(item) {
             </div>
         </template>
 
-        <!-- Tabla -->
         <div class="py-6">
             <div
                 class="overflow-x-auto rounded-xl border border-gray-100 bg-gray-50"
@@ -168,9 +173,19 @@ function eliminar(item) {
                             <th class="px-4 py-2 text-left">Teléfono</th>
                             <th class="px-4 py-2 text-left">Dirección</th>
                             <th class="px-4 py-2 text-left">Operador Actual</th>
-                            <th class="px-4 py-2 text-left">Oferta Comercial</th>
-                            <th class="px-4 py-2 text-left">Observación SMART</th>
+                            <th class="px-4 py-2 text-left">
+                                Oferta Comercial
+                            </th>
+                            <th class="px-4 py-2 text-left">
+                                Observación SMART
+                            </th>
                             <th class="px-4 py-2 text-left">Tipificaciones</th>
+                            <th
+                                v-if="canViewGlobal"
+                                class="px-4 py-2 text-center"
+                            >
+                                Usuario
+                            </th>
                             <th class="px-4 py-2 text-center">Acciones</th>
                         </tr>
                     </thead>
@@ -207,10 +222,45 @@ function eliminar(item) {
                             <td class="px-4 py-1.5 text-[13px]">
                                 {{ item.tipificaciones }}
                             </td>
+                            <td
+                                v-if="canViewGlobal"
+                                class="px-4 py-1.5 text-center"
+                            >
+                                {{ item.user ? item.user.name : "Sin usuario" }}
+                                <button
+                                    v-if="item.user"
+                                    @click="mostrarInfoUsuario(item.user)"
+                                    class="text-blue-600 hover:text-blue-800"
+                                    title="Ver info usuario"
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        class="h-5 w-5 inline"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <circle
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            fill="none"
+                                        />
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M12 16v-4m0-4h.01"
+                                        />
+                                    </svg>
+                                </button>
+                            </td>
                             <td class="px-4 py-1.5 text-center text-[13px]">
                                 <Actions
-                                    :edit="true"
-                                    :remove="true"
+                                    :edit="canDo('vodafone.editar')"
+                                    :remove="canDo('vodafone.eliminar')"
                                     @edit="abrirModalEditar(item)"
                                     @delete="eliminar(item)"
                                 />
@@ -218,7 +268,7 @@ function eliminar(item) {
                         </tr>
                         <tr v-if="items.length === 0">
                             <td
-                                colspan="5"
+                                :colspan="canViewGlobal ? 11 : 10"
                                 class="text-center py-4 text-gray-400 text-lg"
                             >
                                 No hay registros.
@@ -227,6 +277,38 @@ function eliminar(item) {
                     </tbody>
                 </table>
             </div>
+        </div>
+
+        <!-- Paginación -->
+        <div
+            class="flex justify-center items-center flex-wrap gap-2 mt-4"
+            v-if="pagination.links && pagination.links.length > 1"
+        >
+            <template v-for="(link, index) in pagination.links" :key="index">
+                <button
+                    v-if="link.url"
+                    @click="
+                        router.visit(link.url, {
+                            preserveScroll: true,
+                            only: ['items'],
+                        })
+                    "
+                    class="px-3 py-1 min-w-[32px] rounded border text-sm transition"
+                    :class="{
+                        'bg-indigo-600 text-white font-bold': link.active,
+                        'bg-white text-gray-800 hover:bg-indigo-50':
+                            !link.active,
+                    }"
+                >
+                    {{ parseLabel(link.label) }}
+                </button>
+                <span
+                    v-else
+                    class="px-3 py-1 min-w-[32px] rounded border bg-gray-200 text-gray-500 text-sm cursor-not-allowed"
+                >
+                    {{ parseLabel(link.label) }}
+                </span>
+            </template>
         </div>
 
         <!-- Modal -->
@@ -242,75 +324,70 @@ function eliminar(item) {
             @close="cerrarModal"
             @success="handleSuccess"
         >
-            <template #default="{ form: slotForm, errors }" class="modalVodaFone">
+            <template #default="{ form: slotForm, errors }">
                 <InputField
+                    class="modalInputs"
                     label="Nombre Cliente"
                     v-model="slotForm.nombre_cliente"
                     name="nombre_cliente"
                     :error="errors.nombre_cliente"
-                    placeholder="Jhon Smit"
-                    class="modalInputs"
                     required
                 />
                 <div class="flex justify-between width-49">
                     <InputField
+                        class="modalInputs"
                         label="DNI / NIF / CIF"
                         v-model="slotForm.dni_nif_cif"
                         name="dni_nif_cif"
-                        class="modalInputs m-0"
                         :error="errors.dni_nif_cif"
                         type="number"
-                        maxlength="12"
-                        minlength="8"
-                        max="9"
-                        min="0"
                         required
                     />
                     <InputField
+                        class="modalInputs"
                         label="Teléfono"
                         v-model="slotForm.telefono_contacto"
                         name="telefono_contacto"
-                        class="modalInputs m-0"
                         type="number"
                         required
                         :error="errors.telefono_contacto"
                     />
                 </div>
                 <InputField
+                    class="modalInputs"
                     label="Dirección"
                     v-model="slotForm.direccion_instalacion"
                     name="direccion_instalacion"
-                    class="modalInputs"
                     :error="errors.direccion_instalacion"
                     required
                 />
                 <InputField
+                    class="modalInputs"
                     label="Operador Actual"
                     v-model="slotForm.operador_actual"
                     name="operador_actual"
-                    class="modalInputs"
                     :error="errors.operador_actual"
                 />
                 <InputField
+                    class="modalInputs"
                     label="Oferta Comercial"
                     v-model="slotForm.oferta_comercial"
                     name="oferta_comercial"
-                    class="modalInputs"
                     :error="errors.oferta_comercial"
                 />
                 <div class="flex justify-between width-49">
                     <InputField
+                        class="modalInputs"
                         label="Observación SMART"
                         v-model="slotForm.observacion_smart"
                         name="observacion_smart"
-                        class="modalInputs"
                         :error="errors.observacion_smart"
                     />
                     <InputField
+                        class="modalInputs"
                         label="Tipificaciones"
                         v-model="slotForm.tipificaciones"
                         name="tipificaciones"
-                        class="modalInputs"
                         :error="errors.tipificaciones"
                     />
                 </div>

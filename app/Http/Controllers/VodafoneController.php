@@ -15,17 +15,21 @@ class VodafoneController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        $query = Vodafone::query();
+        $query = Vodafone::query()->with(['user.roles']); // Incluye los roles del usuario
+
 
         if (!$user->can('vodafone.ver-global')) {
             $query->where('user_id', $user->id);
         }
 
-        $items = $query->latest()->paginate(15);
+
+        $items = $query->oldest()->paginate(17)->withQueryString();
+
 
         return Inertia::render('Vodafone', [
             'items' => $items,
             'success' => session('success'),
+            'canViewGlobal' => $user->can('vodafone.ver-global'), // Envía el permiso
         ]);
     }
 

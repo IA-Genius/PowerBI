@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\User;
 
 class Vodafone extends Model
 {
@@ -29,4 +30,9 @@ class Vodafone extends Model
         'fecha_creacion' => 'date',
         'fecha_cierre' => 'date',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
