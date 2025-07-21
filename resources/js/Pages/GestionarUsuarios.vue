@@ -359,7 +359,6 @@ watch(
                             v-model="form.password"
                             placeholder="Deja en blanco para no cambiar"
                             :error="errors.password"
-                            :required="true"
                         />
 
                         <div class="modalInputs">
