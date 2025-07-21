@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { usePage, router } from "@inertiajs/vue3";
 import Swal from "sweetalert2";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
@@ -17,6 +17,10 @@ const canDo = (key) => !!can[key];
 
 const showModal = ref(false);
 const registroEditar = ref(null);
+const isLoading = ref(false);
+const filters = usePage().props.filters || {};
+const search = ref(filters.search || "");
+
 const form = ref({
     nombre_cliente: "",
     dni_nif_cif: "",
@@ -44,17 +48,14 @@ onMounted(() => {
 function abrirModalAgregar() {
     registroEditar.value = null;
     form.value = {
-        ...form.value,
-        ...{
-            nombre_cliente: "",
-            dni_nif_cif: "",
-            telefono_contacto: "",
-            direccion_instalacion: "",
-            operador_actual: "",
-            oferta_comercial: "",
-            observacion_smart: "",
-            tipificaciones: "",
-        },
+        nombre_cliente: "",
+        dni_nif_cif: "",
+        telefono_contacto: "",
+        direccion_instalacion: "",
+        operador_actual: "",
+        oferta_comercial: "",
+        observacion_smart: "",
+        tipificaciones: "",
     };
     showModal.value = true;
 }
@@ -128,35 +129,119 @@ function parseLabel(label) {
     if (label === "Next &raquo;") return "»";
     return label.replace(/&laquo;|&raquo;/g, "").trim();
 }
+
+function limpiarBusqueda() {
+    search.value = "";
+}
+
+// 🟢 Nuevo: búsqueda en tiempo real con loading
+watch(search, async (val) => {
+    isLoading.value = true;
+
+    await router.get(
+        route("vodafone.index"),
+        {
+            search: val,
+            page: 1,
+        },
+        {
+            replace: true,
+            preserveScroll: true,
+            onFinish: () => {
+                isLoading.value = false;
+            },
+        }
+    );
+});
 </script>
 
 <template>
     <AuthenticatedLayout class="relleno">
         <template #header>
-            <div class="flex items-center justify-between">
+            <div
+                class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+            >
+                <!-- Título centrado en móvil -->
                 <h2 class="text-xl font-semibold tituloPag">
                     Gestionar Vodafone
                 </h2>
-                <button
-                    v-if="canDo('vodafone.crear')"
-                    @click="abrirModalAgregar"
-                    class="flex items-center gap-2 bg-green-500 text-white px-5 py-2 rounded shadow hover:bg-green-600 transition"
+
+                <!-- Input con buscador y spinner -->
+                <div
+                    class="flex flex-col sm:flex-row items-stretch gap-3 sm:gap-4 mt-4 sm:mt-0"
                 >
-                    <svg
-                        class="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M12 4v16m8-8H4"
+                    <!-- Input con lupa -->
+                    <div class="relative sm:max-w-xs">
+                        <input
+                            v-model="search"
+                            type="text"
+                            placeholder="Buscar.."
+                            class="w-full pl-10 pr-10 py-2 rounded-md border border-gray-200 bg-white shadow-sm text-sm placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none focus:border-indigo-300 transition"
                         />
-                    </svg>
-                    Agregar
-                </button>
+
+                        <!-- Ícono lupa -->
+                        <svg
+                            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M21 21l-4.35-4.35M10 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"
+                            />
+                        </svg>
+
+                        <!-- Botón limpiar (centrado) -->
+                        <button
+                            v-if="search"
+                            @click="limpiarBusqueda"
+                            class="absolute right-7 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-500 text-base leading-none"
+                            title="Limpiar búsqueda"
+                        >
+                            &times;
+                        </button>
+
+                        <!-- Spinner de puntos (centrado) -->
+                        <span
+                            v-if="isLoading"
+                            class="absolute right-2 top-1/2 -translate-y-1/2 flex space-x-0.5"
+                        >
+                            <span
+                                class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"
+                            ></span>
+                            <span
+                                class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"
+                            ></span>
+                            <span
+                                class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+                            ></span>
+                        </span>
+                    </div>
+                    <!-- Botón agregar -->
+                    <button
+                        v-if="canDo('vodafone.crear')"
+                        @click="abrirModalAgregar"
+                        class="flex items-center justify-center gap-2 bg-green-500 text-white px-5 py-2 rounded-md shadow hover:bg-green-600 transition text-sm font-semibold"
+                    >
+                        <svg
+                            class="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M12 4v16m8-8H4"
+                            />
+                        </svg>
+                        Agregar
+                    </button>
+                </div>
             </div>
         </template>
 
@@ -287,12 +372,7 @@ function parseLabel(label) {
             <template v-for="(link, index) in pagination.links" :key="index">
                 <button
                     v-if="link.url"
-                    @click="
-                        router.visit(link.url, {
-                            preserveScroll: true,
-                            only: ['items'],
-                        })
-                    "
+                    @click="router.get(link.url, { search: search.value })"
                     class="px-3 py-1 min-w-[32px] rounded border text-sm transition"
                     :class="{
                         'bg-indigo-600 text-white font-bold': link.active,

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
 class VodafoneController extends Controller
 {
 
-    public function index()
+    public function index(Request $request)
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
@@ -22,6 +22,15 @@ class VodafoneController extends Controller
             $query->where('user_id', $user->id);
         }
 
+        $search = $request->input('search');
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nombre_cliente', 'like', "%$search%")
+                ->orWhere('telefono_contacto', 'like', "%$search%")
+                ->orWhere('dni_nif_cif', 'like', "%$search%");
+            });
+        }
 
         $items = $query->oldest()->paginate(17)->withQueryString();
 
@@ -30,6 +39,7 @@ class VodafoneController extends Controller
             'items' => $items,
             'success' => session('success'),
             'canViewGlobal' => $user->can('vodafone.ver-global'), // Envía el permiso
+            'filters' => [ 'search' => $search ]
         ]);
     }
 
