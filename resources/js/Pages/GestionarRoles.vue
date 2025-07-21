@@ -243,6 +243,16 @@ function transformarForm(form) {
         reportes: form.reportes.map((r) => r.id),
     };
 }
+
+function permisoAmigable(permiso) {
+    // Si el permiso es 'vodafone.ver-global', muestra 'Ver Global'
+    const partes = permiso.split(".");
+    if (partes.length < 2) return permiso;
+    let accion = partes[1]
+        .replace("-", " ") // ver-global → ver global
+        .replace(/\b\w/g, (l) => l.toUpperCase()); // primera letra mayúscula
+    return accion;
+}
 </script>
 
 <template>
@@ -392,7 +402,7 @@ function transformarForm(form) {
                                         </svg>
                                     </span>
                                     <span
-                                        class="text-base font-medium text-gray-900 truncate max-w-[110px]"
+                                        class="text-base font-medium text-gray-900 truncate max-w-[150px]"
                                         :title="role.name"
                                     >
                                         {{ role.name }}
@@ -417,8 +427,8 @@ function transformarForm(form) {
                                                 class="w-3 h-3 mr-1 text-indigo-400"
                                                 fill="none"
                                                 stroke="currentColor"
-                                                stroke-width="2"
-                                                viewBox="0 0 24 24"
+ stroke-width="2"
+                                                                                               viewBox="0 0 24 24"
                                             >
                                                 <path
                                                     stroke-linecap="round"
