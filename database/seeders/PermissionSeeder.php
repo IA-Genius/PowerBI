@@ -12,11 +12,11 @@ class PermissionSeeder extends Seeder
     public function run(): void
     {
         $modulosConPermisos = [
-            'Roles' => ['ver', 'crear', 'guardar', 'editar', 'actualizar', 'eliminar'],
-            'Usuarios' => ['ver', 'crear', 'guardar', 'editar', 'actualizar', 'eliminar'],
-            'Carteras' => ['ver', 'crear', 'guardar', 'editar', 'actualizar', 'eliminar'],
-            'Reportes' => ['ver', 'crear', 'guardar', 'editar', 'actualizar', 'eliminar'],
-            'Vodafone' => ['ver', 'crear', 'guardar', 'editar', 'actualizar', 'eliminar', 'ver-global'],
+            'Roles' => ['ver', 'crear', 'guardar', 'editar',  'eliminar'],
+            'Usuarios' => ['ver', 'crear', 'guardar', 'editar', 'eliminar'],
+            'Carteras' => ['ver', 'crear', 'guardar', 'editar',  'eliminar'],
+            'Reportes' => ['ver', 'crear', 'guardar', 'editar',  'eliminar'],
+            'Vodafone' => ['ver', 'crear', 'guardar', 'editar', 'eliminar', 'ver-global'],
         ];
 
         foreach ($modulosConPermisos as $moduloNombre => $acciones) {
@@ -52,6 +52,8 @@ class PermissionSeeder extends Seeder
         ]);
         $rolSupervisor->syncPermissions([
             'vodafone.ver',
+            'vodafone.editar',
+            'vodafone.guardar',
             'vodafone.ver-global',
         ]);
     }

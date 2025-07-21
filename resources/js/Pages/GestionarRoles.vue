@@ -11,6 +11,11 @@ import Actions from "@/Components/Actions.vue";
 import InputField from "@/Components/InputField.vue";
 import ModuloPermisosAccordion from "@/Components/ModuloPermisosAccordion.vue";
 
+//Permisos
+const page = usePage();
+const { can } = page.props;
+const canDo = (key) => !!can[key];
+
 const { roles, carteras, reportes, permissions, success } = usePage().props;
 
 const showModal = ref(false);
@@ -268,6 +273,7 @@ function permisoAmigable(permiso) {
                 </span>
             </div>
             <button
+                v-if="canDo('roles.guardar')"
                 @click="abrirModalAgregar"
                 class="flex items-center gap-2 bg-green-500 text-white px-5 py-2 rounded shadow hover:bg-green-600 transition"
             >
@@ -409,8 +415,8 @@ function permisoAmigable(permiso) {
                                     </span>
                                 </div>
                                 <Actions
-                                    :edit="true"
-                                    :remove="true"
+                                    :edit="canDo('roles.editar')"
+                                    :remove="canDo('roles.eliminar')"
                                     @edit="abrirModalEditar(role)"
                                     @delete="eliminarRol(role)"
                                 />

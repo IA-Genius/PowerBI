@@ -59,7 +59,7 @@ const submit = () => {
             Panel Ejecutivo de Inteligencia de Negocios
         </div>
 
-        <Head title="Log in" />
+        <Head title="Login" />
 
         <div v-if="status" class="mb-4 text-sm font-medium text-green-600">
             {{ status }}

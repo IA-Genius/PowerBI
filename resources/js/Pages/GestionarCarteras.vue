@@ -14,6 +14,7 @@
                 </div>
 
                 <button
+                    v-if="canDo('carteras.guardar')"
                     @click="abrirModalAgregar"
                     class="flex items-center gap-2 bg-green-500 text-white px-5 py-2 rounded shadow hover:bg-green-600 transition"
                 >
@@ -73,8 +74,8 @@
                             </td>
                             <td class="px-4 py-1.5 text-center text-[13px]">
                                 <Actions
-                                    :edit="true"
-                                    :remove="true"
+                                    :edit="canDo('carteras.editar')"
+                                    :remove="canDo('carteras.eliminar')"
                                     @edit="abrirModalEditar(cartera)"
                                     @delete="eliminarCartera(cartera)"
                                 />
@@ -166,6 +167,11 @@ import StatusBadge from "@/Components/StatusBadge.vue";
 import { usePage, router } from "@inertiajs/vue3";
 import { ref, onMounted } from "vue";
 import Swal from "sweetalert2";
+
+//Permisos
+const page = usePage();
+const { can } = page.props;
+const canDo = (key) => !!can[key];
 
 const carteras = ref(usePage().props.carteras);
 const success = usePage().props.success;
