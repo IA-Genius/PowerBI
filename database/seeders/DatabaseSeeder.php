@@ -36,6 +36,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'webie@gmail.com',
             'password' => bcrypt('test'),
         ]);
+  
 
         // 3. Asignar roles a usuarios
         $rolAdmin = Role::where('name', 'admin')->first();

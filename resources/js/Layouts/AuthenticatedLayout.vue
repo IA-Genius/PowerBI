@@ -82,7 +82,6 @@ onMounted(() => {
         }
     });
 });
-console.log(page.props);
 </script>
 
 <!-- =========================
