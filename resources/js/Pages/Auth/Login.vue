@@ -31,7 +31,7 @@ onMounted(() => {
 
 <template>
     <GuestLayout>
-        <Head title="Iniciar sesión" />
+        <Head title="Login" />
 
         <!-- Estado general -->
 

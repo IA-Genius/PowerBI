@@ -239,7 +239,7 @@ watch(
 </script>
 
 <template>
-    <Head title="Listado de Usuarios" />
+    <Head title="Usuarios" />
 
     <AuthenticatedLayout class="relleno">
         <template #header>

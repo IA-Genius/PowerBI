@@ -193,7 +193,7 @@ function transformarForm(form) {
 </script>
 
 <template>
-    <Head title="Gestión de Roles" />
+    <Head title="Roles" />
     <AuthenticatedLayout class="relleno">
         <div class="flex items-center justify-between">
             <div class="flex items-center justify-between">

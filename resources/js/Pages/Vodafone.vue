@@ -156,6 +156,7 @@ watch(search, async (val) => {
 </script>
 
 <template>
+    <Head title="Vodafone" />
     <AuthenticatedLayout class="relleno">
         <template #header>
             <div

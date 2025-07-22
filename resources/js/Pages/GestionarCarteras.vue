@@ -1,4 +1,5 @@
 <template>
+    <Head title="Carteras" />
     <AuthenticatedLayout class="relleno">
         <template #header>
             <div class="flex items-center justify-between">

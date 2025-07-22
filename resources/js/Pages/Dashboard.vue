@@ -31,6 +31,7 @@ const linkReporte = computed(() => {
 </script>
 
 <template>
+    <Head title="Dashboard" />
     <AuthenticatedLayout>
         <div class="w-full">
             <transition name="fade" mode="out-in">

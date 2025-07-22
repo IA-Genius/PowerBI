@@ -12,7 +12,10 @@
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
     <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
 
-
+    <link rel="icon" href="https://geatel-telecom.com/wp-content/uploads/2023/07/ISOTIPO.png" sizes="32x32">
+    <link rel="icon" href="https://geatel-telecom.com/wp-content/uploads/2023/07/ISOTIPO.png" sizes="192x192">
+    <link rel="apple-touch-icon" href="https://geatel-telecom.com/wp-content/uploads/2023/07/ISOTIPO.png">
+    <meta name="msapplication-TileImage" content="https://geatel-telecom.com/wp-content/uploads/2023/07/ISOTIPO.png">
     <!-- Scripts -->
     @routes
     @vite(['resources/js/app.js', "resources/js/Pages/{$page['component']}.vue"])

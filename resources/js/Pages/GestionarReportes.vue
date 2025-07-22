@@ -155,7 +155,7 @@ const reportesFiltrados = computed(() => {
 </script>
 
 <template>
-    <Head title="Gestión de Reportes" />
+    <Head title="Reportes" />
     <AuthenticatedLayout class="relleno">
         <template #header>
             <div
