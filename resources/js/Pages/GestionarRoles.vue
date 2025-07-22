@@ -21,21 +21,11 @@ const { roles, carteras, reportes, permissions, success } = usePage().props;
 const showModal = ref(false);
 const rolEditar = ref(null);
 
-import { computed } from "vue";
-
 const rolForm = reactive({
     name: "",
     carteras: [],
     reportes: [],
     permissions: [],
-});
-
-// modelValue para reportes, usando computed para asegurar reactividad
-const modelValue = computed({
-    get: () => rolForm.reportes,
-    set: (val) => {
-        rolForm.reportes = val;
-    },
 });
 
 const carterasConReportes = carteras.map((c) => ({
@@ -146,13 +136,13 @@ function eliminarRol(role) {
         cancelButtonText: "Cancelar",
     }).then((result) => {
         if (result.isConfirmed) {
-            router.delete(`/roles/${role.id}`, {
+            router.delete(route("roles.destroy", role.id), {
                 onSuccess: () => {
                     Swal.fire({
                         toast: true,
                         position: "top-end",
                         icon: "success",
-                        title: "Rol eliminado",
+                        title: `Rol «${role.name}» eliminado`,
                         showConfirmButton: false,
                         timer: 2000,
                         timerProgressBar: true,
@@ -175,17 +165,6 @@ function eliminarRol(role) {
     });
 }
 
-function toggleReporteCartera(reporte, checked) {
-    // Trabajar siempre con IDs únicos y objetos consistentes
-    if (checked) {
-        if (!rolForm.reportes.some((r) => r.id === reporte.id)) {
-            rolForm.reportes = [...rolForm.reportes, { ...reporte }];
-        }
-    } else {
-        rolForm.reportes = rolForm.reportes.filter((r) => r.id !== reporte.id);
-    }
-}
-
 watch(
     () => rolForm.carteras,
     (nuevasCarteras) => {
@@ -196,43 +175,6 @@ watch(
     },
     { deep: true }
 );
-const showCrearModulo = ref(false);
-
-const nuevoModulo = reactive({
-    name: "",
-    permissions: [""], // empieza con un permiso vacío
-});
-
-function agregarPermisoInput() {
-    nuevoModulo.permissions.push("");
-}
-
-function eliminarPermisoInput(i) {
-    if (nuevoModulo.permissions.length > 1) {
-        nuevoModulo.permissions.splice(i, 1);
-    }
-}
-
-async function crearModulo() {
-    try {
-        const res = await axios.post("/modulos", {
-            name: nuevoModulo.name,
-            permissions: nuevoModulo.permissions.filter((p) => p.trim() !== ""),
-        });
-
-        permissions.push(...res.data.module.permissions);
-        handleSuccess("Módulo y permisos creados");
-        showCrearModulo.value = false;
-
-        // Limpiar
-        Object.assign(nuevoModulo, {
-            name: "",
-            permissions: [""],
-        });
-    } catch (e) {
-        Swal.fire("Error", "No se pudo crear el módulo", "error");
-    }
-}
 
 const tabActiva = ref("basico");
 
@@ -247,16 +189,6 @@ function transformarForm(form) {
         carteras: form.carteras.map((c) => c.id),
         reportes: form.reportes.map((r) => r.id),
     };
-}
-
-function permisoAmigable(permiso) {
-    // Si el permiso es 'vodafone.ver-global', muestra 'Ver Global'
-    const partes = permiso.split(".");
-    if (partes.length < 2) return permiso;
-    let accion = partes[1]
-        .replace("-", " ") // ver-global → ver global
-        .replace(/\b\w/g, (l) => l.toUpperCase()); // primera letra mayúscula
-    return accion;
 }
 </script>
 
@@ -301,7 +233,11 @@ function permisoAmigable(permiso) {
                     :title="rolEditar ? 'Editar Rol' : 'Agregar Rol'"
                     :submitLabel="rolEditar ? 'Actualizar' : 'Registrar'"
                     :form="rolForm"
-                    :endpoint="rolEditar ? `/roles/${rolEditar.id}` : '/roles'"
+                    :endpoint="
+                        rolEditar
+                            ? route('roles.update', rolEditar.id)
+                            : route('roles.store')
+                    "
                     :method="rolEditar ? 'put' : 'post'"
                     :transform="transformarForm"
                     :carteras="carterasConReportes"

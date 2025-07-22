@@ -43,12 +43,8 @@ class ReportesController extends Controller
             'cartera_id' => $request->cartera_id,
         ]);
 
-        return response()->json([
-            'message' => "Reporte «{$reporte->nombre}» creado correctamente.",
-            'reporte' => $reporte->load('cartera'),
-        ]);
+        return redirect()->route('reportes.index')->with('success', "Reporte «{$reporte->nombre}» creado correctamente.");
     }
-
 
     // Actualizar un reporte
     public function update(Request $request, Reporte $reporte)
@@ -71,23 +67,13 @@ class ReportesController extends Controller
             'cartera_id' => $request->cartera_id,
         ]);
 
-        return response()->json([
-             'message' => "Reporte «{$reporte->nombre}»  actualizado correctamente.",
-            'reporte' => $reporte->load('cartera'),
-        ]);
+        return redirect()->route('reportes.index')->with('success', "Reporte «{$reporte->nombre}» actualizado correctamente.");
     }
 
     // Eliminar un reporte
     public function destroy(Reporte $reporte)
     {
-        $nombre = $reporte->nombre;
         $reporte->delete();
-
-        return response()->json([
-            'message' => "Reporte «{$nombre}» eliminado correctamente.",
-            'id' => $reporte->id,
-        ]);
+        return redirect()->route('reportes.index')->with('success', "Reporte «$reporte->nombre» eliminado");
     }
-
-
 }

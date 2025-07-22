@@ -1,19 +1,16 @@
 <script setup>
-import Checkbox from "@/Components/Checkbox.vue";
+import { Head, useForm } from "@inertiajs/vue3";
+import { ref, onMounted } from "vue";
 import GuestLayout from "@/Layouts/GuestLayout.vue";
-import InputError from "@/Components/InputError.vue";
 import InputLabel from "@/Components/InputLabel.vue";
-import PrimaryButton from "@/Components/PrimaryButton.vue";
 import TextInput from "@/Components/TextInput.vue";
-import { Head, Link, useForm } from "@inertiajs/vue3";
+import InputError from "@/Components/InputError.vue";
+import PrimaryButton from "@/Components/PrimaryButton.vue";
+import Checkbox from "@/Components/Checkbox.vue";
 
 defineProps({
-    canResetPassword: {
-        type: Boolean,
-    },
-    status: {
-        type: String,
-    },
+    canResetPassword: Boolean,
+    status: String,
 });
 
 const form = useForm({
@@ -21,71 +18,52 @@ const form = useForm({
     password: "",
     remember: false,
 });
-
+const emailInput = ref(null);
 const submit = () => {
     form.post(route("login"), {
-        onError: (errors) => {
-            console.log("Errores del backend:", errors); // <-- ¿se imprime algo?
-        },
         onFinish: () => form.reset("password"),
     });
 };
+onMounted(() => {
+    emailInput.value?.focus();
+});
 </script>
+
 <template>
     <GuestLayout>
-        <!-- <figure class="logo_login">
-            <img src="https://control.financiera.geatel-telecom.com/assets/logo-9d776287.png" alt="Geatel Telecon">
-        </figure> -->
-        <div
-            v-if="form.errors.email"
-            class="flex items-start gap-2 rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-800"
-        >
-            <svg
-                class="h-5 w-5 mt-0.5 flex-shrink-0 text-red-600"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                viewBox="0 0 24 24"
-            >
-                <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M12 9v2m0 4h.01M4.93 4.93l14.14 14.14M12 2a10 10 0 1010 10A10 10 0 0012 2z"
-                />
-            </svg>
-            <span>{{ form.errors.email }}</span>
-        </div>
-        <div class="tituloPrincipal">
+        <Head title="Iniciar sesión" />
+
+        <!-- Estado general -->
+
+        <!-- Título del sistema -->
+        <div class="text-center text-2xl font-semibold text-indigo-800 mb-6">
             Panel Ejecutivo de Inteligencia de Negocios
         </div>
 
-        <Head title="Login" />
-
-        <div v-if="status" class="mb-4 text-sm font-medium text-green-600">
-            {{ status }}
-        </div>
-        <form @submit.prevent="submit">
+        <!-- Formulario -->
+        <form @submit.prevent="submit" class="space-y-6">
+            <!-- Usuario -->
             <div>
-                <InputLabel for="email" value="Usuarios" class="colorMorado" />
-
+                <InputLabel for="email" value="Usuario" class="colorMorado" />
                 <TextInput
                     id="email"
                     type="email"
+                    ref="emailInput"
                     class="mt-1 block w-full inputs"
                     v-model="form.email"
                     required
-                    autofocus
                     autocomplete="username"
                 />
+                <InputError class="mt-2" :message="form.errors.email" />
             </div>
 
-            <div class="mt-4">
+            <!-- Contraseña -->
+            <div>
                 <InputLabel
                     for="password"
-                    value="Contraseñas"
+                    value="Contraseña"
                     class="colorMorado"
                 />
-
                 <TextInput
                     id="password"
                     type="password"
@@ -94,25 +72,23 @@ const submit = () => {
                     required
                     autocomplete="current-password"
                 />
-
                 <InputError class="mt-2" :message="form.errors.password" />
             </div>
 
-            <div class="mt-4 block">
-                <label class="flex items-center">
-                    <Checkbox name="remember" v-model:checked="form.remember" />
-                    <span class="ms-2 text-sm text-gray-600">Recuérdame</span>
-                </label>
+            <!-- Recordarme -->
+            <div class="flex items-center">
+                <Checkbox name="remember" v-model:checked="form.remember" />
+                <span class="ml-2 text-sm text-gray-600">Recuérdame</span>
             </div>
 
-            <div class="mt-4 center boxBtnl">
-                <!-- flex items-center justify-end -->
+            <!-- Botón -->
+            <div class="text-center">
                 <PrimaryButton
-                    class="ms-4 btn btnFull"
-                    :class="{ 'opacity-25': form.processing }"
+                    class="btn btnFull"
+                    :class="{ 'opacity-50': form.processing }"
                     :disabled="form.processing"
                 >
-                    Ingresar
+                    {{ form.processing ? "Ingresando..." : "Ingresar" }}
                 </PrimaryButton>
             </div>
         </form>

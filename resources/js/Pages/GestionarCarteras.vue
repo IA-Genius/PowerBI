@@ -100,7 +100,9 @@
             submitLabel="Guardar"
             :initialForm="carteraForm"
             :endpoint="
-                carteraEditar ? `/carteras/${carteraEditar.id}` : '/carteras'
+                carteraEditar
+                    ? route('carteras.update', carteraEditar.id)
+                    : route('carteras.store')
             "
             :method="carteraEditar ? 'put' : 'post'"
             @close="cerrarModal"
@@ -245,7 +247,7 @@ function recargar() {
 function eliminarCartera(cartera) {
     Swal.fire({
         title: "¿Eliminar cartera?",
-        text: `¿Estás seguro de eliminar "${cartera.nombre}"?`,
+        text: `¿Estás seguro de eliminar «${cartera.nombre}»?`,
         icon: "warning",
         showCancelButton: true,
         confirmButtonColor: "#3085d6",
@@ -254,8 +256,9 @@ function eliminarCartera(cartera) {
         cancelButtonText: "Cancelar",
     }).then((result) => {
         if (result.isConfirmed) {
-            router.delete(`/carteras/${cartera.id}`, {
-                onSuccess: () => handleSuccess("Cartera eliminada"),
+            router.delete(route("carteras.destroy", cartera.id), {
+                onSuccess: () =>
+                    handleSuccess(`Cartera «${cartera.nombre}» eliminada`),
                 onError: () => {
                     Swal.fire({
                         toast: true,

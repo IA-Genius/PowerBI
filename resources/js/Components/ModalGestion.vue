@@ -56,7 +56,7 @@
 
 <script setup>
 import { reactive, ref, watchEffect } from "vue";
-import axios from "axios";
+import { router } from "@inertiajs/vue3";
 
 const props = defineProps({
     show: Boolean,
@@ -76,40 +76,24 @@ const emit = defineEmits(["close", "success"]);
 const form = reactive({});
 const errors = ref({});
 
-// ✅ Solución FINAL sin perder referencias (carteras/reportes):
 watchEffect(() => {
     if (props.show) {
-        // Copia por referencia directa, no borres las keys
         Object.assign(form, props.initialForm);
+        errors.value = {};
     }
 });
 
-async function handleSubmit() {
-    try {
-        const data = props.transform(form);
+function handleSubmit() {
+    errors.value = {};
+    const data = props.transform(form);
 
-        const response =
-            props.method === "put"
-                ? await axios.put(props.endpoint, data)
-                : await axios.post(props.endpoint, data);
-
-        emit(
-            "success",
-            response.data.message || "Operación realizada correctamente"
-        );
-    } catch (e) {
-        errors.value = e.response?.data?.errors || {};
-    }
+    router[props.method](props.endpoint, data, {
+        onSuccess: (page) => {
+            if (page.props?.success) {
+                emit("success", page.props.success);
+            }
+        },
+        onError: (err) => (errors.value = err),
+    });
 }
 </script>
-
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-    transition: opacity 0.3s;
-}
-.fade-enter-from,
-.fade-leave-to {
-    opacity: 0;
-}
-</style>

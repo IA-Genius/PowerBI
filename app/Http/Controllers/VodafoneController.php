@@ -27,8 +27,8 @@ class VodafoneController extends Controller
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
                 $q->where('nombre_cliente', 'like', "%$search%")
-                ->orWhere('telefono_contacto', 'like', "%$search%")
-                ->orWhere('dni_nif_cif', 'like', "%$search%");
+                    ->orWhere('telefono_contacto', 'like', "%$search%")
+                    ->orWhere('dni_nif_cif', 'like', "%$search%");
             });
         }
 
@@ -39,7 +39,7 @@ class VodafoneController extends Controller
             'items' => $items,
             'success' => session('success'),
             'canViewGlobal' => $user->can('vodafone.ver-global'), // Envía el permiso
-            'filters' => [ 'search' => $search ]
+            'filters' => ['search' => $search]
         ]);
     }
 

@@ -136,30 +136,9 @@ class UserController extends Controller
     public function destroy(Request $request, User $user)
     {
         $user->delete();
-
-        if ($request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Usuario eliminado correctamente.'
-            ]);
-        }
-
         return redirect()->route('users.index')->with('success', 'Usuario eliminado correctamente.');
     }
 
     // No se usa actualmente, pero lo dejamos como utilidad interna
-    private function saveUser(User $user, array $data): void
-    {
-        $user->name = $data['name'];
-        $user->email = $data['email'];
-        $user->active = $data['active'];
 
-        if (!empty($data['password'])) {
-            $user->password = bcrypt($data['password']);
-        }
-
-        $user->save();
-
-        $user->reportes()->sync($data['reportes'] ?? []);
-    }
 }

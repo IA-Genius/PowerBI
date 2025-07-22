@@ -10,12 +10,9 @@ class CarterasController extends Controller
 {
     public function index()
     {
-        $carteras = Cartera::all();
-        $reportes = \App\Models\Reporte::with('cartera')->get();
-
         return Inertia::render('GestionarCarteras', [
-            'carteras' => $carteras,
-            'reportes' => $reportes,
+            'carteras' => Cartera::all(),
+            'reportes' => \App\Models\Reporte::with('cartera')->get(),
             'success' => session('success'),
         ]);
     }
@@ -31,15 +28,9 @@ class CarterasController extends Controller
 
         $cartera = Cartera::create($validated);
 
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Cartera creada correctamente.',
-                'cartera' => $cartera,
-            ]);
-        }
-
-        return redirect()->route('carteras.index')->with('success', 'Cartera creada correctamente.');
+        return redirect()
+            ->route('carteras.index')
+            ->with('success', "Cartera «{$cartera->nombre}» creada correctamente.");
     }
 
     public function update(Request $request, Cartera $cartera)
@@ -53,28 +44,18 @@ class CarterasController extends Controller
 
         $cartera->update($validated);
 
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Cartera actualizada correctamente.',
-                'cartera' => $cartera,
-            ]);
-        }
-
-        return redirect()->route('carteras.index')->with('success', 'Cartera actualizada correctamente.');
+        return redirect()
+            ->route('carteras.index')
+            ->with('success', "Cartera «{$cartera->nombre}» actualizada correctamente.");
     }
 
-    public function destroy(Request $request, Cartera $cartera)
+    public function destroy(Cartera $cartera)
     {
+        $nombre = $cartera->nombre;
         $cartera->delete();
 
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Cartera eliminada correctamente.',
-            ]);
-        }
-
-        return redirect()->route('carteras.index')->with('success', 'Cartera eliminada correctamente.');
+        return redirect()
+            ->route('carteras.index')
+            ->with('success', "Cartera «{$nombre}» eliminada correctamente.");
     }
 }

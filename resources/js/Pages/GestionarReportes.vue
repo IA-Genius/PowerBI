@@ -9,7 +9,6 @@ import Swal from "sweetalert2";
 import Dropdown from "@/Components/Dropdown.vue";
 import SvgUploader from "@/Components/SvgUploader.vue";
 import LinkCopiable from "@/Components/LinkCopiable.vue";
-import axios from "axios";
 const carteras = ref(usePage().props.carteras);
 const reportes = ref(usePage().props.reportes);
 const success = usePage().props.success;
@@ -98,7 +97,7 @@ function handleSuccess(message) {
 function eliminarReporte(reporte) {
     Swal.fire({
         title: "¿Eliminar reporte?",
-        text: `¿Estás seguro de eliminar "${reporte.nombre}"?`,
+        text: `¿Estás seguro de eliminar «${reporte.nombre}»?`,
         icon: "warning",
         showCancelButton: true,
         confirmButtonColor: "#3085d6",
@@ -107,25 +106,30 @@ function eliminarReporte(reporte) {
         cancelButtonText: "Cancelar",
     }).then((result) => {
         if (result.isConfirmed) {
-            axios
-                .delete(`/reportes/${reporte.id}`)
-                .then((response) => {
-                    handleSuccess(response.data.message);
-                    router.visit(route("reportes.index"), {
-                        preserveScroll: true,
-                        only: ["reportes", "success"],
+            router.delete(route("reportes.destroy", reporte.id), {
+                preserveScroll: true,
+                only: ["reportes", "success"],
+                onSuccess: () => {
+                    Swal.fire({
+                        toast: true,
+                        position: "top-end",
+                        icon: "success",
+                        title: `Reporte «${reporte.nombre}» eliminado`,
+                        showConfirmButton: false,
+                        timer: 2000,
                     });
-                })
-                .catch(() => {
+                },
+                onError: () => {
                     Swal.fire({
                         toast: true,
                         position: "top-end",
                         icon: "error",
-                        title: "No se pudo eliminar el reporte",
+                        title: `Error al eliminar el reporte «${reporte.nombre}»`,
                         showConfirmButton: false,
                         timer: 2000,
                     });
-                });
+                },
+            });
         }
     });
 }
@@ -606,7 +610,9 @@ const reportesFiltrados = computed(() => {
             submitLabel="Guardar"
             :initialForm="reporteForm"
             :endpoint="
-                editandoReporte ? `/reportes/${reporteForm.id}` : '/reportes'
+                editandoReporte
+                    ? route('reportes.update', reporteForm.id)
+                    : route('reportes.store')
             "
             :method="editandoReporte ? 'put' : 'post'"
             @close="cerrarModalReporte"

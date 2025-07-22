@@ -10,7 +10,10 @@ return new class extends Migration
     {
         Schema::create('reportes', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('cartera_id')->constrained('carteras')->onDelete('cascade');
+            $table->foreignId('cartera_id')
+                ->nullable()
+                ->constrained('carteras')
+                ->nullOnDelete();
             $table->string('nombre');
             $table->string('link_desktop')->nullable();
             $table->string('link_mobile')->nullable();

@@ -163,13 +163,13 @@ function eliminarUsuario(user) {
         cancelButtonText: "Cancelar",
     }).then((result) => {
         if (result.isConfirmed) {
-            router.delete(`/users/${user.id}`, {
+            router.delete(route("users.destroy", user.id), {
                 onSuccess: () => {
                     Swal.fire({
                         toast: true,
                         position: "top-end",
                         icon: "success",
-                        title: `Usuario ${user.name} eliminado`,
+                        title: `Usuario «${user.name}» eliminado`,
                         showConfirmButton: false,
                         timer: 2000,
                     });
@@ -178,18 +178,6 @@ function eliminarUsuario(user) {
             });
         }
     });
-}
-
-function toggleReportePersonalizado(reporte, checked) {
-    if (checked) {
-        if (!usuarioForm.customReportes.some((r) => r.id === reporte.id)) {
-            usuarioForm.customReportes.push(reporte);
-        }
-    } else {
-        usuarioForm.customReportes = usuarioForm.customReportes.filter(
-            (r) => r.id !== reporte.id
-        );
-    }
 }
 
 function resetearACarterasYReportesPorDefecto() {
@@ -296,7 +284,9 @@ watch(
                 :submitLabel="usuarioEditar ? 'Actualizar' : 'Registrar'"
                 :form="usuarioForm"
                 :endpoint="
-                    usuarioEditar ? `/users/${usuarioEditar.id}` : '/users'
+                    usuarioEditar
+                        ? route('users.update', usuarioEditar.id)
+                        : route('users.store')
                 "
                 :method="usuarioEditar ? 'put' : 'post'"
                 :transform="
