@@ -178,9 +178,11 @@ watch(
 
 const tabActiva = ref("basico");
 
+import { UserGroupIcon, CogIcon } from "@heroicons/vue/24/outline";
+
 const tabs = [
-    { value: "basico", label: "Datos Básicos", icon: null },
-    { value: "permisos", label: "Permisos Avanzados", icon: null },
+    { value: "basico", label: "Datos Básicos", icon: UserGroupIcon },
+    { value: "avanzado", label: "Permisos Avanzados", icon: CogIcon },
 ];
 
 function transformarForm(form) {
@@ -295,7 +297,7 @@ function transformarForm(form) {
                             </div>
                         </div>
 
-                        <div v-if="tabActiva === 'permisos'" class="space-y-4">
+                        <div v-if="tabActiva === 'avanzado'" class="space-y-4">
                             <label
                                 class="block text-sm font-medium text-gray-700 mb-1"
                                 >Permisos</label

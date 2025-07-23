@@ -236,6 +236,13 @@ watch(
     },
     { deep: true }
 );
+
+import { UserIcon, CogIcon } from "@heroicons/vue/24/outline";
+
+const tabs = [
+    { value: "basicos", label: "Información", icon: UserIcon },
+    { value: "avanzado", label: "Avanzado", icon: CogIcon },
+];
 </script>
 
 <template>
@@ -297,14 +304,7 @@ watch(
                         reportes: form.customReportes.map((r) => r.id),
                     })
                 "
-                :tabs="[
-                    { value: 'basicos', label: 'Información', icon: UserIcon },
-                    {
-                        value: 'avanzado',
-                        label: 'Permisos',
-                        icon: SettingsIcon,
-                    },
-                ]"
+                :tabs="tabs"
                 :tabActiva="tabActiva"
                 @update:tabActiva="tabActiva = $event"
                 @close="cerrarModal"
