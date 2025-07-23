@@ -13,6 +13,7 @@ return new class extends Migration
             $table->id();
             $table->string('name')->unique(); // Nombre del módulo (ej: Usuarios, Ventas)
             $table->timestamps();
+            $table->softDeletes();
         });
 
         // Añadir columna module_id a permissions

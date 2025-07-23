@@ -3,14 +3,20 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\User;
 
 class Vodafone extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'vodafone';
 
     protected $fillable = [
         'user_id',
+        'upload_id',
+        'asignado_a_id',
+        'estado',
         'dni_nif_cif',
         'id_cliente',
         'observacion_smart',

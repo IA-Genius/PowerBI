@@ -6,10 +6,11 @@ use Spatie\Permission\Models\Role as SpatieRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\Cartera;
 use App\Models\Reporte;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Role extends SpatieRole
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     // Valor por defecto para guard_name si lo usas en la DB
     protected $attributes = [

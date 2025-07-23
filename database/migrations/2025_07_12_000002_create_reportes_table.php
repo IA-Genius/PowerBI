@@ -20,6 +20,7 @@ return new class extends Migration
             $table->text('icon')->nullable();
             $table->integer('orden')->default(0);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
