@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::create('vodafone_uploads', function (Blueprint $table) {
+        Schema::create('log_importacion_vodafone', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('nombre_archivo')->nullable();
@@ -15,20 +15,27 @@ return new class extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('vodafone', function (Blueprint $table) {
+        Schema::create('historial_registros_vodafone', function (Blueprint $table) {
             $table->id();
 
             // Quien creó el registro
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
 
             // Subida a la que pertenece
-            $table->foreignId('upload_id')->nullable()->constrained('vodafone_uploads')->onDelete('set null');
+            $table->foreignId('upload_id')->nullable()->constrained('log_importacion_vodafone')->onDelete('set null');
 
             // Encargado asignado
             $table->foreignId('asignado_a_id')->nullable()->constrained('users')->onDelete('set null');
 
             // Estado del registro
-            $table->enum('estado', ['pendiente', 'asignado', 'completado'])->default('pendiente');
+            $table->enum('estado', [
+                'pendiente',
+                'asignado',
+                'irrelevante',
+                'completado',
+                'agendado'
+            ])->default('pendiente');
+
 
             // Datos del Excel
             $table->string('dni_nif_cif')->nullable();

@@ -10,7 +10,7 @@ class Vodafone extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'vodafone';
+    protected $table = 'historial_registros_vodafone';
 
     protected $fillable = [
         'user_id',
