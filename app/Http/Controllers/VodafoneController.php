@@ -6,6 +6,9 @@ use App\Models\Vodafone;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
+use App\Models\LogImportacionVodafone;
+use App\Models\Vodafone as HistorialRegistroVodafone;
+
 
 class VodafoneController extends Controller
 {
@@ -42,7 +45,41 @@ class VodafoneController extends Controller
             'filters' => ['search' => $search]
         ]);
     }
+    public function importMasivo(Request $request)
+    {
+        $request->validate([
+            'archivo' => 'required|file|mimes:xlsx,csv',
+        ]);
 
+        $user = Auth::user();
+        $file = $request->file('archivo');
+        $nombreOriginal = $file->getClientOriginalName();
+
+        // Leer datos del archivo
+        $data = []; // <- AQUI debes integrar Laravel Excel o PhpSpreadsheet
+
+        // Crear log de importación
+        $log = LogImportacionVodafone::create([
+            'user_id' => $user->id,
+            'nombre_archivo' => $nombreOriginal,
+            'cantidad_registros' => count($data),
+        ]);
+
+        // Insertar registros
+        foreach ($data as $fila) {
+            HistorialRegistroVodafone::create([
+                'user_id' => $user->id,
+                'upload_id' => $log->id,
+                'estado' => 'pendiente',
+                'dni_nif_cif' => $fila['dni_nif_cif'] ?? null,
+                'nombre_cliente' => $fila['nombre_cliente'] ?? null,
+                'telefono_contacto' => $fila['telefono_contacto'] ?? null,
+                // Agrega aquí los demás campos del Excel si deseas
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Importación completada correctamente.');
+    }
 
 
     public function store(Request $request)
@@ -54,14 +91,6 @@ class VodafoneController extends Controller
         $data['user_id'] = $user->id;
 
         Vodafone::create($data);
-
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Datos creados correctamente.',
-                'vodafone' => $data,
-            ]);
-        }
 
         return redirect()->route('vodafone.index')->with('success', 'Registro creado correctamente.');
     }
@@ -78,14 +107,6 @@ class VodafoneController extends Controller
 
 
         $vodafone->update($data);
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Datos actualizados correctamente.',
-                'vodafone' => $data,
-            ]);
-        }
-
 
         return redirect()->route('vodafone.index')->with('success', 'Registro actualizado correctamente.');
     }
@@ -101,12 +122,6 @@ class VodafoneController extends Controller
 
         $vodafone->delete();
 
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Data eliminada correctamente.',
-            ]);
-        }
 
         return redirect()->route('vodafone.index')->with('success', 'Registro eliminado correctamente.');
     }

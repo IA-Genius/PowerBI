@@ -41,4 +41,19 @@ class Vodafone extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function logImportacion()
+    {
+        return $this->belongsTo(LogImportacionVodafone::class, 'upload_id');
+    }
+
+    public function creador()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function asignadoA()
+    {
+        return $this->belongsTo(User::class, 'asignado_a_id');
+    }
 }

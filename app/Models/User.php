@@ -67,4 +67,9 @@ class User extends Authenticatable
             ->unique('id')
             ->values();
     }
+
+    public function importacionesVodafone()
+    {
+        return $this->hasMany(LogImportacionVodafone::class);
+    }
 }
