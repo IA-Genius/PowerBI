@@ -10,6 +10,7 @@ COLORES
     --colorPrincipal: #5f5ffffc;
     --colortTxt: #4d4a48;
     --colorSecundario: #ff7e00;
+    --blackTransparent: #000000b2;
 }
 .tituloPag,
 .colorMorado {
@@ -538,4 +539,81 @@ ICONOS
 
 @media screen and (max-width: 992px) {
   .width-50 { width: 100% !important;}
+}
+
+
+
+
+
+
+
+
+
+
+
+.newFiltros {
+    flex-direction: column;
+}
+.modalFiltros .modalContent,
+.modalFiltros .fdClose {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    right: 0;
+}
+.modalFiltros .fdClose {
+    background: var(--blackTransparent); 
+    z-index: 99;
+}
+.modalFiltros .modalContent {
+    margin: auto;
+    z-index: 999;
+    max-width: 550px;
+    max-height: 400px;
+    height: auto;
+    padding-top: 59px;
+}
+
+.buscadorModal {
+    position: absolute;
+    left: -3%;
+    top: -2px;
+    right: -3%;
+    width: 106%;
+}
+
+
+
+
+.upload-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin: 10px 0 0 0 ;
+}
+
+.upload-label {
+  cursor: pointer;
+  background-color: var(--colorPrincipal);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: background-color 0.3s ease;
+}
+
+.upload-label:hover {
+  background-color: #1a5fd0;
+}
+
+.upload-label input[type="file"] {
+  display: none;
+}
+
+.upload-icon {
+  width: 20px;
+  height: 20px;
 }

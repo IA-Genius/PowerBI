@@ -20,6 +20,12 @@ import FiltroFlotante from "@/Components/FiltroFlotante.vue";
 const showModal = ref(false);
 const registroEditar = ref(null);
 
+const showInportarModal = ref(false);
+const InportarTitulo = ref(null);
+
+const showAsignacionModal = ref(false);
+const asignacionTitulo = ref(null);
+
 const filters = usePage().props.filters || {};
 
 const form = ref({
@@ -61,6 +67,15 @@ function abrirModalAgregar() {
     showModal.value = true;
 }
 
+function abrirModalInportar() {
+    showInportarModal.value = true;
+}
+
+function abrirModalAsignacion() {
+    showAsignacionModal.value = true;
+}
+
+
 function abrirModalEditar(item) {
     registroEditar.value = item;
     form.value = { ...item };
@@ -70,6 +85,12 @@ function abrirModalEditar(item) {
 function cerrarModal() {
     showModal.value = false;
     registroEditar.value = null;
+
+    showInportarModal.value = false;
+    InportarTitulo.value = null;
+
+    showAsignacionModal.value = false;
+    asignacionTitulo.value = null;
 }
 
 function handleSuccess(msg) {
@@ -194,92 +215,114 @@ function aplicarFiltros(f) {
                     Historial de Registros
                 </h2>
 
-                <!-- Botón y modal de filtros -->
-                <div class="relative">
-                    <button
-                        @click="showFiltro = !showFiltro"
-                        class="bg-white px-3 py-1 border rounded shadow text-sm"
-                    >
-                        Filtros
-                    </button>
-                    <FiltroFlotante
-                        v-if="showFiltro"
-                        :filtros="filtrosDisponibles"
-                        @filtrar="aplicarFiltros"
-                        @close="showFiltro = false"
-                    />
-                </div>
-
-                <!-- Input con buscador y spinner -->
-                <div
-                    class="flex flex-col sm:flex-row items-stretch gap-3 sm:gap-4 mt-4 sm:mt-0"
-                >
-                    <!-- Botón agregar -->
-                    <button
-                        v-if="canDo('vodafone.crear')"
-                        @click="abrirModalAgregar"
-                        class="flex items-center justify-center gap-2 bg-green-500 text-white px-5 py-2 rounded-md shadow hover:bg-green-600 transition text-sm font-semibold"
-                    >
-                        <svg
-                            class="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            viewBox="0 0 24 24"
+                <div class="flex justify-between gap-4 itens-center">
+                    <!-- Botón y modal de filtros -->
+                    <div class="modalFiltros">
+                        <button
+                            @click="showFiltro = !showFiltro"
+                            class="flex items-center gap-2 bg-white  px-2 py-1 shadow border border-gray-200 cursor-pointer relative"
                         >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M12 4v16m8-8H4"
-                            />
-                        </svg>
-                        Agregar
-                    </button>
+                            Seleccionador de filtros
+                            <!-- Flecha caret -->
+                            <svg
+                                class="w-4 h-4 text-gray-400 ml-2 mr-1"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M19 9l-7 7-7-7"
+                                />
+                            </svg>
+                        </button>
 
-                    <!-- Botón agregar -->
-                    <button
-                        v-if="canDo('vodafone.crear')"
-                        @click="abrirModalAgregar"
-                        class="flex items-center justify-center gap-2 bg-green-500 text-white px-5 py-2 rounded-md shadow hover:bg-green-600 transition text-sm font-semibold"
-                    >
-                        <svg
-                            class="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M12 4v16m8-8H4"
-                            />
-                        </svg>
-                        Importa
-                    </button>
+                        <FiltroFlotante
+                            v-if="showFiltro"
+                            :filtros="filtrosDisponibles"
+                            @filtrar="aplicarFiltros"
+                            @close="showFiltro = false"
+                        />
+                    </div>
 
-                    <!-- Botón agregar -->
-                    <button
-                        v-if="canDo('vodafone.crear')"
-                        @click="abrirModalAgregar"
-                        class="flex items-center justify-center gap-2 bg-green-500 text-white px-5 py-2 rounded-md shadow hover:bg-green-600 transition text-sm font-semibold"
-                    >
-                        <svg
-                            class="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M12 4v16m8-8H4"
-                            />
-                        </svg>
-                        Asignar Filtrador
-                    </button>
-                </div>
+                    <div class="relative">
+                        <Dropdown align="right" width="48">
+                            <!-- Trigger -->
+                            <template #trigger>
+                                <div
+                                    class="flex items-center gap-2 bg-white  px-2 py-1 shadow border border-gray-200 cursor-pointer relative"
+                                >
+                                    Listado de Operaciones
+                                    
+                                    <!-- Flecha caret -->
+                                    <svg
+                                        class="w-4 h-4 text-gray-400 ml-2 mr-1"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="M19 9l-7 7-7-7"
+                                        />
+                                    </svg>
+                                </div>
+                            </template>
+
+                            <!-- Contenido del Dropdown -->
+                            <template #content>
+
+                                <div class=" gap-3 newFiltros p-2 flex   gap-3">
+                                    <!-- Botón agregar -->
+                                    <button
+                                        v-if="canDo('vodafone.crear')"
+                                        @click="abrirModalAgregar"
+                                        class="w-full flex items-center justify-center gap-2 bg-green-500 text-white px-5 py-2 rounded-md shadow hover:bg-green-600 transition text-sm font-semibold"
+                                    >
+                                        <svg
+                                            class="w-5 h-5"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                d="M12 4v16m8-8H4"
+                                            />
+                                        </svg>
+                                        Agregar
+                                    </button>
+
+                                    <!-- Botón agregar -->
+                                    <button
+                                        @click="abrirModalInportar"
+                                        class="flex items-center justify-center gap-2 bg-green-500 text-white px-5 py-2 rounded-md shadow hover:bg-green-600 transition text-sm font-semibold"
+                                    >
+                                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Pro 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2025 Fonticons, Inc. --><path fill="currentColor" d="M416 176c0 8.8 7.2 16 16 16s16-7.2 16-16l0-80c0-53-43-96-96-96L96 0C43 0 0 43 0 96l0 80c0 8.8 7.2 16 16 16s16-7.2 16-16l0-80c0-35.3 28.7-64 64-64l256 0c35.3 0 64 28.7 64 64l0 80zM212.7 507.3c6.2 6.2 16.4 6.2 22.6 0l144-144c6.2-6.2 6.2-16.4 0-22.6s-16.4-6.2-22.6 0L240 457.4 240 176c0-8.8-7.2-16-16-16s-16 7.2-16 16l0 281.4-116.7-116.7c-6.2-6.2-16.4-6.2-22.6 0s-6.2 16.4 0 22.6l144 144z"/></svg>
+                                        Importar
+                                    </button>
+
+                                    <!-- Botón agregar -->
+                                    <button
+                                        @click="abrirModalAsignacion"
+                                        class="flex items-center justify-center gap-2 bg-green-500 text-white px-5 py-2 rounded-md shadow hover:bg-green-600 transition text-sm font-semibold"
+                                    >
+                                        <svg class="w-5 h-5"  xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Pro 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2025 Fonticons, Inc. --><path fill="currentColor" d="M256 224a96 96 0 1 0 0-192 96 96 0 1 0 0 192zM256 0a128 128 0 1 1 0 256 128 128 0 1 1 0-256zM208 336c-79.5 0-144 64.5-144 144l0 16c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-16c0-97.2 78.8-176 176-176l96 0c97.2 0 176 78.8 176 176l0 16c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-16c0-79.5-64.5-144-144-144l-96 0zm320-72l0-56-56 0c-8.8 0-16-7.2-16-16s7.2-16 16-16l56 0 0-56c0-8.8 7.2-16 16-16s16 7.2 16 16l0 56 56 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-56 0 0 56c0 8.8-7.2 16-16 16s-16-7.2-16-16z"/></svg>
+                                        Asignar Filtrador
+                                    </button>
+                                </div>
+
+                            </template>
+                        </Dropdown>
+                    </div>
+                </div> 
+                
             </div>
         </template>
 
@@ -410,7 +453,7 @@ function aplicarFiltros(f) {
             </div>
         </div>
 
-        <!-- Modal -->
+        <!-- Modal DE AGREGAR -->
         <ModalGestion
             :show="showModal"
             :title="registroEditar ? 'Editar Registro' : 'Nuevo Registro'"
@@ -492,6 +535,135 @@ function aplicarFiltros(f) {
                         :error="errors.tipificaciones"
                     />
                 </div>
+            </template>
+        </ModalGestion>
+
+
+
+        <!-- Modal DE INPORTAR -->
+        <ModalGestion
+            :show="showInportarModal"
+            :title="InportarTitulo ? 'Inportar' : 'Inportar nuevos Registros'"
+            submitLabel="Importar"
+            :initialForm="form"
+            :endpoint="
+                registroEditar
+                    ? route('vodafone.update', registroEditar.id)
+                    : route('vodafone.store')
+            "
+            :method="registroEditar ? 'put' : 'post'"
+            @close="cerrarModal"
+            @success="handleSuccess"
+        >
+            <template #default="{ form: slotForm, errors }">
+                <InputField
+                    class="modalInputs"
+                    label="Descripción de la Carga"
+                    name="descricion"
+                    :error="errors.nombre_cliente"
+                    required
+                />
+
+                 <div>
+                    <h2>Subir archivo Excel</h2>
+                    <div class="upload-container">
+                        <label class="upload-label">
+                        <!-- Ícono SVG de subir archivo -->
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="upload-icon"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                        >
+                            <path
+                            d="M12 16c.55 0 1-.45 1-1V9.83l1.59 1.59L16 10l-4-4-4 4 1.41 1.41L11 9.83V15c0 .55.45 1 1 1zm6-10H6c-1.1 0-2 .9-2 2v12c0 
+                                1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 
+                                14H6V8h12v12z"
+                            />
+                        </svg>
+                        <span>Subir Excel</span>
+                        <input type="file" @change="handleFileUpload" accept=".xlsx, .xls" />
+                        </label>
+
+                        <p v-if="fileName">Archivo: {{ fileName }}</p>
+                    </div>
+                </div>
+
+                <div>
+                    <h2>Descarga plantilla de excel</h2>
+                    <a href="ruta/al/archivo.pdf" download="nombre-del-archivo-descargado.pdf" class="flex gap-2 pt-3" style="color: var(--colorPrincipal);">
+                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Pro 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2025 Fonticons, Inc. --><path fill="currentColor" d="M416 176c0 8.8 7.2 16 16 16s16-7.2 16-16l0-80c0-53-43-96-96-96L96 0C43 0 0 43 0 96l0 80c0 8.8 7.2 16 16 16s16-7.2 16-16l0-80c0-35.3 28.7-64 64-64l256 0c35.3 0 64 28.7 64 64l0 80zM212.7 507.3c6.2 6.2 16.4 6.2 22.6 0l144-144c6.2-6.2 6.2-16.4 0-22.6s-16.4-6.2-22.6 0L240 457.4 240 176c0-8.8-7.2-16-16-16s-16 7.2-16 16l0 281.4-116.7-116.7c-6.2-6.2-16.4-6.2-22.6 0s-6.2 16.4 0 22.6l144 144z"/></svg>
+                        Descargar el archivo
+                    </a>
+                </div>
+                            
+            </template>
+        </ModalGestion>
+
+
+        <!-- Modal DE ASIGNACION -->
+        <ModalGestion
+            :show="showAsignacionModal"
+            :title="asignacionTitulo ? 'ASIGNAR' : 'Asignación de Registros'"
+            submitLabel="Asignar"
+            @close="cerrarModal"
+            @success="handleSuccess"
+        >
+            <template #default="{ form: slotForm, errors }">
+                <h3>Listado de Filtradores</h3>
+                <div class="relative">
+                        <Dropdown align="right" width="48">
+                            <!-- Trigger -->
+                            <template #trigger>
+                                <div
+                                    class="flex items-center gap-2 bg-white  px-2 py-1 shadow border border-gray-200 cursor-pointer relative"
+                                >
+                                    Listado de Filtradores
+                                    
+                                    <!-- Flecha caret -->
+                                    <svg
+                                        class="w-4 h-4 text-gray-400 ml-2 mr-1"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="M19 9l-7 7-7-7"
+                                        />
+                                    </svg>
+                                </div>
+                            </template>
+
+                            <!-- Contenido del Dropdown -->
+                            <template #content>
+
+                                <DropdownLink >
+                                    <div class="flex items-center gap-2">
+                                        <span>Persona 1</span>
+                                    </div>
+                                </DropdownLink>
+                                <DropdownLink >
+                                    <div class="flex items-center gap-2">
+                                        <span>Persona 2</span>
+                                    </div>
+                                </DropdownLink>
+                                <DropdownLink >
+                                    <div class="flex items-center gap-2">
+                                        <span>Persona 3</span>
+                                    </div>
+                                </DropdownLink>
+
+                            </template>
+                        </Dropdown>
+                    </div>
+
+                 <div>
+                    <h2>Lista de Registros a Asignar: 2 Registros</h2>
+                </div>
+                            
             </template>
         </ModalGestion>
     </AuthenticatedLayout>

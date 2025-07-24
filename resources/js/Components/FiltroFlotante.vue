@@ -1,36 +1,38 @@
 <template>
+    <div class="fdClose" @click="$emit('close')" ></div>
     <div
-        class="absolute z-50 bg-white shadow-lg border border-gray-200 rounded-xl p-5 w-[480px] top-full mt-2 space-y-5"
+        class="absolute bg-white shadow-lg border border-gray-200 rounded-xl p-5 mt-2 space-y-5 modalContent"
     >
-        <!-- Botón cerrar -->
-        <button
-            @click="$emit('close')"
-            class="absolute top-3 right-3 text-gray-400 hover:text-red-500 transition"
-            title="Cerrar filtros"
-        >
-            <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-            >
-                <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                />
-            </svg>
-        </button>
 
         <!-- Buscador -->
-        <div v-if="hasSearch" class="relative">
+        <div v-if="hasSearch" class="buscadorModal">
+            <!-- Botón cerrar -->
+            <button
+                @click="$emit('close')"
+                class="absolute top-5 right-3 text-gray-400 hover:text-red-500 transition"
+                title="Cerrar filtros"
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M6 18L18 6M6 6l12 12"
+                    />
+                </svg>
+            </button>
+
             <input
                 v-model="internalSearch"
                 type="text"
                 :placeholder="placeholder"
-                class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-400 focus:outline-none text-sm"
+                class="w-full pl-10 pr-8 py-5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-400 focus:outline-none text-sm"
             />
             <svg
                 class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
