@@ -29,6 +29,14 @@ require __DIR__ . '/auth.php';
 // ===================
 Route::middleware('auth')->group(function () {
 
+    
+Route::get('/newVodaFone', function () {
+    return view('newVodaFone'); // Sin .vue ni extensión
+})->middleware('auth');
+
+    
+
+
     // PERFIL Y DASHBOARD
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -37,6 +45,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/reporte/{id}', [DashboardController::class, 'showReporte'])->name('dashboard.reporte');
+
 
 
     // ===================
@@ -83,6 +92,8 @@ Route::middleware('auth')->group(function () {
     Route::middleware('can:vodafone.guardar')->post('/vodafone', [VodafoneController::class, 'store'])->name('vodafone.store');
     Route::middleware('can:vodafone.editar')->put('/vodafone/{vodafone}', [VodafoneController::class, 'update'])->name('vodafone.update');
     Route::middleware('can:vodafone.eliminar')->delete('/vodafone/{vodafone}', [VodafoneController::class, 'destroy'])->name('vodafone.destroy');
+
+
 });
 
 // ===================

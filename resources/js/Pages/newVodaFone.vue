@@ -6,7 +6,6 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import ModalGestion from "@/Components/ModalGestion.vue";
 import InputField from "@/Components/InputField.vue";
 import Actions from "@/Components/Actions.vue";
-import Dropdown from "@/Components/Dropdown.vue";
 
 const pageProps = usePage().props;
 const pagination = computed(() => pageProps.items);
@@ -81,7 +80,7 @@ function handleSuccess(msg) {
         timer: 2000,
         showConfirmButton: false,
     });
-    router.visit(route("vodafone.index"), {
+    router.visit(route("newVodaFone.index"), {
         preserveScroll: true,
         only: ["items", "success"],
         onFinish: cerrarModal,
@@ -99,7 +98,7 @@ function eliminar(item) {
         confirmButtonText: "Sí, eliminar",
     }).then((res) => {
         if (res.isConfirmed) {
-            router.delete(`/vodafone/${item.id}`, {
+            router.delete(`/newVodaFone/${item.id}`, {
                 onSuccess: () => handleSuccess("Registro eliminado"),
                 onError: () =>
                     Swal.fire({
@@ -140,7 +139,7 @@ watch(search, async (val) => {
     isLoading.value = true;
 
     await router.get(
-        route("vodafone.index"),
+        route("newVodaFone.index"),
         {
             search: val,
             page: 1,
@@ -167,160 +166,6 @@ watch(search, async (val) => {
                 <h2 class="text-xl font-semibold tituloPag">
                     Historial de Registros
                 </h2>
-
-                <div class="flex justify-between items-center">
-                    <div>
-                        Archivos: 
-                    </div>
-                    <Dropdown align="right" width="400" class="codigoBarra">
-                        <!-- Trigger -->
-                        <template #trigger>
-                            <div
-                                class="flex items-center gap-2 bg-white  px-2 py-1 shadow border border-gray-200 cursor-pointer relative"
-                            >
-                                    Codigo de Barra
-
-                                <!-- Flecha caret -->
-                                <svg
-                                    class="w-4 h-4 text-gray-400 ml-2 mr-1"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M19 9l-7 7-7-7"
-                                    />
-                                </svg>
-                            </div>
-                        </template>
-
-                        <!-- Contenido del Dropdown -->
-                        <template #content>
-
-                            <DropdownLink :href="route('profile.edit')">
-                                <div class="flex items-center gap-2">
-                                    <svg
-                                        class="w-5 h-5 text-indigo-500"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                                        />
-                                    </svg>
-                                    <span>Perfil</span>
-                                </div>
-                            </DropdownLink>
-
-                            <DropdownLink
-                                :href="route('logout')"
-                                method="post"
-                                as="button"
-                            >
-                                <div class="flex items-center gap-2">
-                                    <svg
-                                        class="w-5 h-5 text-red-500"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M17 16l4-4m0 0l-4-4m4 4H3"
-                                        />
-                                    </svg>
-                                    <span>Cerrar Sesión</span>
-                                </div>
-                            </DropdownLink>
-                        </template>
-                    </Dropdown>
-                </div>
-
-                 <div class="flex justify-between items-center">
-                    <div>
-                        Trasavilidad: 
-                    </div>
-                    <Dropdown align="right" width="400" class="codigoBarra">
-                        <!-- Trigger -->
-                        <template #trigger>
-                            <div
-                                class="flex items-center gap-2 bg-white  px-2 py-1 shadow border border-gray-200 cursor-pointer relative"
-                            >
-                                    Pendientes
-
-                                <!-- Flecha caret -->
-                                <svg
-                                    class="w-4 h-4 text-gray-400 ml-2 mr-1"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M19 9l-7 7-7-7"
-                                    />
-                                </svg>
-                            </div>
-                        </template>
-
-                        <!-- Contenido del Dropdown -->
-                        <template #content>
-
-                            <DropdownLink :href="route('profile.edit')">
-                                <div class="flex items-center gap-2">
-                                    <svg
-                                        class="w-5 h-5 text-indigo-500"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                                        />
-                                    </svg>
-                                    <span>Perfil</span>
-                                </div>
-                            </DropdownLink>
-
-                            <DropdownLink
-                                :href="route('logout')"
-                                method="post"
-                                as="button"
-                            >
-                                <div class="flex items-center gap-2">
-                                    <svg
-                                        class="w-5 h-5 text-red-500"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M17 16l4-4m0 0l-4-4m4 4H3"
-                                        />
-                                    </svg>
-                                    <span>Cerrar Sesión</span>
-                                </div>
-                            </DropdownLink>
-                        </template>
-                    </Dropdown>
-                </div>
 
                 <!-- Input con buscador y spinner -->
                 <div
@@ -376,7 +221,6 @@ watch(search, async (val) => {
                             ></span>
                         </span>
                     </div>
-
                     <!-- Botón agregar -->
                     <button
                         v-if="canDo('vodafone.crear')"
@@ -398,50 +242,6 @@ watch(search, async (val) => {
                         </svg>
                         Agregar
                     </button>
-
-                    <!-- Botón agregar -->
-                    <button
-                        v-if="canDo('vodafone.crear')"
-                        @click="abrirModalAgregar"
-                        class="flex items-center justify-center gap-2 bg-green-500 text-white px-5 py-2 rounded-md shadow hover:bg-green-600 transition text-sm font-semibold"
-                    >
-                        <svg
-                            class="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M12 4v16m8-8H4"
-                            />
-                        </svg>
-                        Importa
-                    </button>
-
-                    <!-- Botón agregar -->
-                    <button
-                        v-if="canDo('vodafone.crear')"
-                        @click="abrirModalAgregar"
-                        class="flex items-center justify-center gap-2 bg-green-500 text-white px-5 py-2 rounded-md shadow hover:bg-green-600 transition text-sm font-semibold"
-                    >
-                        <svg
-                            class="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M12 4v16m8-8H4"
-                            />
-                        </svg>
-                        Asignar Filtrador
-                    </button>
                 </div>
             </div>
         </template>
@@ -454,19 +254,11 @@ watch(search, async (val) => {
                     <thead class="text-white text-xs bgPrincipal">
                         <tr>
                             <th class="px-4 py-2 text-left">ID</th>
-                            <th class="px-4 py-2 text-left">Nro. Carga</th>
-                            <th class="px-4 py-2 text-left">Fecha de Carga</th>
                             <th class="px-4 py-2 text-left">DNI</th>
-                            <th class="px-4 py-2 text-left">Nombre</th>
+                            <th class="px-4 py-2 text-left">Cliente</th>
                             <th class="px-4 py-2 text-left">Teléfono</th>
-                            <th class="px-4 py-2 text-left">Estado</th>
-                            <th class="px-4 py-2 text-left">Correo</th>
                             <th class="px-4 py-2 text-left">Dirección</th>
-                            <th class="px-4 py-2 text-left">Contacto</th>
-                            <th class="px-4 py-2 text-left">Asignado</th>
-                            <th class="px-4 py-2 text-left">Fecha Asignada</th>
                             <th class="px-4 py-2 text-left">Operador Actual</th>
-                            <th class="px-4 py-2 text-left">Trasavilidad </th>
                             <th class="px-4 py-2 text-left">
                                 Oferta Comercial
                             </th>
