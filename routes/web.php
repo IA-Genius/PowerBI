@@ -29,12 +29,12 @@ require __DIR__ . '/auth.php';
 // ===================
 Route::middleware('auth')->group(function () {
 
-    
-Route::get('/newVodaFone', function () {
-    return view('newVodaFone'); // Sin .vue ni extensión
-})->middleware('auth');
 
-    
+    Route::get('/newVodaFone', function () {
+        return view('newVodaFone'); // Sin .vue ni extensión
+    })->middleware('auth');
+
+
 
 
     // PERFIL Y DASHBOARD
@@ -50,7 +50,7 @@ Route::get('/newVodaFone', function () {
 
     // ===================
     // ROLES
-    // ===================
+    // ===================+
     Route::middleware('can:roles.ver')->get('/roles', [RoleController::class, 'index'])->name('roles.index');
     Route::middleware('can:roles.crear')->post('/roles', [RoleController::class, 'store'])->name('roles.store');
     Route::middleware('can:roles.editar')->put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
@@ -92,8 +92,6 @@ Route::get('/newVodaFone', function () {
     Route::middleware('can:vodafone.guardar')->post('/vodafone', [VodafoneController::class, 'store'])->name('vodafone.store');
     Route::middleware('can:vodafone.editar')->put('/vodafone/{vodafone}', [VodafoneController::class, 'update'])->name('vodafone.update');
     Route::middleware('can:vodafone.eliminar')->delete('/vodafone/{vodafone}', [VodafoneController::class, 'destroy'])->name('vodafone.destroy');
-
-
 });
 
 // ===================

@@ -13,38 +13,28 @@ use App\Models\Vodafone as HistorialRegistroVodafone;
 class VodafoneController extends Controller
 {
 
-    public function index(Request $request)
+    public function index()
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        $query = Vodafone::query()->with(['user.roles']); // Incluye los roles del usuario
+
+        $query = Vodafone::query()->with(['user.roles']);
 
 
         if (!$user->can('vodafone.ver-global')) {
             $query->where('user_id', $user->id);
         }
 
-        $search = $request->input('search');
-
-        if (!empty($search)) {
-            $query->where(function ($q) use ($search) {
-                $q->where('nombre_cliente', 'like', "%$search%")
-                    ->orWhere('telefono_contacto', 'like', "%$search%")
-                    ->orWhere('dni_nif_cif', 'like', "%$search%");
-            });
-        }
-
-        $items = $query->oldest()->paginate(17)->withQueryString();
-
+        $items = $query->orderBy('id')->get();
 
         return Inertia::render('Vodafone', [
             'items' => $items,
             'success' => session('success'),
-            'canViewGlobal' => $user->can('vodafone.ver-global'), // Envía el permiso
-            'filters' => ['search' => $search]
+            'canViewGlobal' => $user->can('vodafone.ver-global'),
         ]);
     }
+
     public function importMasivo(Request $request)
     {
         $request->validate([

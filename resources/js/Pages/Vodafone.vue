@@ -9,18 +9,18 @@ import Actions from "@/Components/Actions.vue";
 import Dropdown from "@/Components/Dropdown.vue";
 
 const pageProps = usePage().props;
-const pagination = computed(() => pageProps.items);
-const items = computed(() => pagination.value?.data || []);
+
+const items = computed(() => pageProps.items || []);
 const success = pageProps.success;
 const canViewGlobal = pageProps.canViewGlobal;
 const can = usePage().props.can || {};
 const canDo = (key) => !!can[key];
+import FiltroFlotante from "@/Components/FiltroFlotante.vue";
 
 const showModal = ref(false);
 const registroEditar = ref(null);
-const isLoading = ref(false);
+
 const filters = usePage().props.filters || {};
-const search = ref(filters.search || "");
 
 const form = ref({
     nombre_cliente: "",
@@ -125,35 +125,61 @@ function mostrarInfoUsuario(user) {
     });
 }
 
-function parseLabel(label) {
-    if (label === "&laquo; Previous") return "«";
-    if (label === "Next &raquo;") return "»";
-    return label.replace(/&laquo;|&raquo;/g, "").trim();
-}
+console.log(items.value);
 
-function limpiarBusqueda() {
-    search.value = "";
-}
+const showFiltro = ref(false);
+const filtrosActivos = ref({});
 
-// 🟢 Nuevo: búsqueda en tiempo real con loading
-watch(search, async (val) => {
-    isLoading.value = true;
+const rawItems = computed(() => pageProps.items || []);
 
-    await router.get(
-        route("vodafone.index"),
-        {
-            search: val,
-            page: 1,
-        },
-        {
-            replace: true,
-            preserveScroll: true,
-            onFinish: () => {
-                isLoading.value = false;
-            },
-        }
-    );
+const filtrosDisponibles = computed(() => {
+    const list = rawItems.value;
+    return {
+        operador_actual: [
+            ...new Set(list.map((i) => i.operador_actual).filter(Boolean)),
+        ],
+        tipificaciones: [
+            ...new Set(list.map((i) => i.tipificaciones).filter(Boolean)),
+        ],
+        trasavilidad: [
+            ...new Set(list.map((i) => i.trasavilidad).filter(Boolean)),
+        ],
+        estado: [...new Set(list.map((i) => i.estado).filter(Boolean))],
+        asignado: [...new Set(list.map((i) => i.asignado).filter(Boolean))],
+    };
 });
+
+const filteredItems = computed(() => {
+    const term = filtrosActivos.value.search?.toLowerCase() || "";
+    let data = [...rawItems.value];
+
+    // Filtro de texto
+    if (term) {
+        data = data.filter((item) =>
+            [
+                item.nombre_cliente,
+                item.dni_nif_cif,
+                item.telefono_contacto,
+            ].some((field) =>
+                (field || "").toString().toLowerCase().includes(term)
+            )
+        );
+    }
+
+    // Filtros exactos
+    for (const [key, values] of Object.entries(filtrosActivos.value)) {
+        if (key === "search") continue;
+        if (!Array.isArray(values) || values.length === 0) continue;
+
+        data = data.filter((item) => values.includes(item[key]));
+    }
+
+    return data;
+});
+
+function aplicarFiltros(f) {
+    filtrosActivos.value = f;
+}
 </script>
 
 <template>
@@ -168,215 +194,26 @@ watch(search, async (val) => {
                     Historial de Registros
                 </h2>
 
-                <div class="flex justify-between items-center">
-                    <div>
-                        Archivos: 
-                    </div>
-                    <Dropdown align="right" width="400" class="codigoBarra">
-                        <!-- Trigger -->
-                        <template #trigger>
-                            <div
-                                class="flex items-center gap-2 bg-white  px-2 py-1 shadow border border-gray-200 cursor-pointer relative"
-                            >
-                                    Codigo de Barra
-
-                                <!-- Flecha caret -->
-                                <svg
-                                    class="w-4 h-4 text-gray-400 ml-2 mr-1"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M19 9l-7 7-7-7"
-                                    />
-                                </svg>
-                            </div>
-                        </template>
-
-                        <!-- Contenido del Dropdown -->
-                        <template #content>
-
-                            <DropdownLink :href="route('profile.edit')">
-                                <div class="flex items-center gap-2">
-                                    <svg
-                                        class="w-5 h-5 text-indigo-500"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                                        />
-                                    </svg>
-                                    <span>Perfil</span>
-                                </div>
-                            </DropdownLink>
-
-                            <DropdownLink
-                                :href="route('logout')"
-                                method="post"
-                                as="button"
-                            >
-                                <div class="flex items-center gap-2">
-                                    <svg
-                                        class="w-5 h-5 text-red-500"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M17 16l4-4m0 0l-4-4m4 4H3"
-                                        />
-                                    </svg>
-                                    <span>Cerrar Sesión</span>
-                                </div>
-                            </DropdownLink>
-                        </template>
-                    </Dropdown>
-                </div>
-
-                 <div class="flex justify-between items-center">
-                    <div>
-                        Trasavilidad: 
-                    </div>
-                    <Dropdown align="right" width="400" class="codigoBarra">
-                        <!-- Trigger -->
-                        <template #trigger>
-                            <div
-                                class="flex items-center gap-2 bg-white  px-2 py-1 shadow border border-gray-200 cursor-pointer relative"
-                            >
-                                    Pendientes
-
-                                <!-- Flecha caret -->
-                                <svg
-                                    class="w-4 h-4 text-gray-400 ml-2 mr-1"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M19 9l-7 7-7-7"
-                                    />
-                                </svg>
-                            </div>
-                        </template>
-
-                        <!-- Contenido del Dropdown -->
-                        <template #content>
-
-                            <DropdownLink :href="route('profile.edit')">
-                                <div class="flex items-center gap-2">
-                                    <svg
-                                        class="w-5 h-5 text-indigo-500"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                                        />
-                                    </svg>
-                                    <span>Perfil</span>
-                                </div>
-                            </DropdownLink>
-
-                            <DropdownLink
-                                :href="route('logout')"
-                                method="post"
-                                as="button"
-                            >
-                                <div class="flex items-center gap-2">
-                                    <svg
-                                        class="w-5 h-5 text-red-500"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M17 16l4-4m0 0l-4-4m4 4H3"
-                                        />
-                                    </svg>
-                                    <span>Cerrar Sesión</span>
-                                </div>
-                            </DropdownLink>
-                        </template>
-                    </Dropdown>
+                <!-- Botón y modal de filtros -->
+                <div class="relative">
+                    <button
+                        @click="showFiltro = !showFiltro"
+                        class="bg-white px-3 py-1 border rounded shadow text-sm"
+                    >
+                        Filtros
+                    </button>
+                    <FiltroFlotante
+                        v-if="showFiltro"
+                        :filtros="filtrosDisponibles"
+                        @filtrar="aplicarFiltros"
+                        @close="showFiltro = false"
+                    />
                 </div>
 
                 <!-- Input con buscador y spinner -->
                 <div
                     class="flex flex-col sm:flex-row items-stretch gap-3 sm:gap-4 mt-4 sm:mt-0"
                 >
-                    <!-- Input con lupa -->
-                    <div class="relative sm:max-w-xs">
-                        <input
-                            v-model="search"
-                            type="text"
-                            placeholder="Buscar.."
-                            class="w-full pl-10 pr-10 py-2 rounded-md border border-gray-200 bg-white shadow-sm text-sm placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none focus:border-indigo-300 transition"
-                        />
-
-                        <!-- Ícono lupa -->
-                        <svg
-                            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M21 21l-4.35-4.35M10 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"
-                            />
-                        </svg>
-
-                        <!-- Botón limpiar (centrado) -->
-                        <button
-                            v-if="search"
-                            @click="limpiarBusqueda"
-                            class="absolute right-7 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-500 text-base leading-none"
-                            title="Limpiar búsqueda"
-                        >
-                            &times;
-                        </button>
-
-                        <!-- Spinner de puntos (centrado) -->
-                        <span
-                            v-if="isLoading"
-                            class="absolute right-2 top-1/2 -translate-y-1/2 flex space-x-0.5"
-                        >
-                            <span
-                                class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"
-                            ></span>
-                            <span
-                                class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"
-                            ></span>
-                            <span
-                                class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
-                            ></span>
-                        </span>
-                    </div>
-
                     <!-- Botón agregar -->
                     <button
                         v-if="canDo('vodafone.crear')"
@@ -466,7 +303,7 @@ watch(search, async (val) => {
                             <th class="px-4 py-2 text-left">Asignado</th>
                             <th class="px-4 py-2 text-left">Fecha Asignada</th>
                             <th class="px-4 py-2 text-left">Operador Actual</th>
-                            <th class="px-4 py-2 text-left">Trasavilidad </th>
+                            <th class="px-4 py-2 text-left">Trasavilidad</th>
                             <th class="px-4 py-2 text-left">
                                 Oferta Comercial
                             </th>
@@ -485,7 +322,7 @@ watch(search, async (val) => {
                     </thead>
                     <tbody>
                         <tr
-                            v-for="item in items"
+                            v-for="item in filteredItems"
                             :key="item.id"
                             class="bg-white even:bg-indigo-50 hover:bg-indigo-100 transition"
                         >
@@ -573,33 +410,6 @@ watch(search, async (val) => {
             </div>
         </div>
 
-        <!-- Paginación -->
-        <div
-            class="flex justify-center items-center flex-wrap gap-2 mt-4"
-            v-if="pagination.links && pagination.links.length > 1"
-        >
-            <template v-for="(link, index) in pagination.links" :key="index">
-                <button
-                    v-if="link.url"
-                    @click="router.get(link.url, { search: search.value })"
-                    class="px-3 py-1 min-w-[32px] rounded border text-sm transition"
-                    :class="{
-                        'bg-indigo-600 text-white font-bold': link.active,
-                        'bg-white text-gray-800 hover:bg-indigo-50':
-                            !link.active,
-                    }"
-                >
-                    {{ parseLabel(link.label) }}
-                </button>
-                <span
-                    v-else
-                    class="px-3 py-1 min-w-[32px] rounded border bg-gray-200 text-gray-500 text-sm cursor-not-allowed"
-                >
-                    {{ parseLabel(link.label) }}
-                </span>
-            </template>
-        </div>
-
         <!-- Modal -->
         <ModalGestion
             :show="showModal"
@@ -607,7 +417,9 @@ watch(search, async (val) => {
             submitLabel="Guardar"
             :initialForm="form"
             :endpoint="
-                registroEditar ? `/vodafone/${registroEditar.id}` : '/vodafone'
+                registroEditar
+                    ? route('vodafone.update', registroEditar.id)
+                    : route('vodafone.store')
             "
             :method="registroEditar ? 'put' : 'post'"
             @close="cerrarModal"

@@ -363,6 +363,7 @@ const tabs = [
                                 <option :value="false">Inactivo</option>
                             </select>
                         </div>
+
                         <div class="modalInputs" style="margin-top: 10px">
                             <label class="block text-sm font-medium mb-1"
                                 >Rol</label

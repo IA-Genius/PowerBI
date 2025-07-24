@@ -1,0 +1,143 @@
+<template>
+    <div
+        class="absolute z-50 bg-white shadow-lg border border-gray-200 rounded-xl p-5 w-[480px] top-full mt-2 space-y-5"
+    >
+        <!-- Botón cerrar -->
+        <button
+            @click="$emit('close')"
+            class="absolute top-3 right-3 text-gray-400 hover:text-red-500 transition"
+            title="Cerrar filtros"
+        >
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="w-5 h-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                />
+            </svg>
+        </button>
+
+        <!-- Buscador -->
+        <div v-if="hasSearch" class="relative">
+            <input
+                v-model="internalSearch"
+                type="text"
+                :placeholder="placeholder"
+                class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-400 focus:outline-none text-sm"
+            />
+            <svg
+                class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M21 21l-4.35-4.35M10 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"
+                />
+            </svg>
+        </div>
+
+        <!-- Filtros dinámicos -->
+        <div v-for="(options, key) in filtros" :key="key">
+            <h4
+                class="text-xs font-semibold text-gray-500 mb-2 capitalize tracking-wide"
+            >
+                {{ key.replace(/_/g, " ") }}
+            </h4>
+            <div class="flex flex-wrap gap-2">
+                <span
+                    v-for="opt in options"
+                    :key="opt"
+                    @click="toggleFiltro(key, opt)"
+                    :class="[
+                        'px-3 py-1 rounded-full cursor-pointer text-xs border transition',
+                        (selectedFiltros[key] || []).includes(opt)
+                            ? 'bg-indigo-600 text-white border-indigo-600'
+                            : 'bg-gray-100 text-gray-700 hover:bg-indigo-50',
+                    ]"
+                >
+                    {{ opt }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Botón limpiar -->
+        <div class="flex justify-end mt-2">
+            <button
+                @click="limpiarFiltros"
+                class="flex items-center gap-1 text-sm text-gray-500 hover:text-red-600 hover:underline transition"
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12"
+                    />
+                </svg>
+                Limpiar filtros
+            </button>
+        </div>
+    </div>
+</template>
+
+<script setup>
+import { ref, watch, reactive } from "vue";
+
+const props = defineProps({
+    filtros: { type: Object, required: true },
+    placeholder: { type: String, default: "Buscar..." },
+    hasSearch: { type: Boolean, default: true },
+});
+
+const emit = defineEmits(["filtrar", "close"]);
+
+const internalSearch = ref("");
+const selectedFiltros = reactive({});
+
+function toggleFiltro(key, value) {
+    if (!selectedFiltros[key]) selectedFiltros[key] = [];
+
+    const index = selectedFiltros[key].indexOf(value);
+    if (index > -1) {
+        selectedFiltros[key].splice(index, 1);
+    } else {
+        selectedFiltros[key].push(value);
+    }
+
+    emitirFiltros();
+}
+
+function emitirFiltros() {
+    emit("filtrar", {
+        search: internalSearch.value,
+        ...selectedFiltros,
+    });
+}
+
+function limpiarFiltros() {
+    internalSearch.value = "";
+    Object.keys(selectedFiltros).forEach((k) => (selectedFiltros[k] = []));
+    emitirFiltros();
+}
+
+watch(internalSearch, () => {
+    emitirFiltros();
+});
+</script>
