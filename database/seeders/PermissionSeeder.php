@@ -12,11 +12,20 @@ class PermissionSeeder extends Seeder
     public function run(): void
     {
         $modulosConPermisos = [
-            'Roles' => ['ver', 'crear', 'guardar', 'editar',  'eliminar'],
+            'Roles' => ['ver', 'crear', 'guardar', 'editar', 'eliminar'],
             'Usuarios' => ['ver', 'crear', 'guardar', 'editar', 'eliminar'],
-            'Carteras' => ['ver', 'crear', 'guardar', 'editar',  'eliminar'],
-            'Reportes' => ['ver', 'crear', 'guardar', 'editar',  'eliminar'],
-            'Vodafone' => ['ver', 'crear', 'guardar', 'editar', 'eliminar', 'ver-global'],
+            'Carteras' => ['ver', 'crear', 'guardar', 'editar', 'eliminar'],
+            'Reportes' => ['ver', 'crear', 'guardar', 'editar', 'eliminar'],
+            'Vodafone' => [
+                'ver',           // ver registros
+                'crear',
+                'guardar',
+                'editar',
+                'eliminar',
+                'ver-global',    // ver registros de otros
+                'asignar',       // asignar registros
+                'recibe-asignacion', // se puede asignar a este usuario
+            ],
         ];
 
         foreach ($modulosConPermisos as $moduloNombre => $acciones) {
@@ -33,28 +42,35 @@ class PermissionSeeder extends Seeder
             }
         }
 
-        // Crear roles
+        // ROL ADMIN
         $rolAdmin = Role::firstOrCreate([
             'name' => 'admin',
             'guard_name' => 'web',
         ]);
         $rolAdmin->syncPermissions(Permission::all());
 
-        $rolViewer = Role::firstOrCreate([
-            'name' => 'viewer',
+        // ROL COORDINADOR
+        $rolCoordinador = Role::firstOrCreate([
+            'name' => 'coordinador-vodafone',
             'guard_name' => 'web',
         ]);
-        $rolViewer->syncPermissions([]); // sin permisos
-
-        $rolSupervisor = Role::firstOrCreate([
-            'name' => 'supervisor vodafone',
-            'guard_name' => 'web',
-        ]);
-        $rolSupervisor->syncPermissions([
+        $rolCoordinador->syncPermissions([
             'vodafone.ver',
             'vodafone.editar',
             'vodafone.guardar',
             'vodafone.ver-global',
+            'vodafone.asignar',
+        ]);
+
+        // ROL FILTRADOR
+        $rolFiltrador = Role::firstOrCreate([
+            'name' => 'filtrador-vodafone',
+            'guard_name' => 'web',
+        ]);
+        $rolFiltrador->syncPermissions([
+            'vodafone.ver',
+            'vodafone.guardar',
+            'vodafone.recibe-asignacion',
         ]);
     }
 }

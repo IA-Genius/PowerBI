@@ -41,7 +41,11 @@ const columnDefs = [
     { field: "telefono_contacto", headerName: "Teléfono" },
     { field: "estado", headerName: "Estado" },
     { field: "correo", headerName: "Correo" },
-    { field: "asignado_a_id", headerName: "Asignado" },
+    {
+        headerName: "Asignado",
+        valueGetter: (params) => params.data?.asignado_a?.name || "—",
+    },
+
     // { field: "direccion_instalacion", headerName: "Dirección" },
     // { field: "contacto", headerName: "Contacto" },
 
@@ -106,6 +110,10 @@ let startRowIndex = null;
 function getRowIdFromElement(el) {
     const row = el.closest(".ag-row");
     return row?.getAttribute("row-id");
+}
+function emitSelectedRows() {
+    const selected = gridApi?.getSelectedRows() || [];
+    emit("update:selected", selected);
 }
 
 function handleMouseDown(e) {
@@ -176,34 +184,32 @@ function selectRowRange(start, end, additive = false) {
 
 // 🔁 Inicializar AG Grid
 onMounted(() => {
-    const waitForAgGrid = setInterval(() => {
-        if (window.agGrid?.Grid) {
-            clearInterval(waitForAgGrid);
+    if (!window.agGrid?.createGrid) return;
 
-            const gridOptions = {
-                columnDefs,
-                rowData: props.rows,
-                defaultColDef,
-                rowSelection: "multiple",
-                suppressRowClickSelection: false,
-                suppressCellSelection: true,
-                enableRangeSelection: false,
-                animateRows: true,
-                suppressCellFocus: true,
-                onGridReady: (params) => {
-                    gridApi = params.api;
-                    gridApi.sizeColumnsToFit();
-                },
-            };
+    const gridOptions = {
+        columnDefs,
+        rowData: props.rows,
+        defaultColDef,
+        rowSelection: "multiple",
+        suppressRowClickSelection: false,
+        // suppressCellSelection: true, // ❌ quitar esto
+        enableRangeSelection: false,
+        animateRows: true,
+        suppressCellFocus: true,
+        onGridReady: (params) => {
+            gridApi = params.api;
+            gridApi.sizeColumnsToFit();
+            gridApi.addEventListener("selectionChanged", emitSelectedRows);
+        },
+    };
 
-            new window.agGrid.Grid(gridContainer.value, gridOptions);
+    const { createGrid } = window.agGrid;
+    gridApi = createGrid(gridContainer.value, gridOptions);
 
-            // 🧲 Listeners personalizados
-            gridContainer.value.addEventListener("mousedown", handleMouseDown);
-            document.addEventListener("mousemove", handleMouseMove);
-            document.addEventListener("mouseup", handleMouseUp);
-        }
-    }, 50);
+    // Eventos personalizados
+    gridContainer.value.addEventListener("mousedown", handleMouseDown);
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
 });
 
 // 🔄 Reactividad en datos
@@ -217,18 +223,11 @@ watch(
 // 🔘 Acciones extra
 function selectAll() {
     gridApi?.selectAll();
+    emitSelectedRows();
 }
 function clearSelection() {
     gridApi?.deselectAll();
-}
-function copySelected() {
-    const selectedIds = gridApi
-        ?.getSelectedRows()
-        .map((r) => r.id)
-        .join(", ");
-    if (!selectedIds) return;
-    navigator.clipboard.writeText(selectedIds);
-    alert(`📋 Copiados: ${selectedIds}`);
+    emitSelectedRows();
 }
 </script>
 

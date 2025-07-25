@@ -52,7 +52,7 @@ class Vodafone extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function asignadoA()
+    public function asignado_a()
     {
         return $this->belongsTo(User::class, 'asignado_a_id');
     }

@@ -9,7 +9,8 @@ return new class extends Migration {
     {
         Schema::create('log_importacion_vodafone', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
+
             $table->string('nombre_archivo')->nullable();
             $table->integer('cantidad_registros')->nullable();
             $table->timestamps();
@@ -19,7 +20,8 @@ return new class extends Migration {
             $table->id();
 
             // Quien creó el registro
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
+
 
             // Subida a la que pertenece
             $table->foreignId('upload_id')->nullable()->constrained('log_importacion_vodafone')->onDelete('set null');
@@ -59,7 +61,7 @@ return new class extends Migration {
 
     public function down(): void
     {
-        Schema::dropIfExists('vodafone');
-        Schema::dropIfExists('vodafone_uploads');
+        Schema::dropIfExists('historial_registros_vodafone');
+        Schema::dropIfExists('log_importacion_vodafone');
     }
 };

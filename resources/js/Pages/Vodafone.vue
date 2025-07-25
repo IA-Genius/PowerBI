@@ -9,7 +9,8 @@ import Actions from "@/Components/Actions.vue";
 import Dropdown from "@/Components/Dropdown.vue";
 import ExcelLikeGrid from "@/Components/ExcelLikeGrid.vue";
 const pageProps = usePage().props;
-
+const selectedRows = ref([]);
+import DropdownLink from "@/Components/DropdownLink.vue";
 const search = ref("");
 const items = computed(() => pageProps.items || []);
 const success = pageProps.success;
@@ -17,7 +18,7 @@ const canViewGlobal = pageProps.canViewGlobal;
 const can = usePage().props.can || {};
 const canDo = (key) => !!can[key];
 import FiltroFlotante from "@/Components/FiltroFlotante.vue";
-
+const usuariosAsignables = pageProps.usuariosAsignables || [];
 const showModal = ref(false);
 const registroEditar = ref(null);
 
@@ -144,7 +145,7 @@ function mostrarInfoUsuario(user) {
     });
 }
 
-console.log(items.value);
+console.log(pageProps);
 
 const showFiltro = ref(false);
 const filtrosActivos = ref({});
@@ -215,6 +216,52 @@ function handleFileUpload(event) {
         form.value.archivo = file;
     }
 }
+
+function asignarRegistros(form, close) {
+    if (!form.asignado_a_id || selectedRows.value.length === 0) {
+        Swal.fire({
+            icon: "warning",
+            title: "Faltan datos",
+            text: "Debes seleccionar un filtrador y al menos un registro.",
+            toast: true,
+            position: "top-end",
+            timer: 2500,
+            showConfirmButton: false,
+        });
+        return;
+    }
+
+    const payload = {
+        ...form,
+        ids: selectedRows.value.map((row) => row.id),
+    };
+
+    router.post(route("vodafone.asignar"), payload, {
+        preserveScroll: true,
+        onSuccess: (page) => {
+            if (page.props?.success) {
+                Swal.fire({
+                    toast: true,
+                    icon: "success",
+                    title: page.props.success,
+                    position: "top-end",
+                    timer: 2000,
+                    showConfirmButton: false,
+                });
+            }
+
+            selectedRows.value = []; // Limpia la selección
+            close(); // Cierra modal
+            router.visit(route("vodafone.index"), {
+                preserveScroll: true,
+                only: ["items", "success"],
+            });
+        },
+        onError: (err) => {
+            console.error("Errores en asignación:", err);
+        },
+    });
+}
 </script>
 
 <template>
@@ -234,7 +281,7 @@ function handleFileUpload(event) {
                     <div class="modalFiltros">
                         <button
                             @click="showFiltro = !showFiltro"
-                            class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg shadow-md border border-gray-200 hover:bg-gray-50 transition duration-150"
+                            class="flex items-center h-full gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md shadow hover:bg-gray-50 transition"
                         >
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -265,18 +312,17 @@ function handleFileUpload(event) {
                         />
                     </div>
 
+                    <!-- Dropdown de Operaciones -->
+
                     <div class="relative">
                         <Dropdown align="right" width="48">
-                            <!-- Trigger -->
                             <template #trigger>
-                                <div
-                                    class="flex items-center gap-2 bg-white px-2 py-1 shadow border border-gray-200 cursor-pointer relative"
+                                <button
+                                    class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md shadow hover:bg-gray-50 transition"
                                 >
                                     Listado de Operaciones
-
-                                    <!-- Flecha caret -->
                                     <svg
-                                        class="w-4 h-4 text-gray-400 ml-2 mr-1"
+                                        class="w-4 h-4 text-gray-400"
                                         fill="none"
                                         stroke="currentColor"
                                         stroke-width="2"
@@ -288,72 +334,79 @@ function handleFileUpload(event) {
                                             d="M19 9l-7 7-7-7"
                                         />
                                     </svg>
-                                </div>
+                                </button>
                             </template>
 
-                            <!-- Contenido del Dropdown -->
+                            <!-- Opciones -->
                             <template #content>
-                                <div class="gap-3 newFiltros p-2 flex">
-                                    <!-- Botón agregar -->
-                                    <button
-                                        v-if="canDo('vodafone.crear')"
-                                        @click="abrirModalAgregar"
-                                        class="w-full flex items-center justify-center gap-2 bg-green-500 text-white px-5 py-2 rounded-md shadow hover:bg-green-600 transition text-sm font-semibold"
-                                    >
-                                        <svg
-                                            class="w-5 h-5"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            stroke-width="2"
-                                            viewBox="0 0 24 24"
+                                <ul class="divide-y divide-gray-100">
+                                    <li v-if="canDo('vodafone.crear')">
+                                        <button
+                                            @click="abrirModalAgregar"
+                                            class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition text-left"
                                         >
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                d="M12 4v16m8-8H4"
-                                            />
-                                        </svg>
-                                        Agregar
-                                    </button>
+                                            <svg
+                                                class="w-4 h-4 text-indigo-500 shrink-0"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="2"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    d="M12 4v16m8-8H4"
+                                                />
+                                            </svg>
+                                            <span class="font-medium"
+                                                >Agregar</span
+                                            >
+                                        </button>
+                                    </li>
 
-                                    <!-- Botón agregar -->
-                                    <button
-                                        @click="abrirModalInportar"
-                                        class="flex items-center justify-center gap-2 bg-green-500 text-white px-5 py-2 rounded-md shadow hover:bg-green-600 transition text-sm font-semibold"
-                                    >
-                                        <svg
-                                            class="w-5 h-5"
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 448 512"
+                                    <li>
+                                        <button
+                                            @click="abrirModalInportar"
+                                            class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition text-left"
                                         >
-                                            <!--! Font Awesome Pro 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2025 Fonticons, Inc. -->
-                                            <path
+                                            <svg
+                                                class="w-4 h-4 text-indigo-500 shrink-0"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                viewBox="0 0 448 512"
                                                 fill="currentColor"
-                                                d="M416 176c0 8.8 7.2 16 16 16s16-7.2 16-16l0-80c0-53-43-96-96-96L96 0C43 0 0 43 0 96l0 80c0 8.8 7.2 16 16 16s16-7.2 16-16l0-80c0-35.3 28.7-64 64-64l256 0c35.3 0 64 28.7 64 64l0 80zM212.7 507.3c6.2 6.2 16.4 6.2 22.6 0l144-144c6.2-6.2 6.2-16.4 0-22.6s-16.4-6.2-22.6 0L240 457.4 240 176c0-8.8-7.2-16-16-16s-16 7.2-16 16l0 281.4-116.7-116.7c-6.2-6.2-16.4-6.2-22.6 0s-6.2 16.4 0 22.6l144 144z"
-                                            />
-                                        </svg>
-                                        Importar
-                                    </button>
+                                            >
+                                                <path
+                                                    fill="currentColor"
+                                                    d="M416 176c0 8.8 7.2 16 16 16s16-7.2 16-16l0-80c0-53-43-96-96-96L96 0C43 0 0 43 0 96l0 80c0 8.8 7.2 16 16 16s16-7.2 16-16l0-80c0-35.3 28.7-64 64-64l256 0c35.3 0 64 28.7 64 64l0 80zM212.7 507.3c6.2 6.2 16.4 6.2 22.6 0l144-144c6.2-6.2 6.2-16.4 0-22.6s-16.4-6.2-22.6 0L240 457.4 240 176c0-8.8-7.2-16-16-16s-16 7.2-16 16l0 281.4-116.7-116.7c-6.2-6.2-16.4-6.2-22.6 0s-6.2 16.4 0 22.6l144 144z"
+                                                />
+                                            </svg>
+                                            <span class="font-medium"
+                                                >Importar</span
+                                            >
+                                        </button>
+                                    </li>
 
-                                    <!-- Botón agregar -->
-                                    <button
-                                        @click="abrirModalAsignacion"
-                                        class="flex items-center justify-center gap-2 bg-green-500 text-white px-5 py-2 rounded-md shadow hover:bg-green-600 transition text-sm font-semibold"
-                                    >
-                                        <svg
-                                            class="w-5 h-5"
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 640 512"
+                                    <li>
+                                        <button
+                                            @click="abrirModalAsignacion"
+                                            class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition text-left"
                                         >
-                                            <!--! Font Awesome Pro 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2025 Fonticons, Inc. -->
-                                            <path
+                                            <svg
+                                                class="w-4 h-4 text-indigo-500 shrink-0"
                                                 fill="currentColor"
-                                                d="M256 224a96 96 0 1 0 0-192 96 96 0 1 0 0 192zM256 0a128 128 0 1 1 0 256 128 128 0 1 1 0-256zM208 336c-79.5 0-144 64.5-144 144l0 16c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-16c0-97.2 78.8-176 176-176l96 0c97.2 0 176 78.8 176 176l0 16c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-16c0-79.5-64.5-144-144-144l-96 0zm320-72l0-56-56 0c-8.8 0-16-7.2-16-16s7.2-16 16-16l56 0 0-56c0-8.8 7.2-16 16-16s16 7.2 16 16l0 56 56 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-56 0 0 56c0 8.8-7.2 16-16 16s-16-7.2-16-16z"
-                                            />
-                                        </svg>
-                                        Asignar Filtrador
-                                    </button>
-                                </div>
+                                                viewBox="0 0 640 512"
+                                            >
+                                                <path
+                                                    fill="currentColor"
+                                                    d="M256 224a96 96 0 1 0 0-192 96 96 0 1 0 0 192zM256 0a128 128 0 1 1 0 256 128 128 0 1 1 0-256zM208 336c-79.5 0-144 64.5-144 144l0 16c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-16c0-97.2 78.8-176 176-176l96 0c97.2 0 176 78.8 176 176l0 16c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-16c0-79.5-64.5-144-144-144l-96 0zm320-72l0-56-56 0c-8.8 0-16-7.2-16-16s7.2-16 16-16l56 0 0-56c0-8.8 7.2-16 16-16s16 7.2 16 16l0 56 56 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-56 0 0 56c0 8.8-7.2 16-16 16s-16-7.2-16-16z"
+                                                />
+                                            </svg>
+                                            <span class="font-medium"
+                                                >Asignar Filtrador</span
+                                            >
+                                        </button>
+                                    </li>
+                                </ul>
                             </template>
                         </Dropdown>
                     </div>
@@ -368,14 +421,14 @@ function handleFileUpload(event) {
                 <ExcelLikeGrid
                     :rows="filteredItems"
                     :canViewGlobal="canViewGlobal"
-                    @edit="abrirModalEditar"
-                    @delete="eliminar"
                     :canEdit="canDo('vodafone.editar')"
                     :canDelete="canDo('vodafone.eliminar')"
+                    v-model:selected="selectedRows"
+                    @edit="abrirModalEditar"
+                    @delete="eliminar"
                 />
             </div>
         </div>
-
         <!-- Modal DE AGREGAR -->
         <ModalGestion
             :show="showModal"
@@ -460,7 +513,7 @@ function handleFileUpload(event) {
                 </div>
             </template>
         </ModalGestion>
-
+        
         <!-- Modal DE INPORTAR -->
         <ModalGestion
             :show="showInportarModal"
@@ -554,29 +607,47 @@ function handleFileUpload(event) {
                 </div>
             </template>
         </ModalGestion>
-
         <!-- Modal DE ASIGNACION -->
         <ModalGestion
             :show="showAsignacionModal"
             :title="asignacionTitulo ? 'ASIGNAR' : 'Asignación de Registros'"
             submitLabel="Asignar"
+            :initialForm="{
+                asignado_a_id: null,
+                ids: selectedRows.map((r) => r.id),
+            }"
+            :endpoint="route('vodafone.asignar')"
+            :method="'post'"
             @close="cerrarModal"
             @success="handleSuccess"
         >
             <template #default="{ form: slotForm, errors }">
-                <h3>Listado de Filtradores</h3>
-                <div class="relative">
-                    <Dropdown align="right" width="48">
-                        <!-- Trigger -->
-                        <template #trigger>
-                            <div
-                                class="flex items-center gap-2 bg-white px-2 py-1 shadow border border-gray-200 cursor-pointer relative"
-                            >
-                                Listado de Filtradores
+                <h3 class="text-sm font-semibold text-gray-700 mb-2">
+                    Filtrador a asignar
+                </h3>
 
-                                <!-- Flecha caret -->
+                <!-- Dropdown estilizado -->
+                <div class="relative mb-4">
+                    <Dropdown
+                        align="center"
+                        :minWidth="'455'"
+                        :maxWidth="'400'"
+                    >
+                        <template #trigger>
+                            <button
+                                class="flex items-center justify-between w-full px-4 py-2 text-sm bg-white text-gray-700 border border-gray-300 rounded-md shadow hover:bg-gray-50 transition"
+                            >
+                                {{
+                                    slotForm.asignado_a_id
+                                        ? usuariosAsignables.find(
+                                              (u) =>
+                                                  u.id ===
+                                                  slotForm.asignado_a_id
+                                          )?.name || "Seleccionar"
+                                        : "Seleccionar filtrador"
+                                }}
                                 <svg
-                                    class="w-4 h-4 text-gray-400 ml-2 mr-1"
+                                    class="w-4 h-4 text-gray-400"
                                     fill="none"
                                     stroke="currentColor"
                                     stroke-width="2"
@@ -588,32 +659,41 @@ function handleFileUpload(event) {
                                         d="M19 9l-7 7-7-7"
                                     />
                                 </svg>
-                            </div>
+                            </button>
                         </template>
 
-                        <!-- Contenido del Dropdown -->
                         <template #content>
-                            <DropdownLink>
-                                <div class="flex items-center gap-2">
-                                    <span>Persona 1</span>
-                                </div>
-                            </DropdownLink>
-                            <DropdownLink>
-                                <div class="flex items-center gap-2">
-                                    <span>Persona 2</span>
-                                </div>
-                            </DropdownLink>
-                            <DropdownLink>
-                                <div class="flex items-center gap-2">
-                                    <span>Persona 3</span>
-                                </div>
-                            </DropdownLink>
+                            <ul class="divide-y divide-gray-100">
+                                <li
+                                    v-for="usuario in usuariosAsignables"
+                                    :key="usuario.id"
+                                >
+                                    <button
+                                        @click="
+                                            slotForm.asignado_a_id = usuario.id
+                                        "
+                                        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition"
+                                    >
+                                        {{ usuario.name }}
+                                    </button>
+                                </li>
+                            </ul>
                         </template>
                     </Dropdown>
                 </div>
 
-                <div>
-                    <h2>Lista de Registros a Asignar: 2 Registros</h2>
+                <!-- Error de validación si lo hay -->
+                <p
+                    v-if="errors.asignado_a_id"
+                    class="text-sm text-red-600 mb-2"
+                >
+                    {{ errors.asignado_a_id }}
+                </p>
+
+                <!-- Cantidad de registros -->
+                <div class="mt-4 text-sm text-gray-600">
+                    <strong>Registros a asignar:</strong>
+                    {{ selectedRows.length }} registro(s)
                 </div>
             </template>
         </ModalGestion>

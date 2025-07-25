@@ -1,28 +1,17 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch, nextTick } from "vue";
 
 const props = defineProps({
-    align: {
-        type: String,
-        default: "right",
-    },
-    minWidth: {
-        type: String,
-        default: "180px", // Mínimo aceptable
-    },
-    maxWidth: {
-        type: String,
-        default: "220px", // Máximo aceptable
-    },
-    contentClasses: {
-        type: String,
-        default: "py-1 bg-white",
-    },
+    align: { type: String, default: "right" },
+    minWidth: { type: String, default: "180px" },
+    maxWidth: { type: String, default: "220px" },
+    contentClasses: { type: String, default: "bg-white" },
 });
 
 const open = ref(false);
 const triggerRef = ref(null);
 const dropdownRef = ref(null);
+const dropdownWidth = ref(parseInt(props.minWidth)); // default
 
 const closeOnEscape = (e) => {
     if (open.value && e.key === "Escape") {
@@ -37,17 +26,15 @@ onUnmounted(() => {
     document.removeEventListener("keydown", closeOnEscape);
 });
 
-watch(open, (isOpen) => {
-    if (isOpen && triggerRef.value && dropdownRef.value) {
-        const triggerWidth = triggerRef.value.offsetWidth;
-
-        // Aplicamos límites suaves entre min y max
-        const width = Math.max(
-            parseInt(props.minWidth),
-            Math.min(triggerWidth, parseInt(props.maxWidth))
-        );
-
-        dropdownRef.value.style.width = `${width}px`;
+watch(open, async (isOpen) => {
+    if (isOpen) {
+        await nextTick();
+        if (triggerRef.value) {
+            const triggerW = triggerRef.value.offsetWidth;
+            const minW = parseInt(props.minWidth);
+            const maxW = parseInt(props.maxWidth);
+            dropdownWidth.value = Math.max(minW, Math.min(triggerW, maxW));
+        }
     }
 });
 
@@ -90,7 +77,7 @@ const alignmentClasses = computed(() => {
                 v-show="open"
                 class="absolute z-50 mt-2 rounded-md shadow-lg"
                 :class="alignmentClasses"
-                style="display: none"
+                :style="{ width: dropdownWidth + 'px' }"
                 @click="open = false"
             >
                 <div
