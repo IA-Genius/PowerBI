@@ -6,9 +6,9 @@ use App\Models\Vodafone;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
-use App\Models\LogImportacionVodafone;
-use App\Models\Vodafone as HistorialRegistroVodafone;
-
+use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\VodafoneImport;
 
 class VodafoneController extends Controller
 {
@@ -34,42 +34,48 @@ class VodafoneController extends Controller
             'canViewGlobal' => $user->can('vodafone.ver-global'),
         ]);
     }
-
-    public function importMasivo(Request $request)
+    public function import(Request $request)
     {
         $request->validate([
             'archivo' => 'required|file|mimes:xlsx,csv',
         ]);
 
-        $user = Auth::user();
+        Log::debug('📂 Archivo recibido', [
+            'nombre' => $request->file('archivo')->getClientOriginalName(),
+            'mime' => $request->file('archivo')->getMimeType(),
+        ]);
+        $user = $request->user();
         $file = $request->file('archivo');
-        $nombreOriginal = $file->getClientOriginalName();
+        $nombreArchivo = $file->getClientOriginalName();
 
-        // Leer datos del archivo
-        $data = []; // <- AQUI debes integrar Laravel Excel o PhpSpreadsheet
-
-        // Crear log de importación
-        $log = LogImportacionVodafone::create([
+        Log::info('📥 Importación iniciada desde el formulario', [
             'user_id' => $user->id,
-            'nombre_archivo' => $nombreOriginal,
-            'cantidad_registros' => count($data),
+            'usuario' => $user->name,
+            'archivo' => $nombreArchivo,
+            'ip' => $request->ip(),
         ]);
 
-        // Insertar registros
-        foreach ($data as $fila) {
-            HistorialRegistroVodafone::create([
-                'user_id' => $user->id,
-                'upload_id' => $log->id,
-                'estado' => 'pendiente',
-                'dni_nif_cif' => $fila['dni_nif_cif'] ?? null,
-                'nombre_cliente' => $fila['nombre_cliente'] ?? null,
-                'telefono_contacto' => $fila['telefono_contacto'] ?? null,
-                // Agrega aquí los demás campos del Excel si deseas
-            ]);
-        }
+        try {
+            Excel::import(new VodafoneImport, $file);
 
-        return redirect()->back()->with('success', 'Importación completada correctamente.');
+            Log::info('✅ Importación completada correctamente', [
+                'archivo' => $nombreArchivo,
+                'user_id' => $user->id,
+            ]);
+
+            return redirect()->back()->with('success', 'Importación completada correctamente.');
+        } catch (\Throwable $e) {
+            Log::error('❌ Error durante importación', [
+                'error' => $e->getMessage(),
+                'archivo' => $nombreArchivo,
+                'user_id' => $user->id,
+            ]);
+
+            return redirect()->back()->with('error', 'Ocurrió un error al importar el archivo.');
+        }
     }
+
+
 
 
     public function store(Request $request)

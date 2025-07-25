@@ -7,9 +7,10 @@ import ModalGestion from "@/Components/ModalGestion.vue";
 import InputField from "@/Components/InputField.vue";
 import Actions from "@/Components/Actions.vue";
 import Dropdown from "@/Components/Dropdown.vue";
-
+import ExcelLikeGrid from "@/Components/ExcelLikeGrid.vue";
 const pageProps = usePage().props;
 
+const search = ref("");
 const items = computed(() => pageProps.items || []);
 const success = pageProps.success;
 const canViewGlobal = pageProps.canViewGlobal;
@@ -25,8 +26,6 @@ const InportarTitulo = ref(null);
 
 const showAsignacionModal = ref(false);
 const asignacionTitulo = ref(null);
-
-const filters = usePage().props.filters || {};
 
 const form = ref({
     nombre_cliente: "",
@@ -74,7 +73,6 @@ function abrirModalInportar() {
 function abrirModalAsignacion() {
     showAsignacionModal.value = true;
 }
-
 
 function abrirModalEditar(item) {
     registroEditar.value = item;
@@ -155,18 +153,22 @@ const rawItems = computed(() => pageProps.items || []);
 
 const filtrosDisponibles = computed(() => {
     const list = rawItems.value;
+
     return {
         operador_actual: [
             ...new Set(list.map((i) => i.operador_actual).filter(Boolean)),
         ],
-        tipificaciones: [
-            ...new Set(list.map((i) => i.tipificaciones).filter(Boolean)),
+        estado: [
+            "pendiente",
+            "asignado",
+            "irrelevante",
+            "completado",
+            "agendado",
         ],
-        trasavilidad: [
-            ...new Set(list.map((i) => i.trasavilidad).filter(Boolean)),
-        ],
-        estado: [...new Set(list.map((i) => i.estado).filter(Boolean))],
-        asignado: [...new Set(list.map((i) => i.asignado).filter(Boolean))],
+        upload_id: [...new Set(list.map((i) => i.upload_id).filter(Boolean))]
+            .sort((a, b) => b - a)
+            .slice(0, 15)
+            .sort((a, b) => a - b),
     };
 });
 
@@ -201,6 +203,18 @@ const filteredItems = computed(() => {
 function aplicarFiltros(f) {
     filtrosActivos.value = f;
 }
+
+const excelFile = ref(null);
+const fileName = ref(null);
+
+function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+        fileName.value = file.name;
+        excelFile.value = file;
+        form.value.archivo = file;
+    }
+}
 </script>
 
 <template>
@@ -220,28 +234,32 @@ function aplicarFiltros(f) {
                     <div class="modalFiltros">
                         <button
                             @click="showFiltro = !showFiltro"
-                            class="flex items-center gap-2 bg-white  px-2 py-1 shadow border border-gray-200 cursor-pointer relative"
+                            class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg shadow-md border border-gray-200 hover:bg-gray-50 transition duration-150"
                         >
-                            Seleccionador de filtros
-                            <!-- Flecha caret -->
                             <svg
-                                class="w-4 h-4 text-gray-400 ml-2 mr-1"
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="w-5 h-5 text-indigo-500"
                                 fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
                                 viewBox="0 0 24 24"
+                                stroke="currentColor"
                             >
                                 <path
                                     stroke-linecap="round"
                                     stroke-linejoin="round"
-                                    d="M19 9l-7 7-7-7"
+                                    stroke-width="2"
+                                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707l-6.414 6.414A1 1 0 0013 13v5a1 1 0 01-.553.894l-2 1A1 1 0 019 19v-6a1 1 0 00-.293-.707L2.293 6.707A1 1 0 012 6V4z"
                                 />
                             </svg>
+                            <span class="text-sm font-medium text-gray-700"
+                                >Filtros</span
+                            >
                         </button>
 
                         <FiltroFlotante
-                            v-if="showFiltro"
+                            v-show="showFiltro"
                             :filtros="filtrosDisponibles"
+                            :selected="filtrosActivos"
+                            v-model="search"
                             @filtrar="aplicarFiltros"
                             @close="showFiltro = false"
                         />
@@ -252,10 +270,10 @@ function aplicarFiltros(f) {
                             <!-- Trigger -->
                             <template #trigger>
                                 <div
-                                    class="flex items-center gap-2 bg-white  px-2 py-1 shadow border border-gray-200 cursor-pointer relative"
+                                    class="flex items-center gap-2 bg-white px-2 py-1 shadow border border-gray-200 cursor-pointer relative"
                                 >
                                     Listado de Operaciones
-                                    
+
                                     <!-- Flecha caret -->
                                     <svg
                                         class="w-4 h-4 text-gray-400 ml-2 mr-1"
@@ -275,8 +293,7 @@ function aplicarFiltros(f) {
 
                             <!-- Contenido del Dropdown -->
                             <template #content>
-
-                                <div class=" gap-3 newFiltros p-2 flex   gap-3">
+                                <div class="gap-3 newFiltros p-2 flex">
                                     <!-- Botón agregar -->
                                     <button
                                         v-if="canDo('vodafone.crear')"
@@ -304,7 +321,17 @@ function aplicarFiltros(f) {
                                         @click="abrirModalInportar"
                                         class="flex items-center justify-center gap-2 bg-green-500 text-white px-5 py-2 rounded-md shadow hover:bg-green-600 transition text-sm font-semibold"
                                     >
-                                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Pro 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2025 Fonticons, Inc. --><path fill="currentColor" d="M416 176c0 8.8 7.2 16 16 16s16-7.2 16-16l0-80c0-53-43-96-96-96L96 0C43 0 0 43 0 96l0 80c0 8.8 7.2 16 16 16s16-7.2 16-16l0-80c0-35.3 28.7-64 64-64l256 0c35.3 0 64 28.7 64 64l0 80zM212.7 507.3c6.2 6.2 16.4 6.2 22.6 0l144-144c6.2-6.2 6.2-16.4 0-22.6s-16.4-6.2-22.6 0L240 457.4 240 176c0-8.8-7.2-16-16-16s-16 7.2-16 16l0 281.4-116.7-116.7c-6.2-6.2-16.4-6.2-22.6 0s-6.2 16.4 0 22.6l144 144z"/></svg>
+                                        <svg
+                                            class="w-5 h-5"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 448 512"
+                                        >
+                                            <!--! Font Awesome Pro 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2025 Fonticons, Inc. -->
+                                            <path
+                                                fill="currentColor"
+                                                d="M416 176c0 8.8 7.2 16 16 16s16-7.2 16-16l0-80c0-53-43-96-96-96L96 0C43 0 0 43 0 96l0 80c0 8.8 7.2 16 16 16s16-7.2 16-16l0-80c0-35.3 28.7-64 64-64l256 0c35.3 0 64 28.7 64 64l0 80zM212.7 507.3c6.2 6.2 16.4 6.2 22.6 0l144-144c6.2-6.2 6.2-16.4 0-22.6s-16.4-6.2-22.6 0L240 457.4 240 176c0-8.8-7.2-16-16-16s-16 7.2-16 16l0 281.4-116.7-116.7c-6.2-6.2-16.4-6.2-22.6 0s-6.2 16.4 0 22.6l144 144z"
+                                            />
+                                        </svg>
                                         Importar
                                     </button>
 
@@ -313,16 +340,24 @@ function aplicarFiltros(f) {
                                         @click="abrirModalAsignacion"
                                         class="flex items-center justify-center gap-2 bg-green-500 text-white px-5 py-2 rounded-md shadow hover:bg-green-600 transition text-sm font-semibold"
                                     >
-                                        <svg class="w-5 h-5"  xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Pro 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2025 Fonticons, Inc. --><path fill="currentColor" d="M256 224a96 96 0 1 0 0-192 96 96 0 1 0 0 192zM256 0a128 128 0 1 1 0 256 128 128 0 1 1 0-256zM208 336c-79.5 0-144 64.5-144 144l0 16c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-16c0-97.2 78.8-176 176-176l96 0c97.2 0 176 78.8 176 176l0 16c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-16c0-79.5-64.5-144-144-144l-96 0zm320-72l0-56-56 0c-8.8 0-16-7.2-16-16s7.2-16 16-16l56 0 0-56c0-8.8 7.2-16 16-16s16 7.2 16 16l0 56 56 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-56 0 0 56c0 8.8-7.2 16-16 16s-16-7.2-16-16z"/></svg>
+                                        <svg
+                                            class="w-5 h-5"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 640 512"
+                                        >
+                                            <!--! Font Awesome Pro 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2025 Fonticons, Inc. -->
+                                            <path
+                                                fill="currentColor"
+                                                d="M256 224a96 96 0 1 0 0-192 96 96 0 1 0 0 192zM256 0a128 128 0 1 1 0 256 128 128 0 1 1 0-256zM208 336c-79.5 0-144 64.5-144 144l0 16c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-16c0-97.2 78.8-176 176-176l96 0c97.2 0 176 78.8 176 176l0 16c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-16c0-79.5-64.5-144-144-144l-96 0zm320-72l0-56-56 0c-8.8 0-16-7.2-16-16s7.2-16 16-16l56 0 0-56c0-8.8 7.2-16 16-16s16 7.2 16 16l0 56 56 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-56 0 0 56c0 8.8-7.2 16-16 16s-16-7.2-16-16z"
+                                            />
+                                        </svg>
                                         Asignar Filtrador
                                     </button>
                                 </div>
-
                             </template>
                         </Dropdown>
                     </div>
-                </div> 
-                
+                </div>
             </div>
         </template>
 
@@ -330,126 +365,14 @@ function aplicarFiltros(f) {
             <div
                 class="overflow-x-auto rounded-xl border border-gray-100 bg-gray-50"
             >
-                <table class="min-w-full text-sm text-gray-800">
-                    <thead class="text-white text-xs bgPrincipal">
-                        <tr>
-                            <th class="px-4 py-2 text-left">ID</th>
-                            <th class="px-4 py-2 text-left">Nro. Carga</th>
-                            <th class="px-4 py-2 text-left">Fecha de Carga</th>
-                            <th class="px-4 py-2 text-left">DNI</th>
-                            <th class="px-4 py-2 text-left">Nombre</th>
-                            <th class="px-4 py-2 text-left">Teléfono</th>
-                            <th class="px-4 py-2 text-left">Estado</th>
-                            <th class="px-4 py-2 text-left">Correo</th>
-                            <th class="px-4 py-2 text-left">Dirección</th>
-                            <th class="px-4 py-2 text-left">Contacto</th>
-                            <th class="px-4 py-2 text-left">Asignado</th>
-                            <th class="px-4 py-2 text-left">Fecha Asignada</th>
-                            <th class="px-4 py-2 text-left">Operador Actual</th>
-                            <th class="px-4 py-2 text-left">Trasavilidad</th>
-                            <th class="px-4 py-2 text-left">
-                                Oferta Comercial
-                            </th>
-                            <th class="px-4 py-2 text-left">
-                                Observación SMART
-                            </th>
-                            <th class="px-4 py-2 text-left">Tipificaciones</th>
-                            <th
-                                v-if="canViewGlobal"
-                                class="px-4 py-2 text-center"
-                            >
-                                Usuario
-                            </th>
-                            <th class="px-4 py-2 text-center">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr
-                            v-for="item in filteredItems"
-                            :key="item.id"
-                            class="bg-white even:bg-indigo-50 hover:bg-indigo-100 transition"
-                        >
-                            <td class="px-4 py-1.5 text-[13px]">
-                                {{ item.id }}
-                            </td>
-                            <td class="px-4 py-1.5 text-[13px]">
-                                {{ item.dni_nif_cif }}
-                            </td>
-                            <td class="px-4 py-1.5 text-[13px]">
-                                {{ item.nombre_cliente }}
-                            </td>
-                            <td class="px-4 py-1.5 text-[13px]">
-                                {{ item.telefono_contacto }}
-                            </td>
-                            <td class="px-4 py-1.5 text-[13px]">
-                                {{ item.direccion_instalacion }}
-                            </td>
-                            <td class="px-4 py-1.5 text-[13px]">
-                                {{ item.operador_actual }}
-                            </td>
-                            <td class="px-4 py-1.5 text-[13px]">
-                                {{ item.oferta_comercial }}
-                            </td>
-                            <td class="px-4 py-1.5 text-[13px]">
-                                {{ item.observacion_smart }}
-                            </td>
-                            <td class="px-4 py-1.5 text-[13px]">
-                                {{ item.tipificaciones }}
-                            </td>
-                            <td
-                                v-if="canViewGlobal"
-                                class="px-4 py-1.5 text-center"
-                            >
-                                {{ item.user ? item.user.name : "Sin usuario" }}
-                                <button
-                                    v-if="item.user"
-                                    @click="mostrarInfoUsuario(item.user)"
-                                    class="text-blue-600 hover:text-blue-800"
-                                    title="Ver info usuario"
-                                >
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        class="h-5 w-5 inline"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                    >
-                                        <circle
-                                            cx="12"
-                                            cy="12"
-                                            r="10"
-                                            stroke="currentColor"
-                                            stroke-width="2"
-                                            fill="none"
-                                        />
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M12 16v-4m0-4h.01"
-                                        />
-                                    </svg>
-                                </button>
-                            </td>
-                            <td class="px-4 py-1.5 text-center text-[13px]">
-                                <Actions
-                                    :edit="canDo('vodafone.editar')"
-                                    :remove="canDo('vodafone.eliminar')"
-                                    @edit="abrirModalEditar(item)"
-                                    @delete="eliminar(item)"
-                                />
-                            </td>
-                        </tr>
-                        <tr v-if="items.length === 0">
-                            <td
-                                :colspan="canViewGlobal ? 11 : 10"
-                                class="text-center py-4 text-gray-400 text-lg"
-                            >
-                                No hay registros.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <ExcelLikeGrid
+                    :rows="filteredItems"
+                    :canViewGlobal="canViewGlobal"
+                    @edit="abrirModalEditar"
+                    @delete="eliminar"
+                    :canEdit="canDo('vodafone.editar')"
+                    :canDelete="canDo('vodafone.eliminar')"
+                />
             </div>
         </div>
 
@@ -538,68 +461,99 @@ function aplicarFiltros(f) {
             </template>
         </ModalGestion>
 
-
-
         <!-- Modal DE INPORTAR -->
         <ModalGestion
             :show="showInportarModal"
-            :title="InportarTitulo ? 'Inportar' : 'Inportar nuevos Registros'"
+            :title="InportarTitulo ? 'Importar' : 'Importar nuevos Registros'"
             submitLabel="Importar"
             :initialForm="form"
-            :endpoint="
-                registroEditar
-                    ? route('vodafone.update', registroEditar.id)
-                    : route('vodafone.store')
-            "
-            :method="registroEditar ? 'put' : 'post'"
+            :endpoint="route('vodafone.import')"
+            :method="'post'"
             @close="cerrarModal"
             @success="handleSuccess"
         >
             <template #default="{ form: slotForm, errors }">
-                <InputField
-                    class="modalInputs"
-                    label="Descripción de la Carga"
-                    name="descricion"
-                    :error="errors.nombre_cliente"
-                    required
-                />
+                <div class="space-y-6">
+                    <!-- Descripción -->
+                    <InputField
+                        class="modalInputs"
+                        label="Descripción de la Carga"
+                        name="descripcion"
+                        :error="errors.descripcion"
+                        required
+                    />
 
-                 <div>
-                    <h2>Subir archivo Excel</h2>
-                    <div class="upload-container">
-                        <label class="upload-label">
-                        <!-- Ícono SVG de subir archivo -->
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            class="upload-icon"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
+                    <!-- Subida de archivo -->
+                    <div
+                        class="bg-gray-50 border border-gray-200 p-4 rounded-xl shadow-sm"
+                    >
+                        <h2 class="text-base font-semibold mb-2 text-gray-700">
+                            Subir archivo Excel
+                        </h2>
+                        <label
+                            class="flex items-center gap-3 cursor-pointer text-[var(--colorPrincipal)] hover:text-blue-700 transition"
                         >
-                            <path
-                            d="M12 16c.55 0 1-.45 1-1V9.83l1.59 1.59L16 10l-4-4-4 4 1.41 1.41L11 9.83V15c0 .55.45 1 1 1zm6-10H6c-1.1 0-2 .9-2 2v12c0 
-                                1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 
-                                14H6V8h12v12z"
+                            <!-- Ícono -->
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="w-6 h-6"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                            >
+                                <path
+                                    d="M12 16c.55 0 1-.45 1-1V9.83l1.59 1.59L16 10l-4-4-4 4 1.41 1.41L11 9.83V15c0 .55.45 1 1 1zm6-10H6c-1.1 0-2 .9-2 2v12c0 
+                            1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 
+                            14H6V8h12v12z"
+                                />
+                            </svg>
+                            <span class="font-medium"
+                                >Seleccionar archivo Excel (.xlsx)</span
+                            >
+                            <input
+                                type="file"
+                                name="archivo"
+                                class="hidden"
+                                @change="handleFileUpload"
+                                accept=".xlsx, .xls"
                             />
-                        </svg>
-                        <span>Subir Excel</span>
-                        <input type="file" @change="handleFileUpload" accept=".xlsx, .xls" />
                         </label>
+                        <p v-if="fileName" class="text-sm mt-2 text-gray-500">
+                            Archivo seleccionado:
+                            <strong>{{ fileName }}</strong>
+                        </p>
+                    </div>
 
-                        <p v-if="fileName">Archivo: {{ fileName }}</p>
+                    <!-- Descarga plantilla -->
+                    <div
+                        class="bg-gray-50 border border-gray-200 p-4 rounded-xl shadow-sm"
+                    >
+                        <h2 class="text-base font-semibold mb-2 text-gray-700">
+                            Plantilla de ejemplo
+                        </h2>
+                        <a
+                            href="ruta/al/archivo.xlsx"
+                            download="plantilla-vodafone.xlsx"
+                            class="inline-flex items-center gap-2 text-[var(--colorPrincipal)] hover:text-blue-700 transition"
+                        >
+                            <svg
+                                class="w-5 h-5"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 448 512"
+                                fill="currentColor"
+                            >
+                                <path
+                                    d="M416 176c0 8.8 7.2 16 16 16s16-7.2 16-16l0-80c0-53-43-96-96-96L96 0C43 0 0 43 0 96l0 80c0 8.8 7.2 16 16 16s16-7.2 16-16l0-80c0-35.3 
+                            28.7-64 64-64l256 0c35.3 0 64 28.7 64 64l0 80zM212.7 507.3c6.2 6.2 16.4 6.2 22.6 0l144-144c6.2-6.2 6.2-16.4 
+                            0-22.6s-16.4-6.2-22.6 0L240 457.4 240 176c0-8.8-7.2-16-16-16s-16 7.2-16 
+                            16l0 281.4-116.7-116.7c-6.2-6.2-16.4-6.2-22.6 0s-6.2 16.4 0 22.6l144 144z"
+                                />
+                            </svg>
+                            Descargar plantilla de Excel
+                        </a>
                     </div>
                 </div>
-
-                <div>
-                    <h2>Descarga plantilla de excel</h2>
-                    <a href="ruta/al/archivo.pdf" download="nombre-del-archivo-descargado.pdf" class="flex gap-2 pt-3" style="color: var(--colorPrincipal);">
-                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Pro 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2025 Fonticons, Inc. --><path fill="currentColor" d="M416 176c0 8.8 7.2 16 16 16s16-7.2 16-16l0-80c0-53-43-96-96-96L96 0C43 0 0 43 0 96l0 80c0 8.8 7.2 16 16 16s16-7.2 16-16l0-80c0-35.3 28.7-64 64-64l256 0c35.3 0 64 28.7 64 64l0 80zM212.7 507.3c6.2 6.2 16.4 6.2 22.6 0l144-144c6.2-6.2 6.2-16.4 0-22.6s-16.4-6.2-22.6 0L240 457.4 240 176c0-8.8-7.2-16-16-16s-16 7.2-16 16l0 281.4-116.7-116.7c-6.2-6.2-16.4-6.2-22.6 0s-6.2 16.4 0 22.6l144 144z"/></svg>
-                        Descargar el archivo
-                    </a>
-                </div>
-                            
             </template>
         </ModalGestion>
-
 
         <!-- Modal DE ASIGNACION -->
         <ModalGestion
@@ -612,58 +566,55 @@ function aplicarFiltros(f) {
             <template #default="{ form: slotForm, errors }">
                 <h3>Listado de Filtradores</h3>
                 <div class="relative">
-                        <Dropdown align="right" width="48">
-                            <!-- Trigger -->
-                            <template #trigger>
-                                <div
-                                    class="flex items-center gap-2 bg-white  px-2 py-1 shadow border border-gray-200 cursor-pointer relative"
+                    <Dropdown align="right" width="48">
+                        <!-- Trigger -->
+                        <template #trigger>
+                            <div
+                                class="flex items-center gap-2 bg-white px-2 py-1 shadow border border-gray-200 cursor-pointer relative"
+                            >
+                                Listado de Filtradores
+
+                                <!-- Flecha caret -->
+                                <svg
+                                    class="w-4 h-4 text-gray-400 ml-2 mr-1"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    viewBox="0 0 24 24"
                                 >
-                                    Listado de Filtradores
-                                    
-                                    <!-- Flecha caret -->
-                                    <svg
-                                        class="w-4 h-4 text-gray-400 ml-2 mr-1"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M19 9l-7 7-7-7"
-                                        />
-                                    </svg>
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        d="M19 9l-7 7-7-7"
+                                    />
+                                </svg>
+                            </div>
+                        </template>
+
+                        <!-- Contenido del Dropdown -->
+                        <template #content>
+                            <DropdownLink>
+                                <div class="flex items-center gap-2">
+                                    <span>Persona 1</span>
                                 </div>
-                            </template>
+                            </DropdownLink>
+                            <DropdownLink>
+                                <div class="flex items-center gap-2">
+                                    <span>Persona 2</span>
+                                </div>
+                            </DropdownLink>
+                            <DropdownLink>
+                                <div class="flex items-center gap-2">
+                                    <span>Persona 3</span>
+                                </div>
+                            </DropdownLink>
+                        </template>
+                    </Dropdown>
+                </div>
 
-                            <!-- Contenido del Dropdown -->
-                            <template #content>
-
-                                <DropdownLink >
-                                    <div class="flex items-center gap-2">
-                                        <span>Persona 1</span>
-                                    </div>
-                                </DropdownLink>
-                                <DropdownLink >
-                                    <div class="flex items-center gap-2">
-                                        <span>Persona 2</span>
-                                    </div>
-                                </DropdownLink>
-                                <DropdownLink >
-                                    <div class="flex items-center gap-2">
-                                        <span>Persona 3</span>
-                                    </div>
-                                </DropdownLink>
-
-                            </template>
-                        </Dropdown>
-                    </div>
-
-                 <div>
+                <div>
                     <h2>Lista de Registros a Asignar: 2 Registros</h2>
                 </div>
-                            
             </template>
         </ModalGestion>
     </AuthenticatedLayout>

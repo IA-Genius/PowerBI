@@ -92,6 +92,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('can:vodafone.guardar')->post('/vodafone', [VodafoneController::class, 'store'])->name('vodafone.store');
     Route::middleware('can:vodafone.editar')->put('/vodafone/{vodafone}', [VodafoneController::class, 'update'])->name('vodafone.update');
     Route::middleware('can:vodafone.eliminar')->delete('/vodafone/{vodafone}', [VodafoneController::class, 'destroy'])->name('vodafone.destroy');
+    Route::middleware('can:vodafone.ver')->post('/vodafone/importar', [VodafoneController::class, 'import'])->name('vodafone.import');
 });
 
 // ===================

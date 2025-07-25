@@ -85,15 +85,35 @@ watchEffect(() => {
 
 function handleSubmit() {
     errors.value = {};
+
     const data = props.transform(form);
 
-    router[props.method](props.endpoint, data, {
-        onSuccess: (page) => {
-            if (page.props?.success) {
-                emit("success", page.props.success);
-            }
-        },
-        onError: (err) => (errors.value = err),
-    });
+    const hasFile = Object.values(data).some((v) => v instanceof File);
+
+    if (hasFile) {
+        const formData = new FormData();
+        for (const key in data) {
+            formData.append(key, data[key]);
+        }
+
+        router.post(props.endpoint, formData, {
+            forceFormData: true,
+            onSuccess: (page) => {
+                if (page.props?.success) {
+                    emit("success", page.props.success);
+                }
+            },
+            onError: (err) => (errors.value = err),
+        });
+    } else {
+        router[props.method](props.endpoint, data, {
+            onSuccess: (page) => {
+                if (page.props?.success) {
+                    emit("success", page.props.success);
+                }
+            },
+            onError: (err) => (errors.value = err),
+        });
+    }
 }
 </script>

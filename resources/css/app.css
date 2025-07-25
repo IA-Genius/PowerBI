@@ -225,9 +225,9 @@ svg.mySVG {
     border: 3px solid #ffffff1c;
 }
 
- .m-0 {
+.m-0 {
     margin-bottom: 0 !important;
- }
+}
 /*============
 PAGINAS
 ============*/
@@ -538,18 +538,10 @@ ICONOS
 }
 
 @media screen and (max-width: 992px) {
-  .width-50 { width: 100% !important;}
+    .width-50 {
+        width: 100% !important;
+    }
 }
-
-
-
-
-
-
-
-
-
-
 
 .newFiltros {
     flex-direction: column;
@@ -563,7 +555,7 @@ ICONOS
     right: 0;
 }
 .modalFiltros .fdClose {
-    background: var(--blackTransparent); 
+    background: var(--blackTransparent);
     z-index: 99;
 }
 .modalFiltros .modalContent {
@@ -572,48 +564,36 @@ ICONOS
     max-width: 550px;
     max-height: 400px;
     height: auto;
-    padding-top: 59px;
 }
-
-.buscadorModal {
-    position: absolute;
-    left: -3%;
-    top: -2px;
-    right: -3%;
-    width: 106%;
-}
-
-
-
 
 .upload-container {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  margin: 10px 0 0 0 ;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin: 10px 0 0 0;
 }
 
 .upload-label {
-  cursor: pointer;
-  background-color: var(--colorPrincipal);
-  color: white;
-  padding: 12px 20px;
-  border-radius: 6px;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  transition: background-color 0.3s ease;
+    cursor: pointer;
+    background-color: var(--colorPrincipal);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    transition: background-color 0.3s ease;
 }
 
 .upload-label:hover {
-  background-color: #1a5fd0;
+    background-color: #1a5fd0;
 }
 
 .upload-label input[type="file"] {
-  display: none;
+    display: none;
 }
 
 .upload-icon {
-  width: 20px;
-  height: 20px;
+    width: 20px;
+    height: 20px;
 }
