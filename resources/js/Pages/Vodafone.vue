@@ -159,7 +159,7 @@ const filtrosDisponibles = computed(() => {
         operador_actual: [
             ...new Set(list.map((i) => i.operador_actual).filter(Boolean)),
         ],
-        estado: [
+        trazabilidad: [
             "pendiente",
             "asignado",
             "irrelevante",

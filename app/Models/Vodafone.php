@@ -12,24 +12,23 @@ class Vodafone extends Model
 
     protected $table = 'historial_registros_vodafone';
 
-    protected $fillable = [
+     protected $fillable = [
         'user_id',
         'upload_id',
         'asignado_a_id',
-        'estado',
-        'dni_nif_cif',
-        'id_cliente',
-        'observacion_smart',
-        'oferta_comercial',
-        'operador_actual',
-        'telefono_contacto',
+        'trazabilidad',
+
+        // Nuevos campos de SmartClient / filtrado
+        'marca_base',
+        'origen_motivo_cancelacion',
         'nombre_cliente',
-        'direccion_instalacion',
-        'fecha_creacion',
-        'fecha_cierre',
-        'observaciones_back_office',
-        'tipificaciones',
-        'observaciones_operaciones',
+        'dni_cliente',
+        'orden_trabajo_anterior',
+        'telefono_principal',
+        'telefono_adicional',
+        'correo_referencia',
+        'direccion_historico',
+        'observaciones',
     ];
 
     protected $casts = [

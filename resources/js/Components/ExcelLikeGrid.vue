@@ -34,39 +34,39 @@ let gridApi = null;
 const columnDefs = [
     { field: "id", headerName: "ID" },
     { field: "upload_id", headerName: "Nro. Carga" },
-    { field: "created_at", headerName: "Fecha de Carga" },
-    { field: "dni_nif_cif", headerName: "DNI" },
-    { field: "id_cliente", headerName: "ID Cliente" },
-    { field: "nombre_cliente", headerName: "Nombre" },
-    { field: "telefono_contacto", headerName: "Teléfono" },
-    { field: "estado", headerName: "Estado" },
-    { field: "correo", headerName: "Correo" },
+    {
+        field: "created_at",
+        headerName: "Fecha de Carga",
+        valueFormatter: (p) =>
+            p.value ? new Date(p.value).toLocaleString() : "—",
+    },
+
+    // Datos base del registro
+    { field: "trazabilidad", headerName: "Trazabilidad" },
     {
         headerName: "Asignado",
         valueGetter: (params) => params.data?.asignado_a?.name || "—",
     },
 
-    // { field: "direccion_instalacion", headerName: "Dirección" },
-    // { field: "contacto", headerName: "Contacto" },
+    // Nuevos campos SmartClient y área de filtrado
+    { field: "marca_base", headerName: "Marca de la Base" },
+    { field: "origen_motivo_cancelacion", headerName: "Origen Cancelación" },
+    { field: "nombre_cliente", headerName: "Nombre del Cliente" },
+    { field: "dni_cliente", headerName: "DNI Cliente" },
+    { field: "orden_trabajo_anterior", headerName: "Orden Trabajo Anterior" },
+    { field: "telefono_principal", headerName: "Teléfono Principal" },
+    { field: "telefono_adicional", headerName: "Teléfono Adicional" },
+    { field: "correo_referencia", headerName: "Correo de Referencia" },
+    { field: "direccion_historico", headerName: "Dirección Histórico" },
+    { field: "observaciones", headerName: "Observaciones" },
 
-    // {
-    //     field: "updated_at",
-    //     headerName: "Fecha Asignada",
-    //     valueFormatter: (p) =>
-    //         p.value ? new Date(p.value).toLocaleDateString() : "—",
-    // },
-    { field: "operador_actual", headerName: "Operador Actual" },
-    // { field: "oferta_comercial", headerName: "Oferta Comercial" },
-    // { field: "observacion_smart", headerName: "Observación SMART" },
-    { field: "tipificaciones", headerName: "Tipificaciones" },
-    // {
-    //     field: "fecha_cierre",
-    //     headerName: "Fecha Cierre",
-    //     valueFormatter: (p) =>
-    //         p.value ? new Date(p.value).toLocaleDateString() : "—",
-    // },
-    // { field: "observaciones_back_office", headerName: "Obs. BackOffice" },
-    // { field: "observaciones_operaciones", headerName: "Obs. Operaciones" },
+    // Auditoría
+    {
+        field: "updated_at",
+        headerName: "Última Modificación",
+        valueFormatter: (p) =>
+            p.value ? new Date(p.value).toLocaleString() : "—",
+    },
 ];
 
 if (props.canViewGlobal) {
