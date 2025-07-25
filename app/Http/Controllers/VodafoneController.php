@@ -19,7 +19,8 @@ class VodafoneController extends Controller
         $user = Auth::user();
 
         // Cargar el usuario asignado correctamente
-        $query = Vodafone::query()->with(['asignado_a']);
+
+        $query = Vodafone::query()->with(['asignado_a', 'user']);
 
         if (!$user->can('vodafone.ver-global')) {
             $query->where('user_id', $user->id);
@@ -39,7 +40,6 @@ class VodafoneController extends Controller
             'usuariosAsignables' => $usuariosAsignables,
         ]);
     }
-
     public function asignar(Request $request)
     {
         $request->validate([
@@ -54,10 +54,9 @@ class VodafoneController extends Controller
 
         $cantidad = Vodafone::whereIn('id', $ids)->update([
             'asignado_a_id' => $asignadoA,
-            'estado' => 'asignado',
+            'trazabilidad' => 'asignado',
             'updated_at' => now(),
         ]);
-
 
         Log::info('📌 Registros Vodafone asignados', [
             'ids' => $ids,
@@ -68,6 +67,7 @@ class VodafoneController extends Controller
 
         return redirect()->back()->with('success', "{$cantidad} registro(s) asignado(s) correctamente.");
     }
+
 
     public function import(Request $request)
     {
@@ -152,19 +152,17 @@ class VodafoneController extends Controller
     private function validationRules(?int $ignoreId = null): array
     {
         return [
-            'dni_nif_cif' => ['nullable', 'string', 'max:255', 'unique:historial_registros_vodafone,dni_nif_cif,' . $ignoreId],
-            'id_cliente' => ['nullable', 'string', 'max:255', 'unique:historial_registros_vodafone,id_cliente,' . $ignoreId],
-            'observacion_smart' => 'nullable|string',
-            'oferta_comercial' => 'nullable|string',
-            'operador_actual' => 'nullable|string|max:255',
-            'telefono_contacto' => 'nullable|string|max:20',
+            'trazabilidad' => ['nullable', 'in:pendiente,asignado,irrelevante,completado,agendado'],
+            'marca_base' => 'nullable|string|max:255',
+            'origen_motivo_cancelacion' => 'nullable|string|max:255',
             'nombre_cliente' => 'nullable|string|max:255',
-            'direccion_instalacion' => 'nullable|string',
-            'fecha_creacion' => 'nullable|date',
-            'fecha_cierre' => 'nullable|date',
-            'observaciones_back_office' => 'nullable|string',
-            'tipificaciones' => 'nullable|string',
-            'observaciones_operaciones' => 'nullable|string',
+            'dni_cliente' => ['nullable', 'string', 'max:255', 'unique:historial_registros_vodafone,dni_cliente,' . $ignoreId],
+            'orden_trabajo_anterior' => 'nullable|string|max:255',
+            'telefono_principal' => 'nullable|string|max:20',
+            'telefono_adicional' => 'nullable|string|max:20',
+            'correo_referencia' => 'nullable|email|max:255',
+            'direccion_historico' => 'nullable|string|max:255',
+            'observaciones' => 'nullable|string',
             'asignado_a_id' => 'nullable|exists:users,id',
         ];
     }

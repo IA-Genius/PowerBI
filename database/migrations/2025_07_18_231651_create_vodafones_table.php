@@ -10,7 +10,6 @@ return new class extends Migration {
         Schema::create('log_importacion_vodafone', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
-
             $table->string('nombre_archivo')->nullable();
             $table->integer('cantidad_registros')->nullable();
             $table->timestamps();
@@ -22,15 +21,14 @@ return new class extends Migration {
             // Quien creó el registro
             $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
 
-
             // Subida a la que pertenece
             $table->foreignId('upload_id')->nullable()->constrained('log_importacion_vodafone')->onDelete('set null');
 
             // Encargado asignado
             $table->foreignId('asignado_a_id')->nullable()->constrained('users')->onDelete('set null');
 
-            // Estado del registro
-            $table->enum('estado', [
+            // Trazabilidad del registro (renombrado desde "estado")
+            $table->enum('trazabilidad', [
                 'pendiente',
                 'asignado',
                 'irrelevante',
@@ -38,21 +36,19 @@ return new class extends Migration {
                 'agendado'
             ])->default('pendiente');
 
-
-            // Datos del Excel
-            $table->string('dni_nif_cif')->nullable()->unique();
-            $table->string('id_cliente')->nullable()->unique();
-            $table->text('observacion_smart')->nullable();
-            $table->text('oferta_comercial')->nullable();
-            $table->string('operador_actual')->nullable();
-            $table->string('telefono_contacto')->nullable();
+            // Datos nuevos solicitados
+            $table->string('marca_base')->nullable();                      // Reciclable / No reciclable
+            $table->string('origen_motivo_cancelacion')->nullable();
             $table->string('nombre_cliente')->nullable();
-            $table->text('direccion_instalacion')->nullable();
-            $table->date('fecha_creacion')->nullable();
-            $table->date('fecha_cierre')->nullable();
-            $table->text('observaciones_back_office')->nullable();
-            $table->text('tipificaciones')->nullable();
-            $table->text('observaciones_operaciones')->nullable();
+            $table->string('dni_cliente')->nullable()->unique();
+            $table->string('orden_trabajo_anterior')->nullable();
+            $table->string('telefono_principal')->nullable();
+            $table->string('telefono_adicional')->nullable();
+            $table->string('correo_referencia')->nullable();
+            $table->string('direccion_historico')->nullable();
+            $table->text('observaciones')->nullable();
+
+
 
             $table->timestamps();
             $table->softDeletes();
