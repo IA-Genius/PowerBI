@@ -1,5 +1,6 @@
 <template>
     <div>
+        <!-- Botones de selección -->
         <div
             class="flex gap-2 flex-wrap"
             style="background-color: white; border: none"
@@ -8,6 +9,7 @@
                 @click="selectAll"
                 class="btn bgPrincipal btnTablas flex gap-2 itens-center"
             >
+                <!-- Icono seleccionar todo -->
                 <svg
                     class="w-5 h-5"
                     xmlns="http://www.w3.org/2000/svg"
@@ -21,11 +23,11 @@
                 </svg>
                 Seleccionar todo
             </button>
-
             <button
                 @click="clearSelection"
                 class="btn bgPrincipal btnTablas flex gap-2 itens-center"
             >
+                <!-- Icono limpiar selección -->
                 <svg
                     class="w-5 h-5"
                     xmlns="http://www.w3.org/2000/svg"
@@ -40,7 +42,7 @@
                 Limpiar
             </button>
         </div>
-
+        <!-- Grid principal -->
         <div
             ref="gridContainer"
             id="myGrid"
@@ -50,9 +52,11 @@
 </template>
 
 <script setup>
+// ===== IMPORTS =====
 import { onMounted, ref, watch, h, render, nextTick } from "vue";
 import Actions from "@/Components/Actions.vue";
 
+// ===== PROPS Y EMITS =====
 const props = defineProps({
     rows: Array,
     columns: Array, // ← Nueva prop para columnas personalizadas
@@ -69,9 +73,12 @@ const emit = defineEmits([
     "loadMore",
     "update:selected",
 ]);
+
+// ===== VARIABLES REACTIVAS =====
 const gridContainer = ref(null);
 let gridApi = null;
 
+// ===== DEFINICIÓN DE COLUMNAS =====
 const columnDefs = [
     { field: "id", headerName: "ID" },
     { field: "upload_id", headerName: "Nro. Carga" },
@@ -137,14 +144,13 @@ columnDefs.push({
         return container;
     },
 });
-
 const defaultColDef = {
     resizable: true,
     flex: 1,
     sortable: false,
 };
 
-// 🖱️ Selección por arrastre
+// ===== FUNCIONES DE SELECCIÓN POR ARRASTRE =====
 let isDragging = false;
 let startRowIndex = null;
 
@@ -226,7 +232,7 @@ function selectRowRange(start, end, additive = false) {
     });
 }
 
-// 🔄 Reactividad en datos con preservación de scroll
+// ===== WATCHERS Y REACTIVIDAD =====
 watch(
     () => props.rows,
     (newRows, oldRows) => {
@@ -253,7 +259,7 @@ watch(
     { immediate: true }
 );
 
-// 🔁 Inicializar AG Grid
+// ===== MONTAJE Y EVENTOS =====
 onMounted(() => {
     if (!window.agGrid?.createGrid) return;
 
@@ -263,7 +269,7 @@ onMounted(() => {
         defaultColDef,
         rowSelection: "multiple",
         suppressRowClickSelection: false,
-        // suppressCellSelection: true, // ❌ quitar esto
+
         enableRangeSelection: false,
         animateRows: true,
         suppressCellFocus: true,
@@ -306,7 +312,7 @@ onMounted(() => {
     }
 });
 
-// 🔄 Acciones extra
+// ===== ACCIONES EXTRA =====
 function selectAll() {
     gridApi?.selectAll();
     emitSelectedRows();

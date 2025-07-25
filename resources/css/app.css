@@ -1,3 +1,6 @@
+/*==============
+TAILWIND
+==============*/
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,7 +8,6 @@
 /*==============
 COLORES
 ==============*/
-
 :root {
     --colorPrincipal: #5f5ffffc;
     --colortTxt: #4d4a48;
@@ -37,7 +39,6 @@ button {
 /*==============
 MENU
 ==============*/
-
 .fixed.inset-y-0 {
     transition: 300ms;
 }
@@ -73,7 +74,6 @@ label.linkCarteras {
 .linkMenu:hover {
     background: var(--colorSecundario);
 }
-
 .separador {
     width: 100%;
     height: 1px;
@@ -92,40 +92,35 @@ label.linkCarteras {
     text-transform: capitalize;
 }
 
-/* .h-90 {
-    overflow: hidden;
-    height: 71%;
-}
-.overflowHijo {
-    overflow-y: scroll;
-    overflow-x: hidden;
-    max-height: 100%;
-    width: calc(100% + 17px);
-} */
-
+/*==============
+SCROLLBAR
+==============*/
 .overflowHijo {
     overflow: scroll; /* o auto */
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE 10+ */
 }
-
 .overflowHijo::-webkit-scrollbar {
     display: none; /* Chrome, Safari y Edge */
+}
+/* Scrollbar discreto para vue-multiselect */
+*::-webkit-scrollbar {
+    width: 6px;
+}
+*::-webkit-scrollbar-thumb {
+    background-color: rgba(100, 116, 139, 0.2); /* slate-500 transparente */
+    border-radius: 4px;
+}
+*::-webkit-scrollbar-track {
+    background: transparent;
 }
 
 /*==============
 LOGIN
 ==============*/
-
 .boxBtnl {
     margin-top: 35px;
 }
-
-/* LOGO */
-/* .geatelLogo {
-    width: auto;
-    max-width: 325px;
-} */
 .center {
     text-align: center;
 }
@@ -141,11 +136,9 @@ LOGIN
     border-radius: 0.5em 0.5em 0 0;
     border-bottom-width: 0;
 }
-
 .geatelLogo img {
     width: 100%;
 }
-
 .tituloPrincipal {
     font-weight: 600;
     width: 100%;
@@ -155,7 +148,6 @@ LOGIN
     line-height: 1.05;
     margin: 18px 0 33px;
 }
-
 form label.block {
     color: var(--colorPrincipal);
 }
@@ -170,11 +162,9 @@ form label.block {
     border-radius: 0 0 0.5em 0.5em;
     border-top-width: 0;
 }
-
 button.btnFull {
     width: 100%;
 }
-
 button.btn {
     background: var(--colorPrincipal);
     text-align: center;
@@ -224,13 +214,13 @@ svg.mySVG {
     margin: -10px 7px -10px 0;
     border: 3px solid #ffffff1c;
 }
-
 .m-0 {
     margin-bottom: 0 !important;
 }
-/*============
+
+/*==============
 PAGINAS
-============*/
+==============*/
 @keyframes fadeSlideLeft {
     0% {
         opacity: 0;
@@ -251,7 +241,6 @@ PAGINAS
         opacity: 1;
     }
 }
-
 @keyframes drawSolid {
     0% {
         width: 0;
@@ -262,7 +251,6 @@ PAGINAS
         opacity: 1;
     }
 }
-
 .tituloPag {
     position: relative;
     font-weight: bold;
@@ -272,7 +260,6 @@ PAGINAS
     animation-delay: 0.1s;
     opacity: 0;
 }
-
 .tituloPag::before,
 .tituloPag::after {
     content: "";
@@ -280,7 +267,6 @@ PAGINAS
     bottom: -10px;
     opacity: 0;
 }
-
 .tituloPag::before {
     height: 2px;
     border: 2px dashed var(--colorPrincipal);
@@ -288,7 +274,6 @@ PAGINAS
     animation: drawDashed 0.5s ease-out forwards;
     animation-delay: 0.6s;
 }
-
 .tituloPag::after {
     height: 4px;
     background: var(--colorPrincipal);
@@ -297,14 +282,12 @@ PAGINAS
     animation: drawSolid 0.5s ease-out forwards;
     animation-delay: 0.8s;
 }
-
 .rounded-full {
     border-radius: 5px;
 }
 .rounded-fulls {
     border-radius: 9999px;
 }
-
 .borderTable {
     border-radius: 8px !important;
     overflow: hidden;
@@ -318,17 +301,15 @@ PAGINAS
     background: var(--colorPrincipal);
     color: #fff;
 }
-
 .relleno .rellenoInternas {
     background: #fff;
     padding: 1.5rem 2rem;
     border-radius: 6px;
 }
 
-/*===========
-CAMBIOS AL MULTISELECT
-===========*/
-
+/*==============
+MULTISELECT
+==============*/
 /* Etiquetas seleccionadas */
 .multiselect__tag {
     background-color: #6366f1 !important; /* Indigo-500 */
@@ -336,7 +317,6 @@ CAMBIOS AL MULTISELECT
     border-radius: 6px;
     font-size: 13px;
 }
-
 /* Ícono de cierre (X) */
 .multiselect__tag-icon::after {
     content: "×";
@@ -344,7 +324,6 @@ CAMBIOS AL MULTISELECT
     font-size: 14px;
     font-weight: bold;
 }
-
 /* Contenedor de las opciones desplegables */
 .multiselect__content-wrapper {
     max-height: 140px !important;
@@ -355,7 +334,6 @@ CAMBIOS AL MULTISELECT
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     background-color: #ffffff;
 }
-
 /* Input y zona de etiquetas */
 .multiselect__tags {
     padding: 4px 8px !important;
@@ -366,7 +344,6 @@ CAMBIOS AL MULTISELECT
     border-radius: 6px;
     border: 1px solid #c7d2fe;
 }
-
 /* Opciones */
 .multiselect__element {
     font-size: 14px;
@@ -376,7 +353,6 @@ CAMBIOS AL MULTISELECT
     background-color: #eef2ff !important; /* Indigo-50 más suave */
     color: #3730a3 !important; /* Indigo-700 */
 }
-
 /* Scrollbar tranquilo */
 .multiselect__content-wrapper::-webkit-scrollbar {
     width: 5px;
@@ -390,27 +366,9 @@ CAMBIOS AL MULTISELECT
     background-color: rgba(99, 102, 241, 0.5);
 }
 
-/*===========
-CAMBIOS GLOBALES AL SCROLLBAR WEBKIT
-===========*/
-/* Scrollbar discreto para vue-multiselect */
-*::-webkit-scrollbar {
-    width: 6px;
-}
-
-*::-webkit-scrollbar-thumb {
-    background-color: rgba(100, 116, 139, 0.2); /* slate-500 transparente */
-    border-radius: 4px;
-}
-
-*::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-/*===========
+/*==============
 ICONOS
-===========*/
-
+==============*/
 .bg-green-500 {
     --tw-bg-opacity: 1;
     background-color: var(--colorPrincipal);
@@ -423,7 +381,6 @@ ICONOS
     position: relative;
     top: 1px;
 }
-
 .svgIcon {
     color: #fff;
     fill: #fff;
@@ -433,20 +390,20 @@ ICONOS
     border-radius: 5px;
     padding: 7px;
 }
-
 .bgIconEdit {
     background: #00c853; /* Verde brillante (tipo "Success") */
 }
-
 .bgIconTrash {
     background: #d50000; /* Rojo intenso (tipo "Error") */
 }
-
 .bgIconEdit:hover,
 .bgIconTrash:hover {
     background: var(--colorSecundario);
 }
 
+/*==============
+MODAL
+==============*/
 .modaleStyle {
     background: #000000b2;
     height: 100vh;
@@ -457,7 +414,6 @@ ICONOS
     align-items: flex-start;
     flex: none !important;
 }
-
 .modaleStyle::-webkit-scrollbar {
     display: none; /* Chrome, Safari y Edge */
 }
@@ -470,12 +426,14 @@ ICONOS
     margin: auto;
     background: #fff !important;
 }
-
 .modaleStyle > div label {
     font-size: 13px;
     font-weight: 100;
 }
 
+/*==============
+GRADIENTES
+==============*/
 .from-blue-600 {
     --tw-gradient-from: var(--colorPrincipal);
     background: var(--colorPrincipal);
@@ -489,6 +447,9 @@ ICONOS
     padding: 0;
 }
 
+/*==============
+TABLAS Y REPORTES
+==============*/
 .botonesTablaReportes button {
     display: flex;
     justify-content: center;
@@ -501,19 +462,16 @@ ICONOS
     font-size: 15px;
     margin-left: 10px;
 }
-
 .botonesTablaReportes
     .bgIconTrash.text-white.shadow-md.transition.transform::after {
     content: "Eliminar";
     font-size: 12px;
     margin-left: 8px;
 }
-
 .filtros > span {
     position: relative;
     top: 6px;
 }
-
 .customMenu span {
     white-space: nowrap;
     overflow: hidden;
@@ -526,7 +484,6 @@ ICONOS
     padding: 13px;
     margin-bottom: 10px;
 }
-
 .headerReportes {
     text-align: center;
 }
@@ -536,13 +493,11 @@ ICONOS
 .width-49 > div {
     width: 48%;
 }
-
 @media screen and (max-width: 992px) {
     .width-50 {
         width: 100% !important;
     }
 }
-
 .newFiltros {
     flex-direction: column;
 }
@@ -566,13 +521,15 @@ ICONOS
     height: auto;
 }
 
+/*==============
+UPLOAD
+==============*/
 .upload-container {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     margin: 10px 0 0 0;
 }
-
 .upload-label {
     cursor: pointer;
     background-color: var(--colorPrincipal);
@@ -584,20 +541,20 @@ ICONOS
     gap: 10px;
     transition: background-color 0.3s ease;
 }
-
 .upload-label:hover {
     background-color: #1a5fd0;
 }
-
 .upload-label input[type="file"] {
     display: none;
 }
-
 .upload-icon {
     width: 20px;
     height: 20px;
 }
 
+/*==============
+AG-GRID
+==============*/
 .ag-header-row.ag-header-row-column,
 .ag-header-viewport {
     background-color: var(--colorPrincipal);
@@ -609,8 +566,6 @@ ICONOS
     font-weight: 400;
     font-size: 13px;
 }
-
-
 button.btnTablas {
     position: relative;
     bottom: -3px;
@@ -626,16 +581,9 @@ button.btnTablas:hover {
 .ag-row-odd {
     background-color: #eef2ff;
 }
-
 div#myGrid *,
 .ag-root-wrapper.ag-layout-normal,
 .no-border {
     border: none !important;
     outline: none !important;
-}
-
-
-
-.ag-root-wrapper.ag-layout-normal {
-    max-height: 650px;
 }
