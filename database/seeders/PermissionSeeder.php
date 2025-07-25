@@ -12,10 +12,10 @@ class PermissionSeeder extends Seeder
     public function run(): void
     {
         $modulosConPermisos = [
-            'Roles' => ['ver', 'crear', 'guardar', 'editar', 'eliminar'],
-            'Usuarios' => ['ver', 'crear', 'guardar', 'editar', 'eliminar'],
-            'Carteras' => ['ver', 'crear', 'guardar', 'editar', 'eliminar'],
-            'Reportes' => ['ver', 'crear', 'guardar', 'editar', 'eliminar'],
+            'Roles' => ['ver', 'crear', 'editar', 'eliminar'],
+            'Usuarios' => ['ver', 'crear',  'editar', 'eliminar'],
+            'Carteras' => ['ver', 'crear',  'editar', 'eliminar'],
+            'Reportes' => ['ver', 'crear', 'editar', 'eliminar'],
             'Vodafone' => [
                 'ver',           // ver registros
                 'crear',

@@ -513,7 +513,7 @@ function asignarRegistros(form, close) {
                 </div>
             </template>
         </ModalGestion>
-        
+
         <!-- Modal DE INPORTAR -->
         <ModalGestion
             :show="showInportarModal"
@@ -635,6 +635,7 @@ function asignarRegistros(form, close) {
                     >
                         <template #trigger>
                             <button
+                                type="button"
                                 class="flex items-center justify-between w-full px-4 py-2 text-sm bg-white text-gray-700 border border-gray-300 rounded-md shadow hover:bg-gray-50 transition"
                             >
                                 {{
@@ -669,6 +670,7 @@ function asignarRegistros(form, close) {
                                     :key="usuario.id"
                                 >
                                     <button
+                                        type="button"
                                         @click="
                                             slotForm.asignado_a_id = usuario.id
                                         "
