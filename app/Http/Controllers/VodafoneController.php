@@ -125,8 +125,8 @@ class VodafoneController extends Controller
 
     public function update(Request $request, Vodafone $vodafone)
     {
-        $data = $request->validate($this->validationRules());
-        /** @var \App\Models\User $user */
+        $data = $request->validate($this->validationRules($vodafone->id));
+
         $user = Auth::user();
         $data['user_id'] = $user->id;
 
@@ -134,7 +134,6 @@ class VodafoneController extends Controller
 
         return redirect()->route('vodafone.index')->with('success', 'Registro actualizado correctamente.');
     }
-
     public function destroy(Request $request, Vodafone $vodafone)
     {
         /** @var \App\Models\User $user */
@@ -149,11 +148,12 @@ class VodafoneController extends Controller
         return redirect()->route('vodafone.index')->with('success', 'Registro eliminado correctamente.');
     }
 
-    private function validationRules(): array
+
+    private function validationRules(?int $ignoreId = null): array
     {
         return [
-            'dni_nif_cif' => 'nullable|string|max:255',
-            'id_cliente' => 'nullable|string|max:255',
+            'dni_nif_cif' => ['nullable', 'string', 'max:255', 'unique:historial_registros_vodafone,dni_nif_cif,' . $ignoreId],
+            'id_cliente' => ['nullable', 'string', 'max:255', 'unique:historial_registros_vodafone,id_cliente,' . $ignoreId],
             'observacion_smart' => 'nullable|string',
             'oferta_comercial' => 'nullable|string',
             'operador_actual' => 'nullable|string|max:255',

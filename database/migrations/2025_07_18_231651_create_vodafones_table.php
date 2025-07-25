@@ -40,8 +40,8 @@ return new class extends Migration {
 
 
             // Datos del Excel
-            $table->string('dni_nif_cif')->nullable();
-            $table->string('id_cliente')->nullable();
+            $table->string('dni_nif_cif')->nullable()->unique();
+            $table->string('id_cliente')->nullable()->unique();
             $table->text('observacion_smart')->nullable();
             $table->text('oferta_comercial')->nullable();
             $table->string('operador_actual')->nullable();
