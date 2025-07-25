@@ -36,7 +36,13 @@ const props = defineProps({
     canList: Boolean,
 });
 
-const emit = defineEmits(["edit", "delete", "list"]);
+const emit = defineEmits([
+    "edit",
+    "delete",
+    "list",
+    "loadMore",
+    "update:selected",
+]);
 const gridContainer = ref(null);
 let gridApi = null;
 
@@ -120,6 +126,7 @@ function getRowIdFromElement(el) {
     const row = el.closest(".ag-row");
     return row?.getAttribute("row-id");
 }
+
 function emitSelectedRows() {
     const selected = gridApi?.getSelectedRows() || [];
     emit("update:selected", selected);
@@ -191,6 +198,33 @@ function selectRowRange(start, end, additive = false) {
     });
 }
 
+// 🔄 Reactividad en datos con preservación de scroll
+watch(
+    () => props.rows,
+    (newRows, oldRows) => {
+        if (gridApi) {
+            const viewport =
+                gridContainer.value?.querySelector(".ag-body-viewport");
+            let prevScrollTop = viewport ? viewport.scrollTop : null;
+            // Si no hay datos, muestra un loader en el grid
+            if (!newRows || newRows.length === 0) {
+                gridApi.setRowData([]);
+                gridApi.showLoadingOverlay();
+            } else {
+                gridApi.setRowData(newRows);
+                gridApi.hideOverlay();
+                // Restaurar scroll si se estaba abajo
+                if (viewport && prevScrollTop !== null) {
+                    nextTick(() => {
+                        viewport.scrollTop = prevScrollTop;
+                    });
+                }
+            }
+        }
+    },
+    { immediate: true }
+);
+
 // 🔁 Inicializar AG Grid
 onMounted(() => {
     if (!window.agGrid?.createGrid) return;
@@ -209,6 +243,10 @@ onMounted(() => {
             gridApi = params.api;
             gridApi.sizeColumnsToFit();
             gridApi.addEventListener("selectionChanged", emitSelectedRows);
+            // Muestra loader si no hay datos al inicio
+            if (!props.rows || props.rows.length === 0) {
+                gridApi.showLoadingOverlay();
+            }
         },
     };
 
@@ -219,17 +257,28 @@ onMounted(() => {
     gridContainer.value.addEventListener("mousedown", handleMouseDown);
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
+
+    // Scroll infinito: escucha el scroll del viewport de AG Grid
+    const viewport = gridContainer.value.querySelector(".ag-body-viewport");
+    if (viewport) {
+        viewport.addEventListener(
+            "scroll",
+            (e) => {
+                const el = e.target;
+                const threshold = 120;
+                if (
+                    el.scrollTop + el.clientHeight >=
+                    el.scrollHeight - threshold
+                ) {
+                    emit("loadMore");
+                }
+            },
+            { passive: true }
+        );
+    }
 });
 
-// 🔄 Reactividad en datos
-watch(
-    () => props.rows,
-    (newRows) => {
-        if (gridApi) gridApi.setRowData(newRows);
-    }
-);
-
-// 🔘 Acciones extra
+// 🔄 Acciones extra
 function selectAll() {
     gridApi?.selectAll();
     emitSelectedRows();
@@ -258,5 +307,6 @@ function clearSelection() {
     --ag-header-background-color: #f8f9fa;
     --ag-header-foreground-color: #333;
     --ag-selected-row-background-color: #e3f2fd;
+    /* height: 100%;  <-- ELIMINADO para scroll infinito */
 }
 </style>

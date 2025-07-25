@@ -94,6 +94,8 @@ Route::middleware('auth')->group(function () {
     Route::middleware('can:vodafone.eliminar')->delete('/vodafone/{vodafone}', [VodafoneController::class, 'destroy'])->name('vodafone.destroy');
     Route::middleware('can:vodafone.ver')->post('/vodafone/importar', [VodafoneController::class, 'import'])->name('vodafone.import');
     Route::post('/vodafone/asignar', [VodafoneController::class, 'asignar'])->name('vodafone.asignar');
+    Route::get('/vodafone/page', [VodafoneController::class, 'fetchPage'])->name('vodafone.page');
+
 });
 
 // ===================

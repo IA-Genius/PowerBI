@@ -26,7 +26,7 @@ class VodafoneController extends Controller
             $query->where('user_id', $user->id);
         }
 
-        $items = $query->orderBy('id')->get();
+        $items = $query->orderBy('id')->paginate(50); 
 
         $usuariosAsignables = User::permission('vodafone.recibe-asignacion')
             ->select('id', 'name')
@@ -40,6 +40,25 @@ class VodafoneController extends Controller
             'usuariosAsignables' => $usuariosAsignables,
         ]);
     }
+    public function fetchPage(Request $request)
+    {
+       /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+
+        $query = Vodafone::query()->with(['asignado_a', 'user']);
+
+        if (!$user->can('vodafone.ver-global')) {
+            $query->where('user_id', $user->id);
+        }
+
+        $items = $query->orderBy('id')->paginate(50);
+
+        return response()->json([
+            'items' => $items
+        ]);
+    }
+
     public function asignar(Request $request)
     {
         $request->validate([
@@ -134,6 +153,7 @@ class VodafoneController extends Controller
 
         return redirect()->route('vodafone.index')->with('success', 'Registro actualizado correctamente.');
     }
+
     public function destroy(Request $request, Vodafone $vodafone)
     {
         /** @var \App\Models\User $user */

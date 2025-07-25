@@ -39,28 +39,26 @@ class VodafoneImport implements ToCollection
 
             try {
                 $registro = Vodafone::create([
-                    'user_id'                    => $user->id,
-                    'upload_id'                 => $upload->id,
-                    'estado'                    => 'pendiente',
-
-                    'dni_nif_cif'               => $row[0] ?? null,
-                    'id_cliente'                => $row[1] ?? null,
-                    'observacion_smart'         => $row[2] ?? null,
-                    'oferta_comercial'          => $row[3] ?? null,
-                    'operador_actual'           => $row[4] ?? null,
-                    'telefono_contacto'         => $row[5] ?? null,
-                    'nombre_cliente'            => $row[6] ?? null,
-                    'direccion_instalacion'     => $row[7] ?? null,
-                    'fecha_creacion'            => $this->parseDate($row[8] ?? null),
-                    'fecha_cierre'              => $this->parseDate($row[9] ?? null),
-                    'observaciones_back_office' => $row[10] ?? null,
-                    'tipificaciones'            => $row[11] ?? null,
-                    'observaciones_operaciones' => $row[12] ?? null,
+                    'user_id' => $user->id,
+                    'upload_id' => $upload->id,
+                    'trazabilidad' => 'pendiente',
+                    'marca_base' => $row[0] ?? null,
+                    'origen_motivo_cancelacion' => $row[1] ?? null,
+                    'nombre_cliente' => $row[2] ?? null,
+                    'dni_cliente' => $row[3] ?? null,
+                    'orden_trabajo_anterior' => $row[4] ?? null,
+                    'telefono_principal' => $row[5] ?? null,
+                    'telefono_adicional' => $row[6] ?? null,
+                    'correo_referencia' => $row[7] ?? null,
+                    'direccion_historico' => $row[8] ?? null,
+                    'observaciones' => $row[9] ?? null,
+                    // Si tienes asignado_a_id en el archivo, puedes agregarlo aquí:
+                    // 'asignado_a_id' => $row[10] ?? null,
                 ]);
 
                 Log::debug("✅ Fila importada (index {$index})", [
                     'id' => $registro->id,
-                    'dni_nif_cif' => $registro->dni_nif_cif,
+                    'dni_cliente' => $registro->dni_cliente,
                     'nombre_cliente' => $registro->nombre_cliente,
                 ]);
             } catch (\Throwable $e) {

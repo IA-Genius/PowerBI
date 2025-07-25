@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { usePage, router } from "@inertiajs/vue3";
 import Swal from "sweetalert2";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
@@ -12,7 +12,49 @@ const pageProps = usePage().props;
 const selectedRows = ref([]);
 import DropdownLink from "@/Components/DropdownLink.vue";
 const search = ref("");
-const items = computed(() => pageProps.items || []);
+// Scroll infinito: items acumulados y control de página
+const items = ref([]);
+const currentPage = ref(1);
+const lastPage = ref(1);
+const isLoading = ref(false);
+const scrollContainer = ref(null);
+
+onMounted(() => {
+    inicializarItems();
+    if (success) {
+        Swal.fire({
+            toast: true,
+            icon: "success",
+            title: success,
+            position: "top-end",
+            timer: 2000,
+            showConfirmButton: false,
+        });
+    }
+});
+
+function inicializarItems() {
+    // pageProps.items es paginación de Laravel
+    items.value = pageProps.items?.data || [];
+    currentPage.value = pageProps.items?.current_page || 1;
+    lastPage.value = pageProps.items?.last_page || 1;
+}
+
+watch(
+    () => pageProps.items,
+    () => {
+        // Si es la primera página, reinicia
+        if ((pageProps.items?.current_page || 1) === 1) {
+            items.value = pageProps.items?.data || [];
+        } else {
+            // Si es otra página, acumula
+            items.value = [...items.value, ...(pageProps.items?.data || [])];
+        }
+        currentPage.value = pageProps.items?.current_page || 1;
+        lastPage.value = pageProps.items?.last_page || 1;
+    }
+);
+
 const success = pageProps.success;
 const canViewGlobal = pageProps.canViewGlobal;
 const can = usePage().props.can || {};
@@ -30,13 +72,15 @@ const asignacionTitulo = ref(null);
 
 const form = ref({
     nombre_cliente: "",
-    dni_nif_cif: "",
-    telefono_contacto: "",
-    direccion_instalacion: "",
-    operador_actual: "",
-    oferta_comercial: "",
-    observacion_smart: "",
-    tipificaciones: "",
+    dni_cliente: "",
+    telefono_principal: "",
+    telefono_adicional: "",
+    correo_referencia: "",
+    direccion_historico: "",
+    marca_base: "",
+    origen_motivo_cancelacion: "",
+    orden_trabajo_anterior: "",
+    observaciones: "",
 });
 
 onMounted(() => {
@@ -56,13 +100,16 @@ function abrirModalAgregar() {
     registroEditar.value = null;
     form.value = {
         nombre_cliente: "",
-        dni_nif_cif: "",
-        telefono_contacto: "",
-        direccion_instalacion: "",
-        operador_actual: "",
-        oferta_comercial: "",
-        observacion_smart: "",
-        tipificaciones: "",
+        dni_cliente: "",
+        telefono_principal: "",
+        telefono_adicional: "",
+        correo_referencia: "",
+        direccion_historico: "",
+        marca_base: "",
+        origen_motivo_cancelacion: "",
+        orden_trabajo_anterior: "",
+        observaciones: "",
+        trazabilidad: "pendiente",
     };
     showModal.value = true;
 }
@@ -144,13 +191,58 @@ function mostrarInfoUsuario(user) {
         icon: "info",
     });
 }
+// Función para scroll infinito
 
+import axios from "axios";
+function cargarSiguientePagina() {
+    if (isLoading.value || currentPage.value >= lastPage.value) return;
+    isLoading.value = true;
+    axios
+        .get(route("vodafone.page"), {
+            params: { page: currentPage.value + 1 },
+            headers: { "X-Requested-With": "XMLHttpRequest" },
+        })
+        .then((response) => {
+            let nuevaPagina = response.data.items;
+            if (
+                !nuevaPagina &&
+                response.data.props &&
+                response.data.props.items
+            ) {
+                nuevaPagina = response.data.props.items;
+            }
+            if (nuevaPagina?.data) {
+                // Solo agrega si la página recibida es la esperada
+                if (
+                    (nuevaPagina.current_page || currentPage.value + 1) ===
+                    currentPage.value + 1
+                ) {
+                    items.value = [...items.value, ...nuevaPagina.data];
+                    currentPage.value =
+                        nuevaPagina.current_page || currentPage.value + 1;
+                    lastPage.value = nuevaPagina.last_page || lastPage.value;
+                } else {
+                    // Si la API devuelve la página 1 por error, ignora para evitar duplicados y scroll arriba
+                    console.warn(
+                        "La API devolvió una página inesperada, ignorando para evitar scroll arriba."
+                    );
+                }
+            }
+        })
+        .catch((err) => {
+            console.error("Error al cargar más registros:", err);
+            isLoading.value = false;
+        })
+        .finally(() => {
+            isLoading.value = false;
+        });
+}
 console.log(pageProps);
 
 const showFiltro = ref(false);
 const filtrosActivos = ref({});
 
-const rawItems = computed(() => pageProps.items || []);
+const rawItems = computed(() => items.value);
 
 const filtrosDisponibles = computed(() => {
     const list = rawItems.value;
@@ -294,7 +386,7 @@ function asignarRegistros(form, close) {
                                     stroke-linecap="round"
                                     stroke-linejoin="round"
                                     stroke-width="2"
-                                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707l-6.414 6.414A1 1 0 0013 13v5a1 1 0 01-.553.894l-2 1A1 1 0 019 19v-6a1 1 0 00-.293-.707L2.293 6.707A1 1 0 012 6V4z"
+                                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707l-6.414 6.414A1 1 0 0013 13v5a1 1 0 01-.553.894l-2 1A1 1 0 009 19v-6a1 1 0 00-.293-.707L2.293 6.707A1 1 0 012 6V4z"
                                 />
                             </svg>
                             <span class="text-sm font-medium text-gray-700"
@@ -417,6 +509,8 @@ function asignarRegistros(form, close) {
         <div class="py-6">
             <div
                 class="overflow-x-auto rounded-xl border border-gray-100 bg-gray-50"
+                ref="scrollContainer"
+                style="max-height: 750px"
             >
                 <ExcelLikeGrid
                     :rows="filteredItems"
@@ -426,9 +520,14 @@ function asignarRegistros(form, close) {
                     v-model:selected="selectedRows"
                     @edit="abrirModalEditar"
                     @delete="eliminar"
+                    @loadMore="cargarSiguientePagina"
                 />
+                <div v-if="isLoading" class="text-center py-4 text-gray-500">
+                    Cargando más registros...
+                </div>
             </div>
         </div>
+        <!-- Modal DE AGREGAR -->
         <!-- Modal DE AGREGAR -->
         <ModalGestion
             :show="showModal"
@@ -447,7 +546,7 @@ function asignarRegistros(form, close) {
             <template #default="{ form: slotForm, errors }">
                 <InputField
                     class="modalInputs"
-                    label="Nombre Cliente"
+                    label="Nombre del Cliente"
                     v-model="slotForm.nombre_cliente"
                     name="nombre_cliente"
                     :error="errors.nombre_cliente"
@@ -456,61 +555,71 @@ function asignarRegistros(form, close) {
                 <div class="flex justify-between width-49">
                     <InputField
                         class="modalInputs"
-                        label="DNI / NIF / CIF"
-                        v-model="slotForm.dni_nif_cif"
-                        name="dni_nif_cif"
-                        :error="errors.dni_nif_cif"
-                        type="number"
+                        label="DNI Cliente"
+                        v-model="slotForm.dni_cliente"
+                        name="dni_cliente"
+                        :error="errors.dni_cliente"
                         required
                     />
                     <InputField
                         class="modalInputs"
-                        label="Teléfono"
-                        v-model="slotForm.telefono_contacto"
-                        name="telefono_contacto"
-                        type="number"
-                        required
-                        :error="errors.telefono_contacto"
+                        label="Teléfono Principal"
+                        v-model="slotForm.telefono_principal"
+                        name="telefono_principal"
+                        :error="errors.telefono_principal"
                     />
                 </div>
-                <InputField
-                    class="modalInputs"
-                    label="Dirección"
-                    v-model="slotForm.direccion_instalacion"
-                    name="direccion_instalacion"
-                    :error="errors.direccion_instalacion"
-                    required
-                />
-                <InputField
-                    class="modalInputs"
-                    label="Operador Actual"
-                    v-model="slotForm.operador_actual"
-                    name="operador_actual"
-                    :error="errors.operador_actual"
-                />
-                <InputField
-                    class="modalInputs"
-                    label="Oferta Comercial"
-                    v-model="slotForm.oferta_comercial"
-                    name="oferta_comercial"
-                    :error="errors.oferta_comercial"
-                />
                 <div class="flex justify-between width-49">
                     <InputField
                         class="modalInputs"
-                        label="Observación SMART"
-                        v-model="slotForm.observacion_smart"
-                        name="observacion_smart"
-                        :error="errors.observacion_smart"
+                        label="Teléfono Adicional"
+                        v-model="slotForm.telefono_adicional"
+                        name="telefono_adicional"
+                        :error="errors.telefono_adicional"
                     />
                     <InputField
                         class="modalInputs"
-                        label="Tipificaciones"
-                        v-model="slotForm.tipificaciones"
-                        name="tipificaciones"
-                        :error="errors.tipificaciones"
+                        label="Correo de Referencia"
+                        v-model="slotForm.correo_referencia"
+                        name="correo_referencia"
+                        :error="errors.correo_referencia"
                     />
                 </div>
+                <InputField
+                    class="modalInputs"
+                    label="Dirección Histórico"
+                    v-model="slotForm.direccion_historico"
+                    name="direccion_historico"
+                    :error="errors.direccion_historico"
+                />
+                <InputField
+                    class="modalInputs"
+                    label="Marca de la Base"
+                    v-model="slotForm.marca_base"
+                    name="marca_base"
+                    :error="errors.marca_base"
+                />
+                <InputField
+                    class="modalInputs"
+                    label="Origen Motivo Cancelación"
+                    v-model="slotForm.origen_motivo_cancelacion"
+                    name="origen_motivo_cancelacion"
+                    :error="errors.origen_motivo_cancelacion"
+                />
+                <InputField
+                    class="modalInputs"
+                    label="Orden Trabajo Anterior"
+                    v-model="slotForm.orden_trabajo_anterior"
+                    name="orden_trabajo_anterior"
+                    :error="errors.orden_trabajo_anterior"
+                />
+                <InputField
+                    class="modalInputs"
+                    label="Observaciones"
+                    v-model="slotForm.observaciones"
+                    name="observaciones"
+                    :error="errors.observaciones"
+                />
             </template>
         </ModalGestion>
 
