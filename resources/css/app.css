@@ -597,3 +597,45 @@ ICONOS
     width: 20px;
     height: 20px;
 }
+
+.ag-header-row.ag-header-row-column,
+.ag-header-viewport {
+    background-color: var(--colorPrincipal);
+    border: none !important;
+}
+.ag-header-row.ag-header-row-column *,
+.ag-header-viewport * {
+    color: #fff !important;
+    font-weight: 400;
+    font-size: 13px;
+}
+
+
+button.btnTablas {
+    position: relative;
+    bottom: -3px;
+    left: 2px;
+    border: none;
+    outline: none;
+    border-radius: 8px 8px 0 0 !important;
+    background: var(--colorPrincipal) !important;
+}
+button.btnTablas:hover {
+    background: var(--colorSecundario) !important;
+}
+.ag-row-odd {
+    background-color: #eef2ff;
+}
+
+div#myGrid *,
+.ag-root-wrapper.ag-layout-normal,
+.no-border {
+    border: none !important;
+    outline: none !important;
+}
+
+
+
+.ag-root-wrapper.ag-layout-normal {
+    max-height: 650px;
+}

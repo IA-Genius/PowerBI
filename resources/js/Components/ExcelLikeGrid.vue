@@ -1,8 +1,17 @@
 <template>
     <div>
-        <div class="mb-2 flex gap-2 flex-wrap">
-            <button @click="selectAll" class="btn">🔄 Seleccionar todo</button>
-            <button @click="clearSelection" class="btn">❌ Limpiar</button>
+        <div class="flex gap-2 flex-wrap" style="background-color: white; border: none;">
+            
+            <button @click="selectAll" class="btn bgPrincipal btnTablas flex gap-2 itens-center">
+                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Pro 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2025 Fonticons, Inc. --><path fill="currentColor" d="M64 64C46.3 64 32 78.3 32 96l0 320c0 17.7 14.3 32 32 32l320 0c17.7 0 32-14.3 32-32l0-320c0-17.7-14.3-32-32-32L64 64zM0 96C0 60.7 28.7 32 64 32l320 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96zM301.6 200.5l-80 128c-2.8 4.5-7.6 7.3-12.9 7.5s-10.3-2.2-13.5-6.4l-48-64c-5.3-7.1-3.9-17.1 3.2-22.4s17.1-3.9 22.4 3.2l34 45.3 67.6-108.2c4.7-7.5 14.6-9.8 22-5.1s9.8 14.6 5.1 22z"/></svg>
+                Seleccionar todo
+            </button>
+            
+            <button @click="clearSelection" class="btn bgPrincipal btnTablas flex gap-2 itens-center">
+                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--! Font Awesome Pro 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2025 Fonticons, Inc. --><path fill="currentColor" d="M605.7 45.7C608.8 42.6 608.8 37.5 605.7 34.4C602.6 31.3 597.5 31.3 594.4 34.4L378.4 250.4L354.2 226.2C334 206 302.8 201.6 277.9 215.5L48.4 342.9C38.3 348.5 32 359.2 32 370.8C32 379.2 35.4 387.4 41.3 393.3L246.7 598.7C252.7 604.7 260.8 608 269.3 608C280.9 608 291.6 601.7 297.2 591.6L424.6 362.2C438.5 337.2 434.1 306.1 413.9 285.9L389.7 261.7L605.7 45.7zM342.8 237.4L402.5 297.1C417.7 312.3 420.9 335.6 410.5 354.4L383.1 403.8L236.1 256.9L285.5 229.5C304.2 219.1 327.6 222.4 342.8 237.5zM221.6 264.9L375 418.4L283.1 583.8C280.3 588.9 275 592 269.2 592C265 592 260.9 590.3 257.9 587.3L128.9 458.3L189.6 397.6C192.7 394.5 192.7 389.4 189.6 386.3C186.5 383.2 181.4 383.2 178.3 386.3L117.6 447L52.6 382C49.6 379 47.9 375 47.9 370.7C47.9 364.9 51 359.6 56.1 356.8L221.5 264.9z"/></svg>
+                Limpiar
+            </button>
+
         </div>
 
         <div
@@ -144,7 +153,7 @@ function handleMouseMove(e) {
     const endRowIndex = node.rowIndex;
     selectRowRange(startRowIndex, endRowIndex, true);
 
-    const viewport = gridContainer.value.querySelector(".ag-body-viewport");
+    const viewport = gridContainer.value.querySelector(".ag-body-viewport no-border");
     if (!viewport) return;
 
     const viewportRect = viewport.getBoundingClientRect();
