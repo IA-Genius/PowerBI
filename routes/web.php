@@ -11,6 +11,7 @@ use App\Http\Controllers\CarterasController;
 use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\VodafoneController;
+use App\Http\Controllers\VodafoneImportController;
 
 // ===================
 // RUTA INICIAL
@@ -95,7 +96,10 @@ Route::middleware('auth')->group(function () {
     Route::middleware('can:vodafone.ver')->post('/vodafone/importar', [VodafoneController::class, 'import'])->name('vodafone.import');
     Route::post('/vodafone/asignar', [VodafoneController::class, 'asignar'])->name('vodafone.asignar');
     Route::get('/vodafone/page', [VodafoneController::class, 'fetchPage'])->name('vodafone.page');
-
+    Route::post('/vodafone/import', [VodafoneImportController::class, 'import'])->name('vodafone.import');
+    Route::post('/vodafone/preview', [VodafoneImportController::class, 'preview'])->name('vodafone.preview');
+    Route::post('/vodafone/importar-confirmado', [VodafoneImportController::class, 'importarConfirmado'])->name('vodafone.importarConfirmado');
+    Route::get('/vodafone/errores-log/{id}', [VodafoneImportController::class, 'obtenerErroresLog'])->name('vodafone.errores_log');
 });
 
 // ===================

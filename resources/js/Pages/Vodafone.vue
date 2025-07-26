@@ -1,75 +1,42 @@
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from "vue";
+// 1. Imports
+import { ref, computed, onMounted, watch } from "vue";
 import { usePage, router } from "@inertiajs/vue3";
 import Swal from "sweetalert2";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import ModalGestion from "@/Components/ModalGestion.vue";
 import InputField from "@/Components/InputField.vue";
-import Actions from "@/Components/Actions.vue";
 import Dropdown from "@/Components/Dropdown.vue";
-import ExcelLikeGrid from "@/Components/ExcelLikeGrid.vue";
-const pageProps = usePage().props;
-const selectedRows = ref([]);
+import FiltroFlotante from "@/Components/FiltroFlotante.vue";
 import DropdownLink from "@/Components/DropdownLink.vue";
-const search = ref("");
-// Scroll infinito: items acumulados y control de página
+import ModalImportacion from "@/Components/ModalImportacion.vue";
+import ExcelLikeGrid from "@/Components/ExcelLikeGrid.vue";
+
+// 2. Page Props & Permissions
+const pageProps = usePage().props;
+const success = pageProps.success;
+const canViewGlobal = pageProps.canViewGlobal;
+const can = usePage().props.can || {};
+const canDo = (key) => !!can[key];
+const usuariosAsignables = pageProps.usuariosAsignables || [];
+
+// 3. Main Data & State
 const items = ref([]);
+const selectedRows = ref([]);
 const currentPage = ref(1);
 const lastPage = ref(1);
 const isLoading = ref(false);
 const scrollContainer = ref(null);
 
-onMounted(() => {
-    inicializarItems();
-    if (success) {
-        Swal.fire({
-            toast: true,
-            icon: "success",
-            title: success,
-            position: "top-end",
-            timer: 2000,
-            showConfirmButton: false,
-        });
-    }
-});
-
-function inicializarItems() {
-    // pageProps.items es paginación de Laravel
-    items.value = pageProps.items?.data || [];
-    currentPage.value = pageProps.items?.current_page || 1;
-    lastPage.value = pageProps.items?.last_page || 1;
-}
-
-watch(
-    () => pageProps.items,
-    () => {
-        // Si es la primera página, reinicia
-        if ((pageProps.items?.current_page || 1) === 1) {
-            items.value = pageProps.items?.data || [];
-        } else {
-            // Si es otra página, acumula
-            items.value = [...items.value, ...(pageProps.items?.data || [])];
-        }
-        currentPage.value = pageProps.items?.current_page || 1;
-        lastPage.value = pageProps.items?.last_page || 1;
-    }
-);
-
-const success = pageProps.success;
-const canViewGlobal = pageProps.canViewGlobal;
-const can = usePage().props.can || {};
-const canDo = (key) => !!can[key];
-import FiltroFlotante from "@/Components/FiltroFlotante.vue";
-const usuariosAsignables = pageProps.usuariosAsignables || [];
+// 4. Modals State
 const showModal = ref(false);
 const registroEditar = ref(null);
-
 const showInportarModal = ref(false);
 const InportarTitulo = ref(null);
-
 const showAsignacionModal = ref(false);
 const asignacionTitulo = ref(null);
 
+// 5. Form Data
 const form = ref({
     nombre_cliente: "",
     dni_cliente: "",
@@ -83,19 +50,7 @@ const form = ref({
     observaciones: "",
 });
 
-onMounted(() => {
-    if (success) {
-        Swal.fire({
-            toast: true,
-            icon: "success",
-            title: success,
-            position: "top-end",
-            timer: 2000,
-            showConfirmButton: false,
-        });
-    }
-});
-
+// 6. Modal Functions
 function abrirModalAgregar() {
     registroEditar.value = null;
     form.value = {
@@ -113,32 +68,43 @@ function abrirModalAgregar() {
     };
     showModal.value = true;
 }
-
 function abrirModalInportar() {
     showInportarModal.value = true;
+    formImportar.value = {
+        archivo: null,
+        descripcion: "",
+    };
+    fileName.value = null;
+    excelFile.value = null;
+    allPreviewRows.value = [];
+    previewRows.value = [];
+    modoDuplicados.value = "omitir";
+    importStatus.value = "";
+    importError.value = "";
+    totalRegistros.value = 0;
+    totalDuplicados.value = 0;
+    totalNuevos.value = 0;
+    progress.value = 0;
+    showInportarModal.value = true;
 }
-
 function abrirModalAsignacion() {
     showAsignacionModal.value = true;
 }
-
 function abrirModalEditar(item) {
     registroEditar.value = item;
     form.value = { ...item };
     showModal.value = true;
 }
-
 function cerrarModal() {
     showModal.value = false;
     registroEditar.value = null;
-
     showInportarModal.value = false;
     InportarTitulo.value = null;
-
     showAsignacionModal.value = false;
     asignacionTitulo.value = null;
 }
 
+// 7. CRUD & Utility Functions
 function handleSuccess(msg) {
     Swal.fire({
         toast: true,
@@ -154,7 +120,6 @@ function handleSuccess(msg) {
         onFinish: cerrarModal,
     });
 }
-
 function eliminar(item) {
     Swal.fire({
         title: "¿Eliminar registro?",
@@ -181,7 +146,6 @@ function eliminar(item) {
         }
     });
 }
-
 function mostrarInfoUsuario(user) {
     Swal.fire({
         title: user.name,
@@ -191,9 +155,38 @@ function mostrarInfoUsuario(user) {
         icon: "info",
     });
 }
-// Función para scroll infinito
 
-import axios from "axios";
+// 8. Pagination
+function inicializarItems() {
+    items.value = pageProps.items?.data || [];
+    currentPage.value = pageProps.items?.current_page || 1;
+    lastPage.value = pageProps.items?.last_page || 1;
+}
+onMounted(() => {
+    inicializarItems();
+    if (success) {
+        Swal.fire({
+            toast: true,
+            icon: "success",
+            title: success,
+            position: "top-end",
+            timer: 2000,
+            showConfirmButton: false,
+        });
+    }
+});
+watch(
+    () => pageProps.items,
+    () => {
+        if ((pageProps.items?.current_page || 1) === 1) {
+            items.value = pageProps.items?.data || [];
+        } else {
+            items.value = [...items.value, ...(pageProps.items?.data || [])];
+        }
+        currentPage.value = pageProps.items?.current_page || 1;
+        lastPage.value = pageProps.items?.last_page || 1;
+    }
+);
 function cargarSiguientePagina() {
     if (isLoading.value || currentPage.value >= lastPage.value) return;
     isLoading.value = true;
@@ -212,7 +205,6 @@ function cargarSiguientePagina() {
                 nuevaPagina = response.data.props.items;
             }
             if (nuevaPagina?.data) {
-                // Solo agrega si la página recibida es la esperada
                 if (
                     (nuevaPagina.current_page || currentPage.value + 1) ===
                     currentPage.value + 1
@@ -221,11 +213,6 @@ function cargarSiguientePagina() {
                     currentPage.value =
                         nuevaPagina.current_page || currentPage.value + 1;
                     lastPage.value = nuevaPagina.last_page || lastPage.value;
-                } else {
-                    // Si la API devuelve la página 1 por error, ignora para evitar duplicados y scroll arriba
-                    console.warn(
-                        "La API devolvió una página inesperada, ignorando para evitar scroll arriba."
-                    );
                 }
             }
         })
@@ -237,16 +224,14 @@ function cargarSiguientePagina() {
             isLoading.value = false;
         });
 }
-console.log(pageProps);
 
+// 9. Filtros y Búsqueda
+const search = ref("");
 const showFiltro = ref(false);
 const filtrosActivos = ref({});
-
 const rawItems = computed(() => items.value);
-
 const filtrosDisponibles = computed(() => {
     const list = rawItems.value;
-
     return {
         operador_actual: [
             ...new Set(list.map((i) => i.operador_actual).filter(Boolean)),
@@ -264,12 +249,9 @@ const filtrosDisponibles = computed(() => {
             .sort((a, b) => a - b),
     };
 });
-
 const filteredItems = computed(() => {
     const term = filtrosActivos.value.search?.toLowerCase() || "";
     let data = [...rawItems.value];
-
-    // Filtro de texto
     if (term) {
         data = data.filter((item) =>
             [
@@ -281,78 +263,134 @@ const filteredItems = computed(() => {
             )
         );
     }
-
-    // Filtros exactos
     for (const [key, values] of Object.entries(filtrosActivos.value)) {
         if (key === "search") continue;
         if (!Array.isArray(values) || values.length === 0) continue;
-
         data = data.filter((item) => values.includes(item[key]));
     }
-
     return data;
 });
-
 function aplicarFiltros(f) {
     filtrosActivos.value = f;
 }
 
+// 10. Importación de Excel
 const excelFile = ref(null);
 const fileName = ref(null);
+const allPreviewRows = ref([]);
+const previewRows = ref([]);
+const modoDuplicados = ref("omitir");
+const importStatus = ref("");
+const importError = ref("");
+const totalRegistros = ref(0);
+const totalDuplicados = ref(0);
+const totalNuevos = ref(0);
+const formImportar = ref({
+    archivo: null,
+});
+const progress = ref(0);
 
 function handleFileUpload(event) {
     const file = event.target.files[0];
     if (file) {
         fileName.value = file.name;
         excelFile.value = file;
-        form.value.archivo = file;
+        formImportar.value.archivo = file;
+    }
+}
+watch(fileName, () => {
+    formImportar.value.archivo = excelFile.value;
+});
+
+async function importarArchivo(_, close) {
+    try {
+        importStatus.value = "Subiendo archivo...";
+        importError.value = "";
+        progress.value = 0; // Reinicia el progreso
+
+        const payload = new FormData();
+        const archivo = formImportar.value.archivo;
+
+        if (!(archivo instanceof File)) {
+            importError.value = "Debes seleccionar un archivo Excel válido.";
+            return;
+        }
+
+        payload.append("archivo", archivo);
+        payload.append("descripcion", formImportar.value.descripcion);
+
+        const response = await axios.post(route("vodafone.preview"), payload, {
+            headers: { "Content-Type": "multipart/form-data" },
+            onUploadProgress: (event) => {
+                if (event.lengthComputable) {
+                    progress.value = Math.round(
+                        (event.loaded * 100) / event.total
+                    );
+                }
+            },
+        });
+
+        if (response.data?.preview) {
+            const data = Array.isArray(response.data.preview)
+                ? response.data.preview
+                : Object.values(response.data.preview);
+
+            allPreviewRows.value = [...data];
+            previewRows.value = allPreviewRows.value.filter((r) => r.duplicado);
+
+            totalRegistros.value = allPreviewRows.value.length;
+            totalDuplicados.value = previewRows.value.length;
+            totalNuevos.value = allPreviewRows.value.filter(
+                (r) => !r.duplicado
+            ).length;
+
+            importStatus.value = `Se analizaron ${allPreviewRows.value.length} registros`;
+        } else {
+            importStatus.value = "No se recibieron datos para previsualizar";
+        }
+    } catch (error) {
+        importError.value =
+            error.response?.data?.message || "Error al importar archivo";
+    }
+}
+function confirmarImportacion() {
+    if (previewRows.value.length > 0) {
+        Swal.fire({
+            title: "Duplicados detectados",
+            text: "¿Qué deseas hacer con los registros duplicados?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Actualizar duplicados",
+            cancelButtonText: "Omitir duplicados",
+            reverseButtons: true,
+        }).then((result) => {
+            if (result.isConfirmed) {
+                modoDuplicados.value = "actualizar";
+            } else {
+                modoDuplicados.value = "omitir";
+            }
+            enviarImportacion();
+        });
+    } else {
+        modoDuplicados.value = "omitir";
+        enviarImportacion();
     }
 }
 
-function asignarRegistros(form, close) {
-    if (!form.asignado_a_id || selectedRows.value.length === 0) {
-        Swal.fire({
-            icon: "warning",
-            title: "Faltan datos",
-            text: "Debes seleccionar un filtrador y al menos un registro.",
-            toast: true,
-            position: "top-end",
-            timer: 2500,
-            showConfirmButton: false,
+function enviarImportacion() {
+    axios
+        .post(route("vodafone.importarConfirmado"), {
+            datos: allPreviewRows.value,
+            modo: modoDuplicados.value,
+            descripcion: formImportar.value.descripcion,
+        })
+        .then(() => {
+            handleSuccess("Importación realizada");
+        })
+        .catch((error) => {
+            importError.value =
+                error.response?.data?.message || "Error al importar";
         });
-        return;
-    }
-
-    const payload = {
-        ...form,
-        ids: selectedRows.value.map((row) => row.id),
-    };
-
-    router.post(route("vodafone.asignar"), payload, {
-        preserveScroll: true,
-        onSuccess: (page) => {
-            if (page.props?.success) {
-                Swal.fire({
-                    toast: true,
-                    icon: "success",
-                    title: page.props.success,
-                    position: "top-end",
-                    timer: 2000,
-                    showConfirmButton: false,
-                });
-            }
-
-            selectedRows.value = []; // Limpia la selección
-            close(); // Cierra modal
-            router.visit(route("vodafone.index"), {
-                preserveScroll: true,
-                only: ["items", "success"],
-            });
-        },
-        onError: (err) => {
-            console.error("Errores en asignación:", err);
-        },
-    });
 }
 </script>
 
@@ -510,7 +548,6 @@ function asignarRegistros(form, close) {
             <div
                 class="overflow-x-auto rounded-xl border border-gray-100 bg-gray-50"
                 ref="scrollContainer"
-                style="max-height: 750px"
             >
                 <ExcelLikeGrid
                     :rows="filteredItems"
@@ -622,55 +659,62 @@ function asignarRegistros(form, close) {
                 />
             </template>
         </ModalGestion>
-
         <!-- Modal DE INPORTAR -->
-        <ModalGestion
+
+        <ModalImportacion
             :show="showInportarModal"
-            :title="InportarTitulo ? 'Importar' : 'Importar nuevos Registros'"
+            title="Importar nuevos Registros"
             submitLabel="Importar"
-            :initialForm="form"
+            :initialForm="formImportar"
+            :previewRows="previewRows"
+            :allRows="allPreviewRows"
             :endpoint="route('vodafone.import')"
-            :method="'post'"
+            method="post"
             @close="cerrarModal"
-            @success="handleSuccess"
+            @submit="importarArchivo"
+            @confirmar="confirmarImportacion"
         >
             <template #default="{ form: slotForm, errors }">
-                <div class="space-y-6">
-                    <!-- Descripción -->
-                    <InputField
-                        class="modalInputs"
-                        label="Descripción de la Carga"
-                        name="descripcion"
-                        :error="errors.descripcion"
-                        required
-                    />
-
-                    <!-- Subida de archivo -->
+                <div class="space-y-8 text-sm text-gray-700">
+                    <!-- Card de subida de archivo y estado -->
                     <div
-                        class="bg-gray-50 border border-gray-200 p-4 rounded-xl shadow-sm"
+                        class="bg-white border border-gray-200 p-4 rounded-xl shadow-sm animate__animated animate__fadeIn space-y-3"
                     >
-                        <h2 class="text-base font-semibold mb-2 text-gray-700">
-                            Subir archivo Excel
-                        </h2>
+                        <!-- Campo de descripción -->
+                        <InputField
+                            class="modalInputs"
+                            label="Descripción de la carga"
+                            v-model="slotForm.descripcion"
+                            name="descripcion"
+                            :error="errors.descripcion"
+                            required
+                        />
+
+                        <!-- Carga de archivo -->
                         <label
-                            class="flex items-center gap-3 cursor-pointer text-[var(--colorPrincipal)] hover:text-blue-700 transition"
+                            class="flex items-center justify-between gap-3 cursor-pointer font-medium px-4 py-2 rounded-lg border bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 hover:text-indigo-900 relative transition"
                         >
-                            <!-- Ícono -->
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                class="w-6 h-6"
-                                viewBox="0 0 24 24"
-                                fill="currentColor"
-                            >
-                                <path
-                                    d="M12 16c.55 0 1-.45 1-1V9.83l1.59 1.59L16 10l-4-4-4 4 1.41 1.41L11 9.83V15c0 .55.45 1 1 1zm6-10H6c-1.1 0-2 .9-2 2v12c0 
-                            1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 
-                            14H6V8h12v12z"
-                                />
-                            </svg>
-                            <span class="font-medium"
-                                >Seleccionar archivo Excel (.xlsx)</span
-                            >
+                            <div class="flex items-center gap-2">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="w-5 h-5 transition-transform duration-300"
+                                    :class="'text-indigo-500'"
+                                    fill="currentColor"
+                                    viewBox="0 0 640 640"
+                                >
+                                    <path
+                                        d="M336 118.6V400c0 8.8-7.2 16-16 16s-16-7.2-16-16V118.6l-84.7 84.7c-6.2 6.2-16.4 6.2-22.6 0s-6.2-16.4 0-22.6l112-112c6.2-6.2 16.4-6.2 22.6 0l112 112c6.2 6.2 6.2 16.4 0 22.6s-16.4 6.2-22.6 0L336 118.6zM256 384h-96c-17.7 0-32 14.3-32 32v64c0 17.7 14.3 32 32 32h320c17.7 0 32-14.3 32-32v-64c0-17.7-14.3-32-32-32h-96v-32h96c35.3 0 64 28.7 64 64v64c0 35.3-28.7 64-64 64H160c-35.3 0-64-28.7-64-64v-64c0-35.3 28.7-64 64-64h96v32z"
+                                    />
+                                </svg>
+                                <span class="text-sm">
+                                    {{
+                                        fileName
+                                            ? "Archivo seleccionado"
+                                            : "Seleccionar archivo Excel (.xlsx)"
+                                    }}
+                                </span>
+                            </div>
+
                             <input
                                 type="file"
                                 name="archivo"
@@ -678,44 +722,186 @@ function asignarRegistros(form, close) {
                                 @change="handleFileUpload"
                                 accept=".xlsx, .xls"
                             />
+
+                            <!-- Mostrar nombre y botón quitar -->
+                            <transition name="fade">
+                                <div
+                                    v-if="fileName"
+                                    class="text-xs font-semibold animate__animated animate__fadeInRight flex items-center gap-2"
+                                >
+                                    {{ fileName }}
+                                    <button
+                                        type="button"
+                                        class="px-2 py-0.5 bg-orange-100 text-red-600 rounded hover:bg-orange-200 transition text-xs"
+                                        @click.stop.prevent="
+                                            fileName = null;
+                                            excelFile = null;
+                                            formImportar.value.archivo = null;
+                                        "
+                                    >
+                                        Quitar
+                                    </button>
+                                </div>
+                            </transition>
                         </label>
-                        <p v-if="fileName" class="text-sm mt-2 text-gray-500">
-                            Archivo seleccionado:
-                            <strong>{{ fileName }}</strong>
-                        </p>
+
+                        <!-- Progreso -->
+                        <transition name="fade">
+                            <div
+                                v-if="importStatus || importError"
+                                class="pt-2"
+                            >
+                                <p
+                                    v-if="importError"
+                                    class="text-sm text-red-600 animate__animated animate__shakeX"
+                                >
+                                    {{ importError }}
+                                </p>
+                                <div
+                                    v-if="importStatus"
+                                    class="flex items-center gap-2"
+                                >
+                                    <div
+                                        class="w-full bg-gray-200 rounded-full h-3 overflow-hidden"
+                                    >
+                                        <div
+                                            class="bg-gradient-to-r from-indigo-400 to-indigo-700 h-3 transition-all duration-500"
+                                            :style="{ width: progress + '%' }"
+                                        ></div>
+                                    </div>
+                                    <span
+                                        class="text-xs font-semibold text-indigo-700 w-10 text-right"
+                                    >
+                                        {{ progress }}%
+                                    </span>
+                                </div>
+                            </div>
+                        </transition>
                     </div>
 
-                    <!-- Descarga plantilla -->
-                    <div
-                        class="bg-gray-50 border border-gray-200 p-4 rounded-xl shadow-sm"
-                    >
-                        <h2 class="text-base font-semibold mb-2 text-gray-700">
-                            Plantilla de ejemplo
-                        </h2>
-                        <a
-                            href="ruta/al/archivo.xlsx"
-                            download="plantilla-vodafone.xlsx"
-                            class="inline-flex items-center gap-2 text-[var(--colorPrincipal)] hover:text-blue-700 transition"
+                    <!-- Previsualización de duplicados -->
+                    <transition name="fade">
+                        <div
+                            v-if="previewRows.length > 0"
+                            class="mt-4 animate__animated animate__fadeInUp"
                         >
-                            <svg
-                                class="w-5 h-5"
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 448 512"
-                                fill="currentColor"
+                            <div
+                                class="overflow-x-auto border rounded-xl shadow-sm"
                             >
-                                <path
-                                    d="M416 176c0 8.8 7.2 16 16 16s16-7.2 16-16l0-80c0-53-43-96-96-96L96 0C43 0 0 43 0 96l0 80c0 8.8 7.2 16 16 16s16-7.2 16-16l0-80c0-35.3 
-                            28.7-64 64-64l256 0c35.3 0 64 28.7 64 64l0 80zM212.7 507.3c6.2 6.2 16.4 6.2 22.6 0l144-144c6.2-6.2 6.2-16.4 
-                            0-22.6s-16.4-6.2-22.6 0L240 457.4 240 176c0-8.8-7.2-16-16-16s-16 7.2-16 
-                            16l0 281.4-116.7-116.7c-6.2-6.2-16.4-6.2-22.6 0s-6.2 16.4 0 22.6l144 144z"
-                                />
-                            </svg>
-                            Descargar plantilla de Excel
-                        </a>
-                    </div>
+                                <table
+                                    class="min-w-full text-xs text-left text-gray-700"
+                                >
+                                    <thead
+                                        class="bg-indigo-50 sticky top-0 z-10"
+                                    >
+                                        <tr>
+                                            <th class="px-3 py-2">#</th>
+                                            <th class="px-3 py-2">Nombre</th>
+                                            <th class="px-3 py-2">DNI</th>
+                                            <th class="px-3 py-2">Teléfono</th>
+                                            <th class="px-3 py-2">
+                                                ¿Duplicado?
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr
+                                            v-for="row in previewRows"
+                                            :key="row.index"
+                                            :class="
+                                                row.duplicado
+                                                    ? 'bg-yellow-50 animate__animated animate__flash'
+                                                    : 'bg-green-50'
+                                            "
+                                            class="border-b border-gray-100"
+                                        >
+                                            <td class="px-3 py-2">
+                                                {{ row.index }}
+                                            </td>
+                                            <td class="px-3 py-2">
+                                                {{ row.nombre_cliente }}
+                                            </td>
+                                            <td class="px-3 py-2">
+                                                {{ row.dni_cliente }}
+                                            </td>
+                                            <td class="px-3 py-2">
+                                                {{ row.telefono_principal }}
+                                            </td>
+                                            <td
+                                                class="px-3 py-2 font-semibold"
+                                                :class="
+                                                    row.duplicado
+                                                        ? 'text-red-600'
+                                                        : 'text-green-600'
+                                                "
+                                            >
+                                                {{
+                                                    row.duplicado ? "Sí" : "No"
+                                                }}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </transition>
+
+                    <!-- Resumen y opciones -->
+                    <transition name="fade">
+                        <div
+                            v-if="totalRegistros > 0"
+                            class="mt-6 flex flex-wrap items-center gap-6 bg-indigo-50 rounded-xl p-4 border animate__animated animate__fadeIn"
+                        >
+                            <div class="flex gap-6 flex-wrap">
+                                <span
+                                    class="text-green-700 font-medium flex items-center gap-2"
+                                >
+                                    <svg
+                                        class="inline w-4 h-4"
+                                        fill="currentColor"
+                                        viewBox="0 0 20 20"
+                                    >
+                                        <path
+                                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11H9v2h2V7zm0 4H9v2h2v-2z"
+                                        />
+                                    </svg>
+                                    Nuevos: {{ totalNuevos }}
+                                </span>
+                                <span
+                                    class="text-yellow-700 font-medium flex items-center gap-2"
+                                >
+                                    <svg
+                                        class="inline w-4 h-4"
+                                        fill="currentColor"
+                                        viewBox="0 0 20 20"
+                                    >
+                                        <path
+                                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11H9v2h2V7zm0 4H9v2h2v-2z"
+                                        />
+                                    </svg>
+                                    Duplicados: {{ totalDuplicados }}
+                                </span>
+                                <span
+                                    class="text-gray-700 font-medium flex items-center gap-2"
+                                >
+                                    <svg
+                                        class="inline w-4 h-4"
+                                        fill="currentColor"
+                                        viewBox="0 0 20 20"
+                                    >
+                                        <path
+                                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11H9v2h2V7zm0 4H9v2h2v-2z"
+                                        />
+                                    </svg>
+                                    Total: {{ totalRegistros }}
+                                </span>
+                            </div>
+                        </div>
+                    </transition>
                 </div>
             </template>
-        </ModalGestion>
+        </ModalImportacion>
+
         <!-- Modal DE ASIGNACION -->
         <ModalGestion
             :show="showAsignacionModal"

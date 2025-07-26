@@ -20,59 +20,74 @@ class VodafoneImport implements ToCollection
             'total_filas' => $rows->count(),
         ]);
 
-        // Crear log de importación
         $upload = LogImportacionVodafone::create([
             'user_id' => $user->id,
             'nombre_archivo' => 'Import manual',
             'cantidad_registros' => $rows->count() - 1,
         ]);
 
-        Log::debug('🗂 Log de importación creado', [
-            'upload_id' => $upload->id,
-        ]);
+        $errores = [];
 
         foreach ($rows as $index => $row) {
-            if ($index === 0) {
-                Log::debug('🔼 Encabezado detectado (fila 0), saltando');
+            if ($index === 0) continue;
+
+            $dni = $row[3] ?? null;
+            $telefono = $row[5] ?? null;
+
+            $existe = Vodafone::where('dni_cliente', $dni)
+                ->orWhere('telefono_principal', $telefono)
+                ->exists();
+
+            if ($existe) {
+                Log::warning("⚠️ Registro duplicado en fila {$index}", [
+                    'dni_cliente' => $dni,
+                    'telefono_principal' => $telefono,
+                ]);
+                $errores[] = "Fila {$index}: Duplicado (DNI: {$dni}, Tel: {$telefono})";
                 continue;
             }
 
             try {
-                $registro = Vodafone::create([
+                Vodafone::create([
                     'user_id' => $user->id,
                     'upload_id' => $upload->id,
                     'trazabilidad' => 'pendiente',
                     'marca_base' => $row[0] ?? null,
                     'origen_motivo_cancelacion' => $row[1] ?? null,
                     'nombre_cliente' => $row[2] ?? null,
-                    'dni_cliente' => $row[3] ?? null,
+                    'dni_cliente' => $dni,
                     'orden_trabajo_anterior' => $row[4] ?? null,
-                    'telefono_principal' => $row[5] ?? null,
+                    'telefono_principal' => $telefono,
                     'telefono_adicional' => $row[6] ?? null,
                     'correo_referencia' => $row[7] ?? null,
                     'direccion_historico' => $row[8] ?? null,
                     'observaciones' => $row[9] ?? null,
-                    // Si tienes asignado_a_id en el archivo, puedes agregarlo aquí:
-                    // 'asignado_a_id' => $row[10] ?? null,
                 ]);
 
                 Log::debug("✅ Fila importada (index {$index})", [
-                    'id' => $registro->id,
-                    'dni_cliente' => $registro->dni_cliente,
-                    'nombre_cliente' => $registro->nombre_cliente,
+                    'dni_cliente' => $dni,
+                    'nombre_cliente' => $row[2] ?? null,
                 ]);
             } catch (\Throwable $e) {
-                Log::error("❌ Error importando fila {$index}", [
-                    'row_data' => $row,
+                Log::error("❌ Error en fila {$index}", [
+                    'row' => $row,
                     'error' => $e->getMessage(),
                 ]);
+                $errores[] = "Fila {$index}: Error - " . $e->getMessage();
             }
         }
 
-        Log::debug('🏁 Importación finalizada correctamente', [
-            'total_importados' => $rows->count() - 1,
+        if (count($errores)) {
+            $upload->errores_json = $errores;
+            $upload->save();
+        }
+
+        Log::debug('🏁 Importación finalizada', [
+            'importados' => $rows->count() - 1 - count($errores),
+            'con_errores' => count($errores),
         ]);
     }
+
 
     protected function parseDate($value)
     {

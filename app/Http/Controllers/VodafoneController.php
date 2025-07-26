@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\VodafoneImport;
+use App\Models\LogImportacionVodafone;
 
 class VodafoneController extends Controller
 {
@@ -26,7 +27,7 @@ class VodafoneController extends Controller
             $query->where('user_id', $user->id);
         }
 
-        $items = $query->orderBy('id')->paginate(50); 
+        $items = $query->orderBy('id')->paginate(50);
 
         $usuariosAsignables = User::permission('vodafone.recibe-asignacion')
             ->select('id', 'name')
@@ -42,7 +43,7 @@ class VodafoneController extends Controller
     }
     public function fetchPage(Request $request)
     {
-       /** @var \App\Models\User $user */
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
 
@@ -52,7 +53,7 @@ class VodafoneController extends Controller
             $query->where('user_id', $user->id);
         }
 
-        $items = $query->orderBy('id')->paginate(50);
+        $items = $query->orderBy('id')->paginate(150);
 
         return response()->json([
             'items' => $items
@@ -87,48 +88,6 @@ class VodafoneController extends Controller
         return redirect()->back()->with('success', "{$cantidad} registro(s) asignado(s) correctamente.");
     }
 
-
-    public function import(Request $request)
-    {
-        $request->validate([
-            'archivo' => 'required|file|mimes:xlsx,csv',
-        ]);
-
-        Log::debug('\ud83d\udcc2 Archivo recibido', [
-            'nombre' => $request->file('archivo')->getClientOriginalName(),
-            'mime' => $request->file('archivo')->getMimeType(),
-        ]);
-
-        $user = $request->user();
-        $file = $request->file('archivo');
-        $nombreArchivo = $file->getClientOriginalName();
-
-        Log::info('\ud83d\udce5 Importaci\u00f3n iniciada desde el formulario', [
-            'user_id' => $user->id,
-            'usuario' => $user->name,
-            'archivo' => $nombreArchivo,
-            'ip' => $request->ip(),
-        ]);
-
-        try {
-            Excel::import(new VodafoneImport, $file);
-
-            Log::info('\u2705 Importaci\u00f3n completada correctamente', [
-                'archivo' => $nombreArchivo,
-                'user_id' => $user->id,
-            ]);
-
-            return redirect()->back()->with('success', 'Importaci\u00f3n completada correctamente.');
-        } catch (\Throwable $e) {
-            Log::error('\u274c Error durante importaci\u00f3n', [
-                'error' => $e->getMessage(),
-                'archivo' => $nombreArchivo,
-                'user_id' => $user->id,
-            ]);
-
-            return redirect()->back()->with('error', 'Ocurri\u00f3 un error al importar el archivo.');
-        }
-    }
 
     public function store(Request $request)
     {
