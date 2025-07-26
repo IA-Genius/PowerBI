@@ -88,8 +88,19 @@ function abrirModalInportar() {
     showInportarModal.value = true;
 }
 function abrirModalAsignacion() {
+    if (selectedRows.value.length === 0) {
+        Swal.fire({
+            icon: "warning",
+            title: "Ningún registro seleccionado",
+            text: "Por favor selecciona al menos un registro para asignar.",
+            confirmButtonText: "Entendido",
+        });
+        return;
+    }
+
     showAsignacionModal.value = true;
 }
+
 function abrirModalEditar(item) {
     registroEditar.value = item;
     form.value = { ...item };
@@ -175,6 +186,7 @@ onMounted(() => {
         });
     }
 });
+
 watch(
     () => pageProps.items,
     () => {
@@ -270,6 +282,7 @@ const filteredItems = computed(() => {
     }
     return data;
 });
+
 function aplicarFiltros(f) {
     filtrosActivos.value = f;
 }

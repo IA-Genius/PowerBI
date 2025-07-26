@@ -107,14 +107,6 @@ const columnDefs = [
     { field: "correo_referencia", headerName: "Correo de Referencia" },
     { field: "direccion_historico", headerName: "Dirección Histórico" },
     { field: "observaciones", headerName: "Observaciones" },
-
-    // Auditoría
-    {
-        field: "updated_at",
-        headerName: "Última Modificación",
-        valueFormatter: (p) =>
-            p.value ? new Date(p.value).toLocaleString() : "—",
-    },
 ];
 
 if (props.canViewGlobal) {
@@ -128,7 +120,6 @@ columnDefs.push({
     headerName: "Acciones",
     field: "acciones",
     pinned: "right",
-    width: 120,
     cellRenderer: (params) => {
         const container = document.createElement("div");
         container.className = "flex items-center justify-center gap-1 h-full";
@@ -144,6 +135,7 @@ columnDefs.push({
         return container;
     },
 });
+
 const defaultColDef = {
     resizable: true,
     flex: 1,
@@ -233,28 +225,38 @@ function selectRowRange(start, end, additive = false) {
 }
 
 // ===== WATCHERS Y REACTIVIDAD =====
+const rowDataInternal = ref([]);
+
 watch(
     () => props.rows,
-    (newRows, oldRows) => {
-        if (gridApi) {
-            const viewport =
-                gridContainer.value?.querySelector(".ag-body-viewport");
-            let prevScrollTop = viewport ? viewport.scrollTop : null;
-            // Si no hay datos, muestra un loader en el grid
-            if (!newRows || newRows.length === 0) {
-                gridApi.setGridOption("rowData", []);
-                gridApi.showLoadingOverlay();
-            } else {
-                gridApi.setGridOption("rowData", newRows);
-                gridApi.hideOverlay();
-                // Restaurar scroll si se estaba abajo
-                if (viewport && prevScrollTop !== null) {
-                    nextTick(() => {
-                        viewport.scrollTop = prevScrollTop;
-                    });
-                }
-            }
+    async (newRows) => {
+        if (!gridApi || !Array.isArray(newRows)) return;
+
+        // Detectar si son nuevos (scroll infinito o reemplazo)
+        const isAppending =
+            newRows.length > rowDataInternal.value.length &&
+            rowDataInternal.value.length > 0 &&
+            newRows
+                .slice(0, rowDataInternal.value.length)
+                .every((item, i) => item.id === rowDataInternal.value[i].id);
+
+        if (!newRows || newRows.length === 0) {
+            rowDataInternal.value = [];
+            gridApi.setGridOption("rowData", []);
+            gridApi.showLoadingOverlay();
+        } else if (isAppending) {
+            const added = newRows.slice(rowDataInternal.value.length);
+            rowDataInternal.value = [...rowDataInternal.value, ...added];
+            gridApi.applyTransaction({ add: added });
+        } else {
+            // Reemplazo completo (filtro nuevo, búsqueda, etc.)
+            rowDataInternal.value = [...newRows];
+            gridApi.setGridOption("rowData", newRows);
         }
+
+        await nextTick();
+        gridApi.hideOverlay();
+        gridApi.refreshCells();
     },
     { immediate: true }
 );
@@ -269,15 +271,25 @@ onMounted(() => {
         defaultColDef,
         rowSelection: "multiple",
         suppressRowClickSelection: false,
-
+        rowHeight: 37,
+        headerHeight: 35,
         enableRangeSelection: false,
         animateRows: true,
         suppressCellFocus: true,
         onGridReady: (params) => {
             gridApi = params.api;
-            gridApi.sizeColumnsToFit();
+
+            gridApi.sizeColumnsToFit(); // ← si lo deseas, pero lo puedes quitar
             gridApi.addEventListener("selectionChanged", emitSelectedRows);
-            // Muestra loader si no hay datos al inicio
+
+            // Autoajustar columnas
+            const allColumnIds = [];
+            params.columnApi.getAllColumns().forEach((column) => {
+                allColumnIds.push(column.getId());
+            });
+            params.columnApi.autoSizeColumns(allColumnIds, false);
+
+            // Mostrar loading si no hay datos
             if (!props.rows || props.rows.length === 0) {
                 gridApi.showLoadingOverlay();
             }
@@ -335,12 +347,11 @@ function clearSelection() {
 .btn:hover {
     background-color: #0056b3;
 }
-
 .ag-theme-alpine {
+    min-height: 700px;
     font-size: 13px;
     --ag-header-background-color: #f8f9fa;
     --ag-header-foreground-color: #333;
-    --ag-selected-row-background-color: #e3f2fd;
-    /* height: 100%;  <-- ELIMINADO para scroll infinito */
+    --ag-selected-row-background-color: #ffcc99; /* ← naranja suave */
 }
 </style>

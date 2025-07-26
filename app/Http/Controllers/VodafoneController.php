@@ -27,7 +27,7 @@ class VodafoneController extends Controller
             $query->where('user_id', $user->id);
         }
 
-        $items = $query->orderBy('id')->paginate(50);
+        $items = $query->orderBy('id')->paginate(1000);
 
         $usuariosAsignables = User::permission('vodafone.recibe-asignacion')
             ->select('id', 'name')
@@ -41,6 +41,7 @@ class VodafoneController extends Controller
             'usuariosAsignables' => $usuariosAsignables,
         ]);
     }
+
     public function fetchPage(Request $request)
     {
         /** @var \App\Models\User $user */
@@ -53,7 +54,7 @@ class VodafoneController extends Controller
             $query->where('user_id', $user->id);
         }
 
-        $items = $query->orderBy('id')->paginate(150);
+        $items = $query->orderBy('id')->paginate(1000);
 
         return response()->json([
             'items' => $items

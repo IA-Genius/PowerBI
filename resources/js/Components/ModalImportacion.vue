@@ -72,7 +72,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, watchEffect, computed } from "vue";
+import { reactive, ref, watchEffect, computed, watch } from "vue";
 
 const props = defineProps({
     show: Boolean,
@@ -80,7 +80,7 @@ const props = defineProps({
     submitLabel: String,
     initialForm: Object,
     previewRows: Array,
-    allRows: Array, // <-- nueva prop
+    allRows: Array,
 });
 
 const emit = defineEmits(["close", "submit", "confirmar"]);
