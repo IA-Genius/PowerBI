@@ -12,9 +12,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // Aquí verás tu tarea actual
         $schedule->command('vodafone:agendar-incompletos')
-            ->everyMinute()
+            ->dailyAt('18:46')
             ->appendOutputTo(storage_path('logs/schedule.log'));
     }
 
