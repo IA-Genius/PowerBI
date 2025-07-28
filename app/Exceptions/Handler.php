@@ -31,8 +31,10 @@ class Handler extends ExceptionHandler
         }
 
         // Si está autenticado pero no tiene permisos
-        if ($exception instanceof AuthorizationException ||
-            ($exception instanceof HttpException && $exception->getStatusCode() === 403)) {
+        if (
+            $exception instanceof AuthorizationException ||
+            ($exception instanceof HttpException && $exception->getStatusCode() === 403)
+        ) {
 
             // Si es petición Inertia (frontend Inertia.js)
             if ($request->header('X-Inertia')) {

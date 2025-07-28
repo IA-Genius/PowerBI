@@ -40,16 +40,42 @@
                             >
                                 Cancelar
                             </button>
+
                             <button
                                 type="submit"
-                                class="px-5 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow hover:scale-105 transition-transform"
+                                :disabled="props.loading"
+                                :class="[
+                                    'px-5 py-2 rounded-lg font-semibold shadow transition flex items-center gap-2',
+                                    props.loading
+                                        ? 'bg-gray-400 cursor-not-allowed text-gray-700'
+                                        : 'bg-indigo-600 hover:bg-indigo-700 text-white',
+                                ]"
                             >
-                                {{ submitLabel }}
+                                <span
+                                    v-if="props.loading"
+                                    class="loader"
+                                ></span>
+                                <span v-else>{{
+                                    submitLabel || "Guardar"
+                                }}</span>
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
+        </div>
+    </transition>
+
+    <!-- Overlay de carga -->
+    <transition name="fade">
+        <div
+            v-if="props.loading"
+            class="absolute inset-0 z-30 flex items-center justify-center bg-black bg-opacity-30"
+        >
+            <span class="loader-big"></span>
+            <span class="ml-3 text-white font-semibold"
+                >Asignando registros...</span
+            >
         </div>
     </transition>
 </template>
@@ -69,9 +95,13 @@ const props = defineProps({
         type: Function,
         default: (form) => form,
     },
+    loading: {
+        type: Boolean,
+        default: false,
+    },
 });
 
-const emit = defineEmits(["close", "success"]);
+const emit = defineEmits(["close", "success", "submit"]);
 
 const form = reactive({});
 const errors = ref({});
@@ -87,6 +117,7 @@ function handleSubmit() {
     errors.value = {};
 
     const data = props.transform(form);
+    emit("submit", data); // puedes capturarlo en el padre si deseas
 
     const hasFile = Object.values(data).some((v) => v instanceof File);
 
@@ -103,7 +134,9 @@ function handleSubmit() {
                     emit("success", page.props.success);
                 }
             },
-            onError: (err) => (errors.value = err),
+            onError: (err) => {
+                errors.value = err;
+            },
         });
     } else {
         router[props.method](props.endpoint, data, {
@@ -112,8 +145,38 @@ function handleSubmit() {
                     emit("success", page.props.success);
                 }
             },
-            onError: (err) => (errors.value = err),
+            onError: (err) => {
+                errors.value = err;
+            },
         });
     }
 }
 </script>
+
+<style scoped>
+.loader-big {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #6366f1;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+}
+.loader {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #6366f1;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+</style>

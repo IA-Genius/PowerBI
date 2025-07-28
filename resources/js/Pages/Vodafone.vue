@@ -34,6 +34,7 @@ const currentPage = ref(1);
 const lastPage = ref(1);
 const isLoading = ref(false);
 const scrollContainer = ref(null);
+const isLoadingAsignacion = ref(false);
 
 // =======================
 // 4. MODALES
@@ -112,6 +113,11 @@ function abrirModalAsignacion() {
     }
     showAsignacionModal.value = true;
 }
+
+onMounted(() => {
+    inicializarItems();
+    console.log("Items recibidos:", items.value); // <-- Así ves el array real
+});
 function abrirModalEditar(item) {
     registroEditar.value = item;
     form.value = { ...item };
@@ -138,9 +144,9 @@ function handleSuccess(msg) {
         timer: 2000,
         showConfirmButton: false,
     });
+    cerrarModal();
     router.visit(route("vodafone.index"), {
         only: ["items", "success"],
-        onFinish: cerrarModal,
     });
 }
 function eliminar(item) {
@@ -216,21 +222,10 @@ const search = ref("");
 const showFiltro = ref(false);
 const fechaDesde = ref(pageProps.fechaDesde || "");
 const fechaHasta = ref(pageProps.fechaHasta || "");
-const filtrosActivos = ref({
-    trazabilidad: ["pendiente"],
-});
 
-function aplicarFiltroFecha() {
-    router.visit(route("vodafone.index"), {
-        method: "get",
-        data: {
-            fecha_desde: fechaDesde.value,
-            fecha_hasta: fechaHasta.value,
-        },
-        preserveScroll: true,
-        only: ["items", "success", "fechaDesde", "fechaHasta"],
-    });
-}
+const filtrosActivos = ref({
+    trazabilidad: canDo("vodafone.asignar") ? ["pendiente"] : [],
+});
 
 const rawItems = computed(() => items.value);
 
@@ -269,7 +264,7 @@ const filteredItems = computed(() => {
             [
                 item.nombre_cliente,
                 item.dni_cliente,
-                item.telefono_contacto,
+                item.telefono_principal,
             ].some((field) =>
                 (field || "").toString().toLowerCase().includes(term)
             )
@@ -403,18 +398,15 @@ function confirmarImportacion() {
             cancelButtonText: "Omitir duplicados",
             reverseButtons: true,
         }).then((result) => {
-            if (result.isConfirmed) {
-                modoDuplicados.value = "actualizar";
-            } else {
-                modoDuplicados.value = "omitir";
-            }
+            modoDuplicados.value = result.isConfirmed ? "actualizar" : "omitir";
             enviarImportacion();
         });
     } else {
-        modoDuplicados.value = "omitir";
+        modoDuplicados.value = null;
         enviarImportacion();
     }
 }
+
 async function enviarImportacion() {
     const datosAEnviar = Array.isArray(allPreviewRows.value)
         ? allPreviewRows.value
@@ -444,24 +436,119 @@ async function enviarImportacion() {
 
 async function esperarImportacion(logId) {
     let intentos = 0;
-    while (intentos < 30) {
+    const maxIntentos = 60; // espera hasta 60 segundos
+    while (intentos < maxIntentos) {
         intentos++;
         try {
             const resp = await axios.get(
                 route("vodafone.obtenerErroresLog", logId)
             );
-            if (resp.data && resp.data.errores !== undefined) {
+            const estado = resp.data.estado;
+            const errores = resp.data.errores ?? [];
+
+            if (estado === "finalizado") {
                 importando.value = false;
                 importStatus.value = "";
-                handleSuccess("Importación realizada");
+                if (errores.length) {
+                    importError.value = "Importación completada con errores.";
+                    console.warn("Errores de importación:", errores);
+                } else {
+                    handleSuccess("Importación realizada correctamente.");
+                }
                 return;
+            } else if (estado === "procesando") {
+                importStatus.value = "Procesando registros...";
+            } else {
+                importStatus.value =
+                    "Esperando a que inicie el procesamiento...";
             }
-        } catch (e) {}
-        await new Promise((r) => setTimeout(r, 1000)); // espera 1 segundo
+        } catch (e) {
+            console.warn("Error verificando estado:", e);
+        }
+
+        await new Promise((r) => setTimeout(r, 1000)); // Espera 1s
     }
+
     importando.value = false;
     importStatus.value = "";
     importError.value = "La importación está tardando demasiado.";
+}
+
+const columnasGrid = computed(() => {
+    if (canDo("vodafone.asignar")) {
+        return [
+            "id",
+            "upload_id",
+            "created_at_formatted",
+            "trazabilidad",
+            "asignado_a",
+            "marca_base",
+            "origen_motivo_cancelacion",
+            "nombre_cliente",
+            "dni_cliente",
+            "orden_trabajo_anterior",
+            "telefono_principal",
+            "telefono_adicional",
+            "correo_referencia",
+            "direccion_historico",
+            "observaciones",
+            "user",
+        ];
+    }
+
+    if (canDo("vodafone.recibe-asignacion")) {
+        return [
+            "id",
+            "asignado_a",
+            "marca_base",
+            "origen_motivo_cancelacion",
+            "nombre_cliente",
+            "dni_cliente",
+            "orden_trabajo_anterior",
+            "telefono_principal",
+            "telefono_adicional",
+            "correo_referencia",
+            "direccion_historico",
+            "observaciones",
+        ];
+    }
+    return [
+        "id",
+        "upload_id",
+        "created_at_formatted",
+        "trazabilidad",
+        "asignado_a",
+        "marca_base",
+        "origen_motivo_cancelacion",
+        "nombre_cliente",
+        "dni_cliente",
+        "orden_trabajo_anterior",
+        "telefono_principal",
+        "telefono_adicional",
+        "correo_referencia",
+        "direccion_historico",
+        "observaciones",
+        "user",
+    ];
+});
+
+// =======================
+// 11. ASIGNACIÓN DE REGISTROS
+// =======================
+async function asignarRegistros(slotForm) {
+    isLoadingAsignacion.value = true;
+    try {
+        await axios.post(route("vodafone.asignar"), {
+            ids: slotForm.ids,
+            asignado_a_id: slotForm.asignado_a_id,
+        });
+        handleSuccess("Registros asignados correctamente.");
+        cerrarModal();
+    } catch (e) {
+        Swal.fire("Error", "No se pudo asignar registros", "error");
+    } finally {
+        isLoadingAsignacion.value = false;
+    }
 }
 </script>
 
@@ -482,7 +569,7 @@ async function esperarImportacion(logId) {
                     <!-- Filtro de Fechas -->
 
                     <!-- Botón y modal de filtros -->
-                    <div class="modalFiltros">
+                    <div class="modalFiltros" v-if="canDo('vodafone.asignar')">
                         <button
                             @click="showFiltro = !showFiltro"
                             class="flex items-center h-full gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md shadow hover:bg-gray-50 transition"
@@ -518,7 +605,14 @@ async function esperarImportacion(logId) {
                     </div>
 
                     <!-- Dropdown de Operaciones -->
-                    <div class="relative">
+                    <div
+                        class="relative"
+                        v-if="
+                            canDo('vodafone.crear') ||
+                            canDo('vodafone.importar') ||
+                            canDo('vodafone.asignar')
+                        "
+                    >
                         <Dropdown align="right" width="48">
                             <template #trigger>
                                 <button
@@ -566,7 +660,7 @@ async function esperarImportacion(logId) {
                                             >
                                         </button>
                                     </li>
-                                    <li>
+                                    <li v-if="canDo('vodafone.importar')">
                                         <button
                                             @click="abrirModalInportar"
                                             class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition text-left"
@@ -587,7 +681,7 @@ async function esperarImportacion(logId) {
                                             >
                                         </button>
                                     </li>
-                                    <li>
+                                    <li v-if="canDo('vodafone.asignar')">
                                         <button
                                             @click="abrirModalAsignacion"
                                             class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition text-left"
@@ -646,6 +740,7 @@ async function esperarImportacion(logId) {
             >
                 <ExcelLikeGrid
                     :rows="filteredItems"
+                    :columns="columnasGrid"
                     :canViewGlobal="canViewGlobal"
                     :canEdit="canDo('vodafone.editar')"
                     :canDelete="canDo('vodafone.eliminar')"
@@ -763,6 +858,7 @@ async function esperarImportacion(logId) {
             :initialForm="formImportar"
             :previewRows="previewRows"
             :allRows="allPreviewRows"
+            :importando="importando"
             method="post"
             @close="cerrarModal"
             @submit="importarArchivo"
@@ -883,6 +979,7 @@ async function esperarImportacion(logId) {
                         >
                             <div
                                 class="overflow-x-auto border rounded-xl shadow-sm"
+                                style="max-height: 400px; overflow-y: auto"
                             >
                                 <table
                                     class="min-w-full text-xs text-left text-gray-700"
@@ -938,6 +1035,13 @@ async function esperarImportacion(logId) {
                                         </tr>
                                     </tbody>
                                 </table>
+                            </div>
+                            <div
+                                v-if="previewRows.length > 1000"
+                                class="text-xs text-gray-500 mt-2 text-center"
+                            >
+                                Mostrando {{ previewRows.length }} registros
+                                duplicados.
                             </div>
                         </div>
                     </transition>
@@ -1021,7 +1125,9 @@ async function esperarImportacion(logId) {
             }"
             :endpoint="route('vodafone.asignar')"
             :method="'post'"
+            :loading="isLoadingAsignacion"
             @close="cerrarModal"
+            @submit="asignarRegistros"
             @success="handleSuccess"
         >
             <template #default="{ form: slotForm, errors }">

@@ -35,61 +35,88 @@ class VodafoneImportJob implements ShouldQueue
         $user = User::find($this->userId);
         $log = LogImportacionVodafone::find($this->logId);
 
+        $modo = strtolower(trim($this->modo ?? ''));
+        Log::info("Modo de importación recibido en Job", ['modo' => $modo]);
+
+        if ($log) {
+            $log->estado = 'procesando'; // 🔥 ESTADO EN PROCESO
+            $log->save();
+        }
+
         DB::beginTransaction();
         try {
             foreach ($this->datos as $row) {
-                $dni = $row['dni_cliente'] ?? null;
-                $tel = $row['telefono_principal'] ?? null;
+                $dni = trim($row['dni_cliente'] ?? '');
 
-                $existente = Vodafone::where('dni_cliente', $dni)
-                    ->orWhere('telefono_principal', $tel)
-                    ->first();
+                if (!$dni) continue;
+
+                $data = [
+                    'dni_cliente' => $dni,
+                    'telefono_principal' => $row['telefono_principal'] ?? null,
+                    'nombre_cliente' => $row['nombre_cliente'] ?? null,
+                    'orden_trabajo_anterior' => $row['orden_trabajo_anterior'] ?? null,
+                    'telefono_adicional' => $row['telefono_adicional'] ?? null,
+                    'correo_referencia' => $row['correo_referencia'] ?? null,
+                    'direccion_historico' => $row['direccion_historico'] ?? null,
+                    'observaciones' => $row['observaciones'] ?? null,
+                    'marca_base' => $row['marca_base'] ?? null,
+                    'origen_motivo_cancelacion' => $row['origen_motivo_cancelacion'] ?? null,
+                    'trazabilidad' => 'pendiente',
+                    'asignado_a_id' => $row['asignado_a_id'] ?? null,
+                    'user_id' => $this->userId,
+                    'upload_id' => $row['upload_id'] ?? null,
+                ];
 
                 try {
-                    if ($existente && $this->modo === 'omitir') {
-                        $errores[] = "Fila {$row['index']}: Duplicado omitido (DNI $dni)";
-                        Log::info("Fila {$row['index']}: Duplicado omitido (DNI $dni)");
-                        continue;
-                    }
+                    $dniStr = (string) $dni;
+                    Log::info("Procesando fila", ['fila' => $row['index'], 'dni' => $dniStr]);
 
-                    $data = [
-                        'nombre_cliente' => $row['nombre_cliente'] ?? '',
-                        'dni_cliente' => $row['dni_cliente'] ?? '',
-                        'telefono_principal' => $row['telefono_principal'] ?? '',
-                        'telefono_adicional' => $row['telefono_adicional'] ?? '',
-                        'correo_referencia' => $row['correo_referencia'] ?? '',
-                        'direccion_historico' => $row['direccion_historico'] ?? '',
-                        'marca_base' => $row['marca_base'] ?? '',
-                        'origen_motivo_cancelacion' => $row['origen_motivo_cancelacion'] ?? '',
-                        'orden_trabajo_anterior' => $row['orden_trabajo_anterior'] ?? '',
-                        'observaciones' => $row['observaciones'] ?? '',
-                        'user_id' => $user->id,
-                        'upload_id' => $log->id,
-                        'trazabilidad' => 'pendiente',
-                    ];
+                    $existente = Vodafone::withTrashed()
+                        ->whereRaw('CAST(dni_cliente AS CHAR) = ?', [$dniStr])
+                        ->first();
 
-                    Log::info("Intentando crear/actualizar registro Vodafone", $data);
+                    if ($existente) {
+                        Log::info("Registro encontrado", [
+                            'dni' => $dniStr,
+                            'id' => $existente->id,
+                            'eliminado_logicamente' => $existente->trashed()
+                        ]);
 
-                    if ($existente && $this->modo === 'actualizar') {
-                        $existente->update($data);
-                        Log::info("Registro actualizado", ['id' => $existente->id]);
+                        if ($modo === 'actualizar') {
+                            if ($existente->trashed()) {
+                                Log::info("Restaurando registro", ['dni' => $dniStr]);
+                                $existente->restore();
+                            }
+                            $existente->update($data);
+                            Log::info("Registro actualizado", ['dni' => $dniStr]);
+                        } elseif ($modo === 'omitir') {
+                            Log::info("Registro omitido por configuración", ['dni' => $dniStr]);
+                        } else {
+                            Log::info("Eliminando físicamente registro existente", ['dni' => $dniStr]);
+                            $existente->forceDelete();
+                            $nuevo = Vodafone::create($data);
+                            Log::info("Registro recreado tras eliminación", ['dni' => $dniStr, 'nuevo_id' => $nuevo->id]);
+                        }
                     } else {
+                        Log::info("No se encontró registro existente. Creando nuevo", ['dni' => $dniStr]);
                         $nuevo = Vodafone::create($data);
-                        Log::info("Registro creado", ['id' => $nuevo->id]);
+                        Log::info("Registro creado exitosamente", ['dni' => $dniStr, 'nuevo_id' => $nuevo->id]);
                     }
                 } catch (\Throwable $e) {
                     $errores[] = "Fila {$row['index']}: " . $e->getMessage();
                     Log::error("Error en fila {$row['index']}: " . $e->getMessage());
                 }
             }
+
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
             $errores[] = "Error general: " . $e->getMessage();
             Log::error('Error en importación masiva Vodafone: ' . $e->getMessage());
         }
-        // GUARDA EL LOG SIEMPRE DESPUÉS DEL COMMIT O ROLLBACK
+
         if ($log) {
+            $log->estado = 'finalizado'; // 🏁 FINALIZADO
             $log->errores_json = json_encode($errores);
             $log->save();
         }

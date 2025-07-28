@@ -59,7 +59,7 @@ import Actions from "@/Components/Actions.vue";
 // ===== PROPS Y EMITS =====
 const props = defineProps({
     rows: Array,
-    columns: Array, // ← Nueva prop para columnas personalizadas
+    columns: Array, // <-- agrega esta prop
     canViewGlobal: Boolean,
     canEdit: Boolean,
     canDelete: Boolean,
@@ -73,41 +73,79 @@ const gridContainer = ref(null);
 let gridApi = null;
 
 // ===== DEFINICIÓN DE COLUMNAS =====
-const columnDefs = [
-    { field: "id", headerName: "ID" },
-    { field: "upload_id", headerName: "Nro. Carga" },
-    {
-        valueGetter: (params) => params.data?.created_at_formatted || "",
-        headerName: "Fecha de Carga",
-    },
-
-    // Datos base del registro
-    { field: "trazabilidad", headerName: "Trazabilidad" },
-    {
-        headerName: "Asignado",
-        valueGetter: (params) => params.data?.asignado_a?.name || "—",
-    },
-
-    // Nuevos campos SmartClient y área de filtrado
-
-    { field: "marca_base", headerName: "Marca de la Base" },
-    { field: "origen_motivo_cancelacion", headerName: "Origen Cancelación" },
-    { field: "nombre_cliente", headerName: "Nombre del Cliente" },
-    { field: "dni_cliente", headerName: "DNI Cliente" },
-    { field: "orden_trabajo_anterior", headerName: "Orden Trabajo Anterior" },
-    { field: "telefono_principal", headerName: "Teléfono Principal" },
-    { field: "telefono_adicional", headerName: "Teléfono Adicional" },
-    { field: "correo_referencia", headerName: "Correo de Referencia" },
-    { field: "direccion_historico", headerName: "Dirección Histórico" },
-    { field: "observaciones", headerName: "Observaciones" },
-];
-
-if (props.canViewGlobal) {
-    columnDefs.push({
-        headerName: "Usuario",
-        valueGetter: (p) => p.data.user?.name || "Sin usuario",
-    });
-}
+const columnDefs = props.columns
+    .map((col) => {
+        // Mapea cada columna a su definición
+        switch (col) {
+            case "id":
+                return { field: "id", headerName: "ID" };
+            case "upload_id":
+                return { field: "upload_id", headerName: "Nro. Carga" };
+            case "created_at_formatted":
+                return {
+                    valueGetter: (params) =>
+                        params.data?.created_at_formatted || "",
+                    headerName: "Fecha de Carga",
+                };
+            case "trazabilidad":
+                return { field: "trazabilidad", headerName: "Trazabilidad" };
+            case "asignado_a":
+                return {
+                    headerName: "Asignado",
+                    valueGetter: (params) =>
+                        params.data?.asignado_a?.name || "—",
+                };
+            case "marca_base":
+                return { field: "marca_base", headerName: "Marca de la Base" };
+            case "origen_motivo_cancelacion":
+                return {
+                    field: "origen_motivo_cancelacion",
+                    headerName: "Origen Cancelación",
+                };
+            case "nombre_cliente":
+                return {
+                    field: "nombre_cliente",
+                    headerName: "Nombre del Cliente",
+                };
+            case "dni_cliente":
+                return { field: "dni_cliente", headerName: "DNI Cliente" };
+            case "orden_trabajo_anterior":
+                return {
+                    field: "orden_trabajo_anterior",
+                    headerName: "Orden Trabajo Anterior",
+                };
+            case "telefono_principal":
+                return {
+                    field: "telefono_principal",
+                    headerName: "Teléfono Principal",
+                };
+            case "telefono_adicional":
+                return {
+                    field: "telefono_adicional",
+                    headerName: "Teléfono Adicional",
+                };
+            case "correo_referencia":
+                return {
+                    field: "correo_referencia",
+                    headerName: "Correo de Referencia",
+                };
+            case "direccion_historico":
+                return {
+                    field: "direccion_historico",
+                    headerName: "Dirección Histórico",
+                };
+            case "observaciones":
+                return { field: "observaciones", headerName: "Observaciones" };
+            case "user":
+                return {
+                    headerName: "Usuario",
+                    valueGetter: (p) => p.data.user?.name || "Sin usuario",
+                };
+            default:
+                return null;
+        }
+    })
+    .filter(Boolean);
 
 columnDefs.push({
     headerName: "Acciones",
@@ -133,7 +171,7 @@ const defaultColDef = {
     resizable: true,
     flex: 1,
     sortable: false,
-    minWidth: 120, // ancho mínimo recomendado
+    minWidth: 100, // ancho mínimo recomendado
     maxWidth: 250, // ancho máximo recomendado
     cellClass: "ag-center-cols", // centra el contenido de las celdas
 };

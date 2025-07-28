@@ -262,7 +262,7 @@ const tabs = [
                     </span>
                 </div>
                 <button
-                    v-if="canDo('usuarios.guardar')"
+                    v-if="canDo('usuarios.crear')"
                     @click="abrirModalAgregar"
                     class="flex items-center gap-2 bg-green-500 text-white px-5 py-2 rounded shadow hover:bg-green-600 transition"
                 >

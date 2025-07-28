@@ -59,9 +59,19 @@
                                 v-else
                                 type="button"
                                 @click="emit('confirmar')"
-                                class="px-5 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold shadow transition"
+                                :disabled="importando"
+                                :class="[
+                                    'px-5 py-2 rounded-lg font-semibold shadow transition flex items-center justify-center gap-2 w-48',
+                                    importando
+                                        ? 'bg-gray-400 cursor-not-allowed text-gray-700'
+                                        : 'bg-blue-600 hover:bg-blue-700 text-white',
+                                ]"
                             >
-                                Confirmar Importación
+                                <span
+                                    v-if="importando"
+                                    class="loader-big"
+                                ></span>
+                                <span v-else>Confirmar</span>
                             </button>
                         </div>
                     </form>
@@ -81,6 +91,7 @@ const props = defineProps({
     initialForm: Object,
     previewRows: Array,
     allRows: Array,
+    importando: Boolean,
 });
 
 const emit = defineEmits(["close", "submit", "confirmar"]);
@@ -102,3 +113,23 @@ function emitirEnvio() {
     emit("submit", form, () => emit("close"));
 }
 </script>
+
+<style scoped>
+.loader-big {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+}
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+</style>

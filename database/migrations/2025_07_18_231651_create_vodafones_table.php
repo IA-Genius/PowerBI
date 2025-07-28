@@ -12,8 +12,11 @@ return new class extends Migration {
             $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
             $table->string('nombre_archivo')->nullable();
             $table->integer('cantidad_registros')->nullable();
+            $table->json('errores_json')->nullable();
+            $table->string('estado')->default('pendiente');
             $table->timestamps();
         });
+
 
         Schema::create('historial_registros_vodafone', function (Blueprint $table) {
             $table->id();
@@ -37,7 +40,7 @@ return new class extends Migration {
             ])->default('pendiente');
 
             // Datos nuevos solicitados
-            $table->string('marca_base')->nullable();                      // Reciclable / No reciclable
+            $table->string('marca_base')->nullable();
             $table->string('origen_motivo_cancelacion')->nullable();
             $table->string('nombre_cliente')->nullable();
             $table->string('dni_cliente')->nullable()->unique();
@@ -48,15 +51,23 @@ return new class extends Migration {
             $table->string('direccion_historico')->nullable();
             $table->text('observaciones')->nullable();
 
-
-
             $table->timestamps();
             $table->softDeletes();
+        });
+
+        Schema::create('vodafone_auditorias', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('vodafone_id')->constrained('historial_registros_vodafone')->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->string('accion');
+            $table->json('campos_editados')->nullable();
+            $table->timestamp('fecha');
         });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('vodafone_auditorias');
         Schema::dropIfExists('historial_registros_vodafone');
         Schema::dropIfExists('log_importacion_vodafone');
     }

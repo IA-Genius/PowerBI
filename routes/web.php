@@ -93,14 +93,12 @@ Route::middleware('auth')->group(function () {
     Route::middleware('can:vodafone.crear')->post('/vodafone', [VodafoneController::class, 'store'])->name('vodafone.store');
     Route::middleware('can:vodafone.editar')->put('/vodafone/{vodafone}', [VodafoneController::class, 'update'])->name('vodafone.update');
     Route::middleware('can:vodafone.eliminar')->delete('/vodafone/{vodafone}', [VodafoneController::class, 'destroy'])->name('vodafone.destroy');
-    Route::middleware('can:vodafone.ver')->post('/vodafone/importar', [VodafoneController::class, 'import'])->name('vodafone.import');
-    Route::get('/vodafone/page', [VodafoneController::class, 'fetchPage'])->name('vodafone.page');
-    Route::post('/vodafone/asignar', [VodafoneController::class, 'asignar'])->name('vodafone.asignar');
-    Route::get('/vodafone/page', [VodafoneController::class, 'fetchPage'])->name('vodafone.page');
-    Route::post('/vodafone/import', [VodafoneImportController::class, 'import'])->name('vodafone.import');
-    Route::post('/vodafone/preview', [VodafoneImportController::class, 'preview'])->name('vodafone.preview');
-    Route::post('/vodafone/importar-confirmado', [VodafoneImportController::class, 'importarConfirmado'])->name('vodafone.importarConfirmado');
-    Route::get('/vodafone/errores-log/{id}', [VodafoneImportController::class, 'obtenerErroresLog'])->name('vodafone.obtenerErroresLog');
+    Route::middleware('can:vodafone.asignar')->post('/vodafone/asignar', [VodafoneController::class, 'asignar'])->name('vodafone.asignar');
+    Route::middleware('can:vodafone.asignar')->get('/vodafone/page', [VodafoneController::class, 'fetchPage'])->name('vodafone.page');
+    Route::middleware('can:vodafone.importar')->post('/vodafone/import', [VodafoneImportController::class, 'import'])->name('vodafone.import');
+    Route::middleware('can:vodafone.importar')->post('/vodafone/preview', [VodafoneImportController::class, 'preview'])->name('vodafone.preview');
+    Route::middleware('can:vodafone.importar')->post('/vodafone/importar-confirmado', [VodafoneImportController::class, 'importarConfirmado'])->name('vodafone.importarConfirmado');
+    Route::middleware('can:vodafone.importar')->get('/vodafone/errores-log/{id}', [VodafoneImportController::class, 'obtenerErroresLog'])->name('vodafone.obtenerErroresLog');
 });
 
 // ===================

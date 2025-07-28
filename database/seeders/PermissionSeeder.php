@@ -21,7 +21,8 @@ class PermissionSeeder extends Seeder
                 'crear',
                 'editar',
                 'eliminar',
-                'ver-global',    // ver registros de otros
+                'ver-global',
+                'importar',   // importar registros de otros
                 'asignar',       // asignar registros
                 'recibe-asignacion', // se puede asignar a este usuario
             ],
@@ -63,6 +64,7 @@ class PermissionSeeder extends Seeder
             'vodafone.ver',
             'vodafone.editar',
             'vodafone.crear',
+            'vodafone.importar',
             'vodafone.ver-global',
             'vodafone.asignar',
         ]);
@@ -74,7 +76,7 @@ class PermissionSeeder extends Seeder
         ]);
         $rolFiltrador->syncPermissions([
             'vodafone.ver',
-            'vodafone.crear',
+            'vodafone.editar',
             'vodafone.recibe-asignacion',
         ]);
     }

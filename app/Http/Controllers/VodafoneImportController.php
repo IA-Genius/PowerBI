@@ -55,7 +55,7 @@ class VodafoneImportController extends Controller
     {
         $request->validate([
             'datos' => 'required|array',
-            'modo' => 'required|in:omitir,actualizar',
+            'modo' => 'nullable|string|in:omitir,actualizar',
         ]);
 
         $user = $request->user();
@@ -93,6 +93,7 @@ class VodafoneImportController extends Controller
         $log = LogImportacionVodafone::findOrFail($id);
 
         return response()->json([
+            'estado' => $log->estado,
             'errores' => json_decode($log->errores_json ?? '[]'),
         ]);
     }
