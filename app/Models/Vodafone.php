@@ -12,7 +12,7 @@ class Vodafone extends Model
 
     protected $table = 'historial_registros_vodafone';
 
-     protected $fillable = [
+    protected $fillable = [
         'user_id',
         'upload_id',
         'asignado_a_id',

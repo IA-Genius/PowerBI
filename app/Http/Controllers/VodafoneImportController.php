@@ -11,42 +11,6 @@ use App\Imports\VodafoneImport;
 
 class VodafoneImportController extends Controller
 {
-    public function import(Request $request)
-    {
-        $request->validate([
-            'archivo' => 'required|file|mimes:xlsx,csv',
-        ]);
-
-        $user = $request->user();
-        $file = $request->file('archivo');
-        $nombreArchivo = $file->getClientOriginalName();
-
-        Log::info('📥 Importación iniciada', [
-            'user_id' => $user->id,
-            'usuario' => $user->name,
-            'archivo' => $nombreArchivo,
-            'ip' => $request->ip(),
-        ]);
-
-        try {
-            Excel::import(new VodafoneImport, $file);
-
-            Log::info('✅ Importación completada', [
-                'archivo' => $nombreArchivo,
-                'user_id' => $user->id,
-            ]);
-
-            return redirect()->back()->with('success', 'Importación completada correctamente.');
-        } catch (\Throwable $e) {
-            Log::error('❌ Error durante importación', [
-                'error' => $e->getMessage(),
-                'archivo' => $nombreArchivo,
-                'user_id' => $user->id,
-            ]);
-
-            return redirect()->back()->with('error', 'Ocurrió un error al importar el archivo.');
-        }
-    }
 
     public function preview(Request $request)
     {

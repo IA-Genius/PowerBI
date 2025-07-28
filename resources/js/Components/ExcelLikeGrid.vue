@@ -66,13 +66,7 @@ const props = defineProps({
     canList: Boolean,
 });
 
-const emit = defineEmits([
-    "edit",
-    "delete",
-    "list",
-    "loadMore",
-    "update:selected",
-]);
+const emit = defineEmits(["edit", "delete", "list", "update:selected"]);
 
 // ===== VARIABLES REACTIVAS =====
 const gridContainer = ref(null);
@@ -83,10 +77,8 @@ const columnDefs = [
     { field: "id", headerName: "ID" },
     { field: "upload_id", headerName: "Nro. Carga" },
     {
-        field: "created_at",
+        valueGetter: (params) => params.data?.created_at_formatted || "",
         headerName: "Fecha de Carga",
-        valueFormatter: (p) =>
-            p.value ? new Date(p.value).toLocaleString() : "—",
     },
 
     // Datos base del registro
@@ -97,6 +89,7 @@ const columnDefs = [
     },
 
     // Nuevos campos SmartClient y área de filtrado
+
     { field: "marca_base", headerName: "Marca de la Base" },
     { field: "origen_motivo_cancelacion", headerName: "Origen Cancelación" },
     { field: "nombre_cliente", headerName: "Nombre del Cliente" },
@@ -140,6 +133,9 @@ const defaultColDef = {
     resizable: true,
     flex: 1,
     sortable: false,
+    minWidth: 120, // ancho mínimo recomendado
+    maxWidth: 250, // ancho máximo recomendado
+    cellClass: "ag-center-cols", // centra el contenido de las celdas
 };
 
 // ===== FUNCIONES DE SELECCIÓN POR ARRASTRE =====
@@ -279,15 +275,19 @@ onMounted(() => {
         onGridReady: (params) => {
             gridApi = params.api;
 
-            gridApi.sizeColumnsToFit(); // ← si lo deseas, pero lo puedes quitar
+            gridApi.sizeColumnsToFit();
             gridApi.addEventListener("selectionChanged", emitSelectedRows);
 
-            // Autoajustar columnas
-            const allColumnIds = [];
-            params.columnApi.getAllColumns().forEach((column) => {
-                allColumnIds.push(column.getId());
-            });
-            params.columnApi.autoSizeColumns(allColumnIds, false);
+            if (
+                params.columnApi &&
+                typeof params.columnApi.getAllColumns === "function"
+            ) {
+                const allColumnIds = [];
+                params.columnApi.getAllColumns().forEach((column) => {
+                    allColumnIds.push(column.getId());
+                });
+                params.columnApi.autoSizeColumns(allColumnIds, false);
+            }
 
             // Mostrar loading si no hay datos
             if (!props.rows || props.rows.length === 0) {
@@ -303,25 +303,6 @@ onMounted(() => {
     gridContainer.value.addEventListener("mousedown", handleMouseDown);
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
-
-    // Scroll infinito: escucha el scroll del viewport de AG Grid
-    const viewport = gridContainer.value.querySelector(".ag-body-viewport");
-    if (viewport) {
-        viewport.addEventListener(
-            "scroll",
-            (e) => {
-                const el = e.target;
-                const threshold = 120;
-                if (
-                    el.scrollTop + el.clientHeight >=
-                    el.scrollHeight - threshold
-                ) {
-                    emit("loadMore");
-                }
-            },
-            { passive: true }
-        );
-    }
 });
 
 // ===== ACCIONES EXTRA =====
@@ -336,6 +317,13 @@ function clearSelection() {
 </script>
 
 <style scoped>
+.ag-center-cols {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
 .btn {
     padding: 0.4rem 0.8rem;
     background-color: #007bff;

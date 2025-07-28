@@ -1,5 +1,7 @@
 <script setup>
-// 1. Imports
+// =======================
+// 1. IMPORTS
+// =======================
 import { ref, computed, onMounted, watch } from "vue";
 import { usePage, router } from "@inertiajs/vue3";
 import Swal from "sweetalert2";
@@ -11,16 +13,21 @@ import FiltroFlotante from "@/Components/FiltroFlotante.vue";
 import DropdownLink from "@/Components/DropdownLink.vue";
 import ModalImportacion from "@/Components/ModalImportacion.vue";
 import ExcelLikeGrid from "@/Components/ExcelLikeGrid.vue";
+import axios from "axios";
 
-// 2. Page Props & Permissions
+// =======================
+// 2. PAGE PROPS & PERMISOS
+// =======================
 const pageProps = usePage().props;
 const success = pageProps.success;
 const canViewGlobal = pageProps.canViewGlobal;
-const can = usePage().props.can || {};
+const can = pageProps.can || {};
 const canDo = (key) => !!can[key];
 const usuariosAsignables = pageProps.usuariosAsignables || [];
 
-// 3. Main Data & State
+// =======================
+// 3. ESTADO PRINCIPAL
+// =======================
 const items = ref([]);
 const selectedRows = ref([]);
 const currentPage = ref(1);
@@ -28,7 +35,9 @@ const lastPage = ref(1);
 const isLoading = ref(false);
 const scrollContainer = ref(null);
 
-// 4. Modals State
+// =======================
+// 4. MODALES
+// =======================
 const showModal = ref(false);
 const registroEditar = ref(null);
 const showInportarModal = ref(false);
@@ -36,7 +45,9 @@ const InportarTitulo = ref(null);
 const showAsignacionModal = ref(false);
 const asignacionTitulo = ref(null);
 
-// 5. Form Data
+// =======================
+// 5. FORMULARIOS
+// =======================
 const form = ref({
     nombre_cliente: "",
     dni_cliente: "",
@@ -50,7 +61,9 @@ const form = ref({
     observaciones: "",
 });
 
-// 6. Modal Functions
+// =======================
+// 6. FUNCIONES DE MODALES
+// =======================
 function abrirModalAgregar() {
     registroEditar.value = null;
     form.value = {
@@ -97,10 +110,8 @@ function abrirModalAsignacion() {
         });
         return;
     }
-
     showAsignacionModal.value = true;
 }
-
 function abrirModalEditar(item) {
     registroEditar.value = item;
     form.value = { ...item };
@@ -115,7 +126,9 @@ function cerrarModal() {
     asignacionTitulo.value = null;
 }
 
-// 7. CRUD & Utility Functions
+// =======================
+// 7. CRUD Y UTILIDADES
+// =======================
 function handleSuccess(msg) {
     Swal.fire({
         toast: true,
@@ -167,11 +180,13 @@ function mostrarInfoUsuario(user) {
     });
 }
 
-// 8. Pagination
+// =======================
+// 8. INICIALIZACIÓN Y WATCHERS
+// =======================
 function inicializarItems() {
-    items.value = pageProps.items?.data || [];
-    currentPage.value = pageProps.items?.current_page || 1;
-    lastPage.value = pageProps.items?.last_page || 1;
+    items.value = Array.isArray(pageProps.items) ? pageProps.items : [];
+    currentPage.value = 1;
+    lastPage.value = 1;
 }
 onMounted(() => {
     inicializarItems();
@@ -186,65 +201,43 @@ onMounted(() => {
         });
     }
 });
-
 watch(
     () => pageProps.items,
     () => {
-        if ((pageProps.items?.current_page || 1) === 1) {
-            items.value = pageProps.items?.data || [];
-        } else {
-            items.value = [...items.value, ...(pageProps.items?.data || [])];
-        }
-        currentPage.value = pageProps.items?.current_page || 1;
-        lastPage.value = pageProps.items?.last_page || 1;
+        items.value = Array.isArray(pageProps.items) ? pageProps.items : [];
+        currentPage.value = 1;
+        lastPage.value = 1;
     }
 );
-function cargarSiguientePagina() {
-    if (isLoading.value || currentPage.value >= lastPage.value) return;
-    isLoading.value = true;
-    axios
-        .get(route("vodafone.page"), {
-            params: { page: currentPage.value + 1 },
-            headers: { "X-Requested-With": "XMLHttpRequest" },
-        })
-        .then((response) => {
-            let nuevaPagina = response.data.items;
-            if (
-                !nuevaPagina &&
-                response.data.props &&
-                response.data.props.items
-            ) {
-                nuevaPagina = response.data.props.items;
-            }
-            if (nuevaPagina?.data) {
-                if (
-                    (nuevaPagina.current_page || currentPage.value + 1) ===
-                    currentPage.value + 1
-                ) {
-                    items.value = [...items.value, ...nuevaPagina.data];
-                    currentPage.value =
-                        nuevaPagina.current_page || currentPage.value + 1;
-                    lastPage.value = nuevaPagina.last_page || lastPage.value;
-                }
-            }
-        })
-        .catch((err) => {
-            console.error("Error al cargar más registros:", err);
-            isLoading.value = false;
-        })
-        .finally(() => {
-            isLoading.value = false;
-        });
-}
 
-// 9. Filtros y Búsqueda
+// =======================
+// 9. FILTROS Y BÚSQUEDA
+// =======================
 const search = ref("");
 const showFiltro = ref(false);
-const filtrosActivos = ref({});
+const fechaDesde = ref(pageProps.fechaDesde || "");
+const fechaHasta = ref(pageProps.fechaHasta || "");
+const filtrosActivos = ref({
+    trazabilidad: ["pendiente"],
+});
+
+function aplicarFiltroFecha() {
+    router.visit(route("vodafone.index"), {
+        method: "get",
+        data: {
+            fecha_desde: fechaDesde.value,
+            fecha_hasta: fechaHasta.value,
+        },
+        preserveScroll: true,
+        only: ["items", "success", "fechaDesde", "fechaHasta"],
+    });
+}
+
 const rawItems = computed(() => items.value);
+
 const filtrosDisponibles = computed(() => {
     const list = rawItems.value;
-    return {
+    const filtros = {
         operador_actual: [
             ...new Set(list.map((i) => i.operador_actual).filter(Boolean)),
         ],
@@ -260,7 +253,15 @@ const filtrosDisponibles = computed(() => {
             .slice(0, 15)
             .sort((a, b) => a - b),
     };
+    // Solo los filtros con opciones (trazabilidad siempre)
+    return Object.fromEntries(
+        Object.entries(filtros).filter(
+            ([key, arr]) =>
+                key === "trazabilidad" || (Array.isArray(arr) && arr.length > 0)
+        )
+    );
 });
+
 const filteredItems = computed(() => {
     const term = filtrosActivos.value.search?.toLowerCase() || "";
     let data = [...rawItems.value];
@@ -268,7 +269,7 @@ const filteredItems = computed(() => {
         data = data.filter((item) =>
             [
                 item.nombre_cliente,
-                item.dni_nif_cif,
+                item.dni_cliente,
                 item.telefono_contacto,
             ].some((field) =>
                 (field || "").toString().toLowerCase().includes(term)
@@ -282,12 +283,33 @@ const filteredItems = computed(() => {
     }
     return data;
 });
-
-function aplicarFiltros(f) {
-    filtrosActivos.value = f;
+function aplicarBusquedaInstantanea(val) {
+    filtrosActivos.value = { ...filtrosActivos.value, search: val };
+}
+async function aplicarFiltrosDesdeFlotante(f) {
+    filtrosActivos.value = { ...filtrosActivos.value, ...f };
+    if (f.fecha_desde !== undefined) fechaDesde.value = f.fecha_desde;
+    if (f.fecha_hasta !== undefined) fechaHasta.value = f.fecha_hasta;
+    isLoading.value = true;
+    try {
+        const response = await axios.get(route("vodafone.page"), {
+            params: {
+                ...filtrosActivos.value,
+                fecha_desde: fechaDesde.value,
+                fecha_hasta: fechaHasta.value,
+            },
+        });
+        items.value = response.data.items;
+    } catch (e) {
+        Swal.fire("Error", "No se pudo filtrar por fecha", "error");
+    } finally {
+        isLoading.value = false;
+    }
 }
 
-// 10. Importación de Excel
+// =======================
+// 10. IMPORTACIÓN DE EXCEL
+// =======================
 const excelFile = ref(null);
 const fileName = ref(null);
 const allPreviewRows = ref([]);
@@ -319,19 +341,15 @@ async function importarArchivo(_, close) {
     try {
         importStatus.value = "Subiendo archivo...";
         importError.value = "";
-        progress.value = 0; // Reinicia el progreso
-
+        progress.value = 0;
         const payload = new FormData();
         const archivo = formImportar.value.archivo;
-
         if (!(archivo instanceof File)) {
             importError.value = "Debes seleccionar un archivo Excel válido.";
             return;
         }
-
         payload.append("archivo", archivo);
         payload.append("descripcion", formImportar.value.descripcion);
-
         const response = await axios.post(route("vodafone.preview"), payload, {
             headers: { "Content-Type": "multipart/form-data" },
             onUploadProgress: (event) => {
@@ -342,21 +360,17 @@ async function importarArchivo(_, close) {
                 }
             },
         });
-
         if (response.data?.preview) {
             const data = Array.isArray(response.data.preview)
                 ? response.data.preview
                 : Object.values(response.data.preview);
-
             allPreviewRows.value = [...data];
             previewRows.value = allPreviewRows.value.filter((r) => r.duplicado);
-
             totalRegistros.value = allPreviewRows.value.length;
             totalDuplicados.value = previewRows.value.length;
             totalNuevos.value = allPreviewRows.value.filter(
                 (r) => !r.duplicado
             ).length;
-
             importStatus.value = `Se analizaron ${allPreviewRows.value.length} registros`;
         } else {
             importStatus.value = "No se recibieron datos para previsualizar";
@@ -389,7 +403,6 @@ function confirmarImportacion() {
         enviarImportacion();
     }
 }
-
 function enviarImportacion() {
     axios
         .post(route("vodafone.importarConfirmado"), {
@@ -407,6 +420,9 @@ function enviarImportacion() {
 }
 </script>
 
+<!-- =======================
+     TEMPLATE
+======================= -->
 <template>
     <Head title="Vodafone" />
     <AuthenticatedLayout class="relleno">
@@ -414,12 +430,12 @@ function enviarImportacion() {
             <div
                 class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
             >
-                <!-- Título centrado en móvil -->
                 <h2 class="text-xl font-semibold tituloPag">
                     Historial de Registros
                 </h2>
+                <div class="flex flex-col sm:flex-row gap-4 items-center">
+                    <!-- Filtro de Fechas -->
 
-                <div class="flex justify-between gap-4 itens-center">
                     <!-- Botón y modal de filtros -->
                     <div class="modalFiltros">
                         <button
@@ -444,19 +460,19 @@ function enviarImportacion() {
                                 >Filtros</span
                             >
                         </button>
-
                         <FiltroFlotante
                             v-show="showFiltro"
                             :filtros="filtrosDisponibles"
                             :selected="filtrosActivos"
-                            v-model="search"
-                            @filtrar="aplicarFiltros"
+                            :fechaDesdeProp="fechaDesde"
+                            :fechaHastaProp="fechaHasta"
+                            @filtrar="aplicarFiltrosDesdeFlotante"
+                            @search="aplicarBusquedaInstantanea"
                             @close="showFiltro = false"
                         />
                     </div>
 
                     <!-- Dropdown de Operaciones -->
-
                     <div class="relative">
                         <Dropdown align="right" width="48">
                             <template #trigger>
@@ -479,7 +495,6 @@ function enviarImportacion() {
                                     </svg>
                                 </button>
                             </template>
-
                             <!-- Opciones -->
                             <template #content>
                                 <ul class="divide-y divide-gray-100">
@@ -506,7 +521,6 @@ function enviarImportacion() {
                                             >
                                         </button>
                                     </li>
-
                                     <li>
                                         <button
                                             @click="abrirModalInportar"
@@ -528,7 +542,6 @@ function enviarImportacion() {
                                             >
                                         </button>
                                     </li>
-
                                     <li>
                                         <button
                                             @click="abrirModalAsignacion"
@@ -557,6 +570,9 @@ function enviarImportacion() {
             </div>
         </template>
 
+        <!-- =======================
+             TABLA PRINCIPAL
+        ======================= -->
         <div class="py-6">
             <div
                 class="overflow-x-auto rounded-xl border border-gray-100 bg-gray-50"
@@ -570,15 +586,35 @@ function enviarImportacion() {
                     v-model:selected="selectedRows"
                     @edit="abrirModalEditar"
                     @delete="eliminar"
-                    @loadMore="cargarSiguientePagina"
                 />
-                <div v-if="isLoading" class="text-center py-4 text-gray-500">
-                    Cargando más registros...
-                </div>
             </div>
+            <transition name="fade">
+                <div
+                    v-if="isLoading"
+                    class="flex flex-col items-center justify-center py-10 gap-3 animate__animated animate__fadeIn"
+                >
+                    <!-- Texto con puntos animados y color más suave -->
+                    <span
+                        class="text-indigo-600 font-semibold text-base flex items-center gap-1"
+                    >
+                        Cargando
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                    </span>
+
+                    <span
+                        class="text-gray-400 text-xs transition-opacity duration-500"
+                    >
+                        Por favor espera, obteniendo registros...
+                    </span>
+                </div>
+            </transition>
         </div>
-        <!-- Modal DE AGREGAR -->
-        <!-- Modal DE AGREGAR -->
+
+        <!-- =======================
+             MODAL DE AGREGAR/EDITAR
+        ======================= -->
         <ModalGestion
             :show="showModal"
             :title="registroEditar ? 'Editar Registro' : 'Nuevo Registro'"
@@ -672,8 +708,10 @@ function enviarImportacion() {
                 />
             </template>
         </ModalGestion>
-        <!-- Modal DE INPORTAR -->
 
+        <!-- =======================
+             MODAL DE IMPORTACIÓN
+        ======================= -->
         <ModalImportacion
             :show="showInportarModal"
             title="Importar nuevos Registros"
@@ -681,7 +719,6 @@ function enviarImportacion() {
             :initialForm="formImportar"
             :previewRows="previewRows"
             :allRows="allPreviewRows"
-            :endpoint="route('vodafone.import')"
             method="post"
             @close="cerrarModal"
             @submit="importarArchivo"
@@ -915,7 +952,9 @@ function enviarImportacion() {
             </template>
         </ModalImportacion>
 
-        <!-- Modal DE ASIGNACION -->
+        <!-- =======================
+             MODAL DE ASIGNACIÓN
+        ======================= -->
         <ModalGestion
             :show="showAsignacionModal"
             :title="asignacionTitulo ? 'ASIGNAR' : 'Asignación de Registros'"
@@ -1009,3 +1048,36 @@ function enviarImportacion() {
         </ModalGestion>
     </AuthenticatedLayout>
 </template>
+<style scoped>
+@keyframes typing-dot {
+    0%,
+    80%,
+    100% {
+        transform: scale(0.8);
+        opacity: 0.3;
+    }
+    40% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+}
+
+.typing-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background-color: currentColor;
+    border-radius: 9999px;
+    animation: typing-dot 1.2s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(1) {
+    animation-delay: 0s;
+}
+.typing-dot:nth-child(2) {
+    animation-delay: 0.15s;
+}
+.typing-dot:nth-child(3) {
+    animation-delay: 0.3s;
+}
+</style>

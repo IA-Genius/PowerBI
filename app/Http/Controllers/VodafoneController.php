@@ -8,26 +8,49 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Imports\VodafoneImport;
-use App\Models\LogImportacionVodafone;
+
+use Carbon\Carbon;
 
 class VodafoneController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // Cargar el usuario asignado correctamente
+        // Si no hay fechas, por defecto ayer y hoy
+        $fechaDesde = $request->input('fecha_desde') ?: Carbon::yesterday()->toDateString();
+        $fechaHasta = $request->input('fecha_hasta') ?: Carbon::today()->toDateString();
 
-        $query = Vodafone::query()->with(['asignado_a', 'user']);
+        $desde = Carbon::parse($fechaDesde)->startOfDay();
+        $hasta = Carbon::parse($fechaHasta)->endOfDay();
+
+        $query = Vodafone::query()
+            ->with(['asignado_a', 'user'])
+            ->whereBetween('created_at', [$desde, $hasta]);
 
         if (!$user->can('vodafone.ver-global')) {
             $query->where('user_id', $user->id);
         }
 
-        $items = $query->orderBy('id')->paginate(1000);
+        $items = $query->orderBy('id')->get();
+
+        // Formatear la fecha aquí
+        $hoy = Carbon::today();
+        $ayer = Carbon::yesterday();
+        $items->transform(function ($item) use ($hoy, $ayer) {
+            $fecha = Carbon::parse($item->created_at);
+            if ($fecha->isSameDay($hoy)) {
+                $dia = 'Hoy';
+            } elseif ($fecha->isSameDay($ayer)) {
+                $dia = 'Ayer';
+            } else {
+                $dia = $fecha->format('d/m/Y');
+            }
+            $hora = $fecha->format('g:i A');
+            $item->created_at_formatted = "{$dia} {$hora}";
+            return $item;
+        });
 
         $usuariosAsignables = User::permission('vodafone.recibe-asignacion')
             ->select('id', 'name')
@@ -39,22 +62,60 @@ class VodafoneController extends Controller
             'canViewGlobal' => $user->can('vodafone.ver-global'),
             'canAssign' => $user->can('vodafone.asignar'),
             'usuariosAsignables' => $usuariosAsignables,
+            'fechaDesde' => $fechaDesde,
+            'fechaHasta' => $fechaHasta,
         ]);
     }
+
 
     public function fetchPage(Request $request)
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
+        $fechaDesde = $request->input('fecha_desde') ?: Carbon::yesterday()->toDateString();
+        $fechaHasta = $request->input('fecha_hasta') ?: Carbon::today()->toDateString();
 
-        $query = Vodafone::query()->with(['asignado_a', 'user']);
+        $desde = Carbon::parse($fechaDesde)->startOfDay();
+        $hasta = Carbon::parse($fechaHasta)->endOfDay();
+
+        $query = Vodafone::query()->with(['asignado_a', 'user'])
+            ->whereBetween('created_at', [$desde, $hasta]);
+
+        // Filtro de trazabilidad si viene
+        if ($request->filled('trazabilidad')) {
+            $trazabilidad = $request->input('trazabilidad');
+            if (is_array($trazabilidad)) {
+                $query->whereIn('trazabilidad', $trazabilidad);
+            } else {
+                $query->where('trazabilidad', $trazabilidad);
+            }
+        }
+
+        // Puedes agregar más filtros aquí si lo necesitas
 
         if (!$user->can('vodafone.ver-global')) {
             $query->where('user_id', $user->id);
         }
 
-        $items = $query->orderBy('id')->paginate(1000);
+        $items = $query->orderBy('id')->get();
+
+        // Formatear la fecha igual que en index
+        $hoy = Carbon::today();
+        $ayer = Carbon::yesterday();
+        $items->transform(function ($item) use ($hoy, $ayer) {
+            $fecha = Carbon::parse($item->created_at);
+            if ($fecha->isSameDay($hoy)) {
+                $dia = 'Hoy';
+            } elseif ($fecha->isSameDay($ayer)) {
+                $dia = 'Ayer';
+            } else {
+                $dia = $fecha->format('d/m/Y');
+            }
+            $hora = $fecha->format('g:i A');
+            $item->created_at_formatted = "{$dia} {$hora}";
+            return $item;
+        });
 
         return response()->json([
             'items' => $items
@@ -79,7 +140,7 @@ class VodafoneController extends Controller
             'updated_at' => now(),
         ]);
 
-        Log::info('📌 Registros Vodafone asignados', [
+        Log::info('Registros Vodafone asignados', [
             'ids' => $ids,
             'asignado_a_id' => $asignadoA,
             'asignador_id' => $user->id,

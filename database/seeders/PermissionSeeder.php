@@ -48,6 +48,12 @@ class PermissionSeeder extends Seeder
         ]);
         $rolAdmin->syncPermissions(Permission::all());
 
+
+        Role::firstOrCreate([
+            'name' => 'asesor',
+            'guard_name' => 'web',
+        ]);
+
         // ROL COORDINADOR
         $rolCoordinador = Role::firstOrCreate([
             'name' => 'coordinador-vodafone',
