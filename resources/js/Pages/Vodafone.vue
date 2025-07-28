@@ -573,7 +573,28 @@ function enviarImportacion() {
         <!-- =======================
              TABLA PRINCIPAL
         ======================= -->
-        <div class="py-6">
+        <div class="py-6 relative">
+            <!-- Overlay de loading encima de la tabla -->
+            <transition name="fade">
+                <div
+                    v-if="isLoading"
+                    class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black bg-opacity-30 animate__animated animate__fadeIn"
+                >
+                    <span
+                        class="text-indigo-600 font-semibold text-base flex items-center gap-1"
+                    >
+                        Cargando
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                    </span>
+                    <span
+                        class="text-gray-400 text-xs transition-opacity duration-500 mt-2"
+                    >
+                        Por favor espera, obteniendo registros...
+                    </span>
+                </div>
+            </transition>
             <div
                 class="overflow-x-auto rounded-xl border border-gray-100 bg-gray-50"
                 ref="scrollContainer"
@@ -588,28 +609,6 @@ function enviarImportacion() {
                     @delete="eliminar"
                 />
             </div>
-            <transition name="fade">
-                <div
-                    v-if="isLoading"
-                    class="flex flex-col items-center justify-center py-10 gap-3 animate__animated animate__fadeIn"
-                >
-                    <!-- Texto con puntos animados y color más suave -->
-                    <span
-                        class="text-indigo-600 font-semibold text-base flex items-center gap-1"
-                    >
-                        Cargando
-                        <span class="typing-dot"></span>
-                        <span class="typing-dot"></span>
-                        <span class="typing-dot"></span>
-                    </span>
-
-                    <span
-                        class="text-gray-400 text-xs transition-opacity duration-500"
-                    >
-                        Por favor espera, obteniendo registros...
-                    </span>
-                </div>
-            </transition>
         </div>
 
         <!-- =======================
