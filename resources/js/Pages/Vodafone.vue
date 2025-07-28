@@ -139,7 +139,6 @@ function handleSuccess(msg) {
         showConfirmButton: false,
     });
     router.visit(route("vodafone.index"), {
-        preserveScroll: true,
         only: ["items", "success"],
         onFinish: cerrarModal,
     });
@@ -324,6 +323,7 @@ const formImportar = ref({
     archivo: null,
 });
 const progress = ref(0);
+const importando = ref(false); // <-- Agrega esta línea
 
 function handleFileUpload(event) {
     const file = event.target.files[0];
@@ -350,6 +350,8 @@ async function importarArchivo(_, close) {
         }
         payload.append("archivo", archivo);
         payload.append("descripcion", formImportar.value.descripcion);
+
+        // Subida con barra de progreso
         const response = await axios.post(route("vodafone.preview"), payload, {
             headers: { "Content-Type": "multipart/form-data" },
             onUploadProgress: (event) => {
@@ -360,26 +362,36 @@ async function importarArchivo(_, close) {
                 }
             },
         });
-        if (response.data?.preview) {
-            const data = Array.isArray(response.data.preview)
-                ? response.data.preview
-                : Object.values(response.data.preview);
-            allPreviewRows.value = [...data];
-            previewRows.value = allPreviewRows.value.filter((r) => r.duplicado);
-            totalRegistros.value = allPreviewRows.value.length;
+
+        // Al terminar la subida, mostrar "Procesando..."
+        importStatus.value = "Procesando archivo...";
+        progress.value = 100;
+        console.log(response.data);
+        // Procesamiento backend
+        if (Array.isArray(response.data?.preview)) {
+            allPreviewRows.value = response.data.preview;
+            previewRows.value = response.data.preview.filter(
+                (r) => r.duplicado
+            );
+            totalRegistros.value = response.data.preview.length;
             totalDuplicados.value = previewRows.value.length;
-            totalNuevos.value = allPreviewRows.value.filter(
-                (r) => !r.duplicado
-            ).length;
-            importStatus.value = `Se analizaron ${allPreviewRows.value.length} registros`;
+            totalNuevos.value = totalRegistros.value - totalDuplicados.value;
+            importStatus.value = `Se analizaron ${totalRegistros.value} registros`;
         } else {
-            importStatus.value = "No se recibieron datos para previsualizar";
+            allPreviewRows.value = [];
+            previewRows.value = [];
+            totalRegistros.value = 0;
+            totalDuplicados.value = 0;
+            totalNuevos.value = 0;
         }
     } catch (error) {
         importError.value =
             error.response?.data?.message || "Error al importar archivo";
+        importStatus.value = "";
+        progress.value = 0;
     }
 }
+
 function confirmarImportacion() {
     if (previewRows.value.length > 0) {
         Swal.fire({
@@ -403,20 +415,53 @@ function confirmarImportacion() {
         enviarImportacion();
     }
 }
-function enviarImportacion() {
-    axios
-        .post(route("vodafone.importarConfirmado"), {
-            datos: allPreviewRows.value,
-            modo: modoDuplicados.value,
-            descripcion: formImportar.value.descripcion,
-        })
-        .then(() => {
-            handleSuccess("Importación realizada");
-        })
-        .catch((error) => {
-            importError.value =
-                error.response?.data?.message || "Error al importar";
-        });
+async function enviarImportacion() {
+    const datosAEnviar = Array.isArray(allPreviewRows.value)
+        ? allPreviewRows.value
+        : Object.values(allPreviewRows.value);
+
+    importando.value = true;
+    importStatus.value = "Procesando importación...";
+
+    try {
+        const response = await axios.post(
+            route("vodafone.importarConfirmado"),
+            {
+                datos: datosAEnviar,
+                modo: modoDuplicados.value,
+                descripcion: formImportar.value.descripcion,
+            }
+        );
+        const logId = response.data.log_id;
+        await esperarImportacion(logId);
+    } catch (error) {
+        importError.value =
+            error.response?.data?.message || "Error al importar";
+        importando.value = false;
+        importStatus.value = "";
+    }
+}
+
+async function esperarImportacion(logId) {
+    let intentos = 0;
+    while (intentos < 30) {
+        intentos++;
+        try {
+            const resp = await axios.get(
+                route("vodafone.obtenerErroresLog", logId)
+            );
+            if (resp.data && resp.data.errores !== undefined) {
+                importando.value = false;
+                importStatus.value = "";
+                handleSuccess("Importación realizada");
+                return;
+            }
+        } catch (e) {}
+        await new Promise((r) => setTimeout(r, 1000)); // espera 1 segundo
+    }
+    importando.value = false;
+    importStatus.value = "";
+    importError.value = "La importación está tardando demasiado.";
 }
 </script>
 
@@ -807,8 +852,10 @@ function enviarImportacion() {
                                     {{ importError }}
                                 </p>
                                 <div
-                                    v-if="importStatus"
-                                    class="flex items-center gap-2"
+                                    v-if="
+                                        importStatus === 'Subiendo archivo...'
+                                    "
+                                    class="flex items-center gap-2 mt-2"
                                 >
                                     <div
                                         class="w-full bg-gray-200 rounded-full h-3 overflow-hidden"
@@ -894,7 +941,17 @@ function enviarImportacion() {
                             </div>
                         </div>
                     </transition>
-
+                    <transition name="fade">
+                        <div
+                            v-if="importando"
+                            class="flex items-center gap-2 mt-4 justify-center"
+                        >
+                            <span class="loader"></span>
+                            <span class="text-xs text-indigo-700">{{
+                                importStatus
+                            }}</span>
+                        </div>
+                    </transition>
                     <!-- Resumen y opciones -->
                     <transition name="fade">
                         <div

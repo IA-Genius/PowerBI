@@ -100,7 +100,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/vodafone/import', [VodafoneImportController::class, 'import'])->name('vodafone.import');
     Route::post('/vodafone/preview', [VodafoneImportController::class, 'preview'])->name('vodafone.preview');
     Route::post('/vodafone/importar-confirmado', [VodafoneImportController::class, 'importarConfirmado'])->name('vodafone.importarConfirmado');
-    Route::get('/vodafone/errores-log/{id}', [VodafoneImportController::class, 'obtenerErroresLog'])->name('vodafone.errores_log');
+    Route::get('/vodafone/errores-log/{id}', [VodafoneImportController::class, 'obtenerErroresLog'])->name('vodafone.obtenerErroresLog');
 });
 
 // ===================
