@@ -23,23 +23,28 @@ class VodafoneImportController extends Controller
             $dnilist = Vodafone::pluck('dni_cliente')->toArray();
             $tellist = Vodafone::pluck('telefono_principal')->toArray();
 
-            $rows = collect($array[0] ?? [])->slice(1)->map(function ($row, $index) use ($dnilist, $tellist) {
-                $dni = $row[3] ?? '';
-                $tel = $row[5] ?? '';
-                return [
-                    'index' => $index + 2,
-                    'id_interno' => $row[0] ?? '',
-                    'fecha_registro' => $row[1] ?? '',
-                    'nombre_cliente' => $row[2] ?? '',
-                    'dni_cliente' => $dni,
-                    'direccion_cliente' => $row[4] ?? '',
-                    'telefono_principal' => $tel,
-                    'correo_electronico' => $row[6] ?? '',
-                    'operador_origen' => $row[7] ?? '',
-                    'operador_destino' => $row[8] ?? '',
-                    'duplicado' => in_array($dni, $dnilist) || in_array($tel, $tellist),
-                ];
-            });
+            $rows = collect($array[0] ?? [])->slice(1)
+                ->map(function ($row, $index) use ($dnilist, $tellist) {
+                    $dni = $row[3] ?? '';
+                    $tel = $row[5] ?? '';
+                    return [
+                        'index' => $index + 2,
+                        'id_interno' => $row[0] ?? '',
+                        'fecha_registro' => $row[1] ?? '',
+                        'nombre_cliente' => $row[2] ?? '',
+                        'dni_cliente' => $dni,
+                        'direccion_cliente' => $row[4] ?? '',
+                        'telefono_principal' => $tel,
+                        'correo_electronico' => $row[6] ?? '',
+                        'operador_origen' => $row[7] ?? '',
+                        'operador_destino' => $row[8] ?? '',
+                        'duplicado' => ($dni && in_array($dni, $dnilist)) || ($tel && in_array($tel, $tellist)),
+                    ];
+                })
+                ->filter(function ($row) {
+                    // Excluir registros donde todos los campos principales estén vacíos
+                    return $row['dni_cliente'] || $row['telefono_principal'] || $row['nombre_cliente'];
+                });
 
             return response()->json(['preview' => array_values($rows->toArray())]);
         } catch (\Throwable $e) {

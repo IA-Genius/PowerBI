@@ -365,12 +365,16 @@ async function importarArchivo(_, close) {
         // Procesamiento backend
         if (Array.isArray(response.data?.preview)) {
             allPreviewRows.value = response.data.preview;
-            previewRows.value = response.data.preview.filter(
-                (r) => r.duplicado
+            totalRegistros.value = allPreviewRows.value.length;
+            totalDuplicados.value = allPreviewRows.value.filter(
+                (r) => r.duplicado === true
+            ).length;
+            totalNuevos.value = allPreviewRows.value.filter(
+                (r) => !r.duplicado
+            ).length;
+            previewRows.value = allPreviewRows.value.filter(
+                (r) => r.duplicado === true
             );
-            totalRegistros.value = response.data.preview.length;
-            totalDuplicados.value = previewRows.value.length;
-            totalNuevos.value = totalRegistros.value - totalDuplicados.value;
             importStatus.value = `Se analizaron ${totalRegistros.value} registros`;
         } else {
             allPreviewRows.value = [];
