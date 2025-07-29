@@ -55,19 +55,12 @@ return new class extends Migration {
             $table->softDeletes();
         });
 
-        Schema::create('vodafone_auditorias', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('vodafone_id')->constrained('historial_registros_vodafone')->onDelete('cascade');
-            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
-            $table->string('accion');
-            $table->json('campos_editados')->nullable();
-            $table->timestamp('fecha');
-        });
+        // La migración de vodafone_auditorias se moverá a un archivo separado para asegurar el orden correcto de creación de tablas.
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('vodafone_auditorias');
+        // La migración de vodafone_auditorias está en un archivo separado.
         Schema::dropIfExists('historial_registros_vodafone');
         Schema::dropIfExists('log_importacion_vodafone');
     }

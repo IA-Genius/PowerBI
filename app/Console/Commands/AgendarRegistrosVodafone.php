@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\Vodafone;
 use App\Models\VodafoneAuditoria;
+use App\Models\VodafoneAsignacionHistorial;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -36,41 +37,44 @@ class AgendarRegistrosVodafone extends Command
         // Log para ver la fecha y la consulta
         Log::info('AgendarRegistrosVodafone: Fecha límite', ['fecha' => $hoy]);
 
-        $registros = Vodafone::where('trazabilidad', 'asignado')
-            ->where(function ($q) {
-                $q->whereNull('marca_base')
-                    ->orWhereNull('origen_motivo_cancelacion')
-                    ->orWhereNull('nombre_cliente')
-                    ->orWhereNull('dni_cliente')
-                    ->orWhereNull('telefono_principal')
-                    ->orWhere('marca_base', '')
-                    ->orWhere('origen_motivo_cancelacion', '')
-                    ->orWhere('nombre_cliente', '')
-                    ->orWhere('dni_cliente', '')
-                    ->orWhere('telefono_principal', '');
-            })
-            ->get();
+        $registros = Vodafone::where('trazabilidad', 'asignado')->get();
 
-        Log::info('AgendarRegistrosVodafone: Registros encontrados', [
-            'ids' => $registros->pluck('id')->toArray(),
-            'cantidad' => $registros->count(),
-        ]);
-
+        $agendados = 0;
+        $completados = 0;
         foreach ($registros as $registro) {
-            $registro->update(['trazabilidad' => 'agendado']);
-            VodafoneAuditoria::create([
-                'vodafone_id' => $registro->id,
-                'user_id' => $registro->asignado_a_id,
-                'accion' => 'agendado',
-                'campos_editados' => null,
-                'fecha' => now(),
-            ]);
-            Log::info('AgendarRegistrosVodafone: Registro agendado', [
-                'id' => $registro->id,
-                'asignado_a_id' => $registro->asignado_a_id,
-            ]);
+            $estadoAnterior = $registro->trazabilidad;
+            $asignadoDe = $registro->asignado_a_id;
+            // Verificar si todos los campos requeridos están completos (no null y no vacío)
+            $camposCompletos = (
+                $registro->marca_base &&
+                $registro->origen_motivo_cancelacion &&
+                $registro->nombre_cliente &&
+                $registro->dni_cliente &&
+                $registro->orden_trabajo_anterior &&
+                $registro->telefono_principal &&
+                $registro->telefono_adicional &&
+                $registro->correo_referencia &&
+                $registro->direccion_historico &&
+                $registro->observaciones
+            );
+
+            $nuevoEstado = $camposCompletos ? 'completado' : 'agendado';
+            if ($estadoAnterior !== $nuevoEstado) {
+                $registro->update(['trazabilidad' => $nuevoEstado]);
+                if ($nuevoEstado === 'completado') {
+                    $completados++;
+                } else {
+                    $agendados++;
+                }
+                // Solo log, sin crear auditoría
+                Log::info('AgendarRegistrosVodafone: Registro actualizado', [
+                    'id' => $registro->id,
+                    'asignado_a_id' => $asignadoDe,
+                    'nuevo_estado' => $nuevoEstado,
+                ]);
+            }
         }
 
-        $this->info("Registros agendados: " . $registros->count());
+        $this->info("Registros agendados: $agendados | completados: $completados");
     }
 }

@@ -40,7 +40,13 @@
                             <button
                                 type="button"
                                 @click="$emit('close')"
-                                class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
+                                :disabled="importando"
+                                :class="[
+                                    'px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition',
+                                    importando
+                                        ? 'opacity-60 cursor-not-allowed'
+                                        : '',
+                                ]"
                             >
                                 Cancelar
                             </button>
@@ -61,11 +67,12 @@
                                 @click="emit('confirmar')"
                                 :disabled="importando"
                                 :class="[
-                                    'px-5 py-2 rounded-lg font-semibold shadow transition flex items-center justify-center gap-2 w-48',
+                                    'px-5 py-2 rounded-lg font-semibold shadow transition flex items-center gap-2',
                                     importando
                                         ? 'bg-gray-400 cursor-not-allowed text-gray-700'
-                                        : 'bg-blue-600 hover:bg-blue-700 text-white',
+                                        : 'bg-indigo-600 hover:bg-indigo-700 text-white',
                                 ]"
+                                style="height: 40px"
                             >
                                 <span
                                     v-if="importando"

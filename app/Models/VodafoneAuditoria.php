@@ -8,8 +8,10 @@ class VodafoneAuditoria extends Model
 {
     public $timestamps = false; // Usas 'fecha' como timestamp personalizado
 
+
     protected $fillable = [
         'vodafone_id',
+        'asignacion_id',
         'user_id',
         'accion',
         'campos_editados',
@@ -29,5 +31,11 @@ class VodafoneAuditoria extends Model
     public function usuario()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    // Relación: cada log pertenece a una asignación (cabecera)
+    public function asignacion()
+    {
+        return $this->belongsTo(VodafoneAsignacion::class, 'asignacion_id');
     }
 }

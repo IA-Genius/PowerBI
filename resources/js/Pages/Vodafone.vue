@@ -2,7 +2,7 @@
 // =======================
 // 1. IMPORTS
 // =======================
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch, nextTick, watchEffect } from "vue";
 import { usePage, router } from "@inertiajs/vue3";
 import Swal from "sweetalert2";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
@@ -14,6 +14,7 @@ import DropdownLink from "@/Components/DropdownLink.vue";
 import ModalImportacion from "@/Components/ModalImportacion.vue";
 import ExcelLikeGrid from "@/Components/ExcelLikeGrid.vue";
 import axios from "axios";
+import HistorialAsignaciones from "@/Components/HistorialAsignaciones.vue";
 
 // =======================
 // 2. PAGE PROPS & PERMISOS
@@ -23,6 +24,7 @@ const success = pageProps.success;
 const canViewGlobal = pageProps.canViewGlobal;
 const can = pageProps.can || {};
 const canDo = (key) => !!can[key];
+const canViewHistory = !!can["vodafone.ver-historial"];
 const usuariosAsignables = pageProps.usuariosAsignables || [];
 
 // =======================
@@ -45,6 +47,23 @@ const showInportarModal = ref(false);
 const InportarTitulo = ref(null);
 const showAsignacionModal = ref(false);
 const asignacionTitulo = ref(null);
+// Manejo de errores generales del backend
+const generalError = ref(null);
+// Historial de asignaciones
+const showHistorialModal = ref(false);
+const historialSeleccionado = ref([]);
+const registroHistorial = ref(null);
+
+function abrirHistorial(item) {
+    historialSeleccionado.value = item.asignaciones_historial || [];
+    registroHistorial.value = item;
+    showHistorialModal.value = true;
+}
+function cerrarHistorial() {
+    showHistorialModal.value = false;
+    historialSeleccionado.value = [];
+    registroHistorial.value = null;
+}
 
 // =======================
 // 5. FORMULARIOS
@@ -84,10 +103,8 @@ function abrirModalAgregar() {
 }
 function abrirModalInportar() {
     showInportarModal.value = true;
-    formImportar.value = {
-        archivo: null,
-        descripcion: "",
-    };
+    // Solo reiniciar archivo, NO descripcion
+    formImportar.value.archivo = null;
     fileName.value = null;
     excelFile.value = null;
     allPreviewRows.value = [];
@@ -99,7 +116,6 @@ function abrirModalInportar() {
     totalDuplicados.value = 0;
     totalNuevos.value = 0;
     progress.value = 0;
-    showInportarModal.value = true;
 }
 function abrirModalAsignacion() {
     if (selectedRows.value.length === 0) {
@@ -122,6 +138,8 @@ function abrirModalEditar(item) {
     registroEditar.value = item;
     form.value = { ...item };
     showModal.value = true;
+    // Limpiar error general al abrir
+    generalError.value = null;
 }
 function cerrarModal() {
     showModal.value = false;
@@ -130,6 +148,7 @@ function cerrarModal() {
     InportarTitulo.value = null;
     showAsignacionModal.value = false;
     asignacionTitulo.value = null;
+    generalError.value = null;
 }
 
 // =======================
@@ -205,6 +224,25 @@ onMounted(() => {
             showConfirmButton: false,
         });
     }
+    // Mostrar error general si viene de backend
+    if (pageProps.errors && pageProps.errors.general) {
+        generalError.value = pageProps.errors.general;
+    }
+});
+
+// Mostrar SweetAlert si hay error general y el modal de edición está abierto
+watchEffect(() => {
+    if (showModal.value && generalError.value) {
+        Swal.fire({
+            icon: "error",
+            title: "No se puede editar",
+            text: generalError.value,
+            confirmButtonText: "Entendido",
+        });
+        // Cerrar el modal automáticamente
+        showModal.value = false;
+        registroEditar.value = null;
+    }
 });
 watch(
     () => pageProps.items,
@@ -223,9 +261,33 @@ const showFiltro = ref(false);
 const fechaDesde = ref(pageProps.fechaDesde || "");
 const fechaHasta = ref(pageProps.fechaHasta || "");
 
-const filtrosActivos = ref({
-    trazabilidad: canDo("vodafone.asignar") ? ["pendiente"] : [],
-});
+const filtrosActivos = ref(
+    canDo("vodafone.asignar")
+        ? (() => {
+              // Intenta cargar filtros desde localStorage
+              try {
+                  const saved = localStorage.getItem("vodafoneFiltros");
+                  if (saved) {
+                      return JSON.parse(saved);
+                  }
+              } catch (e) {}
+              // Si no hay nada guardado, valor por defecto
+              return { trazabilidad: ["pendiente"] };
+          })()
+        : { trazabilidad: [] }
+);
+
+watch(
+    filtrosActivos,
+    (val) => {
+        if (canDo("vodafone.asignar")) {
+            try {
+                localStorage.setItem("vodafoneFiltros", JSON.stringify(val));
+            } catch (e) {}
+        }
+    },
+    { deep: true }
+);
 
 const rawItems = computed(() => items.value);
 
@@ -314,6 +376,8 @@ const importError = ref("");
 const totalRegistros = ref(0);
 const totalDuplicados = ref(0);
 const totalNuevos = ref(0);
+const previewTruncado = ref(false); // <-- NUEVO
+const previewTotal = ref(0); // <-- NUEVO
 const formImportar = ref({
     archivo: null,
 });
@@ -361,17 +425,18 @@ async function importarArchivo(_, close) {
         // Al terminar la subida, mostrar "Procesando..."
         importStatus.value = "Procesando archivo...";
         progress.value = 100;
-        console.log(response.data);
-        // Procesamiento backend
+        // Guardar truncado y total
+        previewTruncado.value = !!response.data.truncado;
+        previewTotal.value = response.data.total || 0;
+
+        // Asignar los valores reales enviados por el backend
+        totalRegistros.value = response.data.total_registros || 0;
+        totalDuplicados.value = response.data.total_duplicados || 0;
+        totalNuevos.value = response.data.total_nuevos || 0;
+
+        // Solo para la tabla de preview
         if (Array.isArray(response.data?.preview)) {
             allPreviewRows.value = response.data.preview;
-            totalRegistros.value = allPreviewRows.value.length;
-            totalDuplicados.value = allPreviewRows.value.filter(
-                (r) => r.duplicado === true
-            ).length;
-            totalNuevos.value = allPreviewRows.value.filter(
-                (r) => !r.duplicado
-            ).length;
             previewRows.value = allPreviewRows.value.filter(
                 (r) => r.duplicado === true
             );
@@ -379,15 +444,14 @@ async function importarArchivo(_, close) {
         } else {
             allPreviewRows.value = [];
             previewRows.value = [];
-            totalRegistros.value = 0;
-            totalDuplicados.value = 0;
-            totalNuevos.value = 0;
         }
     } catch (error) {
         importError.value =
             error.response?.data?.message || "Error al importar archivo";
         importStatus.value = "";
         progress.value = 0;
+        previewTruncado.value = false;
+        previewTotal.value = 0;
     }
 }
 
@@ -554,6 +618,43 @@ async function asignarRegistros(slotForm) {
         isLoadingAsignacion.value = false;
     }
 }
+
+// =======================
+// 12. CONTADOR DE FILTROS ACTIVOS
+// =======================
+
+const activeFilterOptions = computed(() => {
+    const filtros = filtrosActivos.value || {};
+    let opciones = [];
+    Object.keys(filtros).forEach((k) => {
+        if (
+            k !== "search" &&
+            Array.isArray(filtros[k]) &&
+            filtros[k].length > 0
+        ) {
+            opciones = opciones.concat(filtros[k]);
+        }
+    });
+    return opciones;
+});
+const cabecerasHistorial = computed(() => {
+    const ult = registroHistorial.value?.ultima_asignacion
+        ? [
+              {
+                  ...registroHistorial.value.ultima_asignacion,
+                  auditoria: registroHistorial.value.auditoria_historial || [],
+              },
+          ]
+        : [];
+    const resto = historialSeleccionado.value
+        .filter(
+            (hh) =>
+                !registroHistorial.value?.ultima_asignacion ||
+                hh.id !== registroHistorial.value.ultima_asignacion.id
+        )
+        .map((hh) => ({ ...hh, auditoria: hh.auditoria_historial || [] }));
+    return [...ult, ...resto];
+});
 </script>
 
 <!-- =======================
@@ -595,6 +696,12 @@ async function asignarRegistros(slotForm) {
                             <span class="text-sm font-medium text-gray-700"
                                 >Filtros</span
                             >
+                            <span
+                                class="ml-2 px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold"
+                                v-if="activeFilterOptions.length > 0"
+                            >
+                                {{ activeFilterOptions.length }}
+                            </span>
                         </button>
                         <FiltroFlotante
                             v-show="showFiltro"
@@ -717,29 +824,8 @@ async function asignarRegistros(slotForm) {
              TABLA PRINCIPAL
         ======================= -->
         <div class="py-6 relative">
-            <!-- Overlay de loading encima de la tabla -->
-            <transition name="fade">
-                <div
-                    v-if="isLoading"
-                    class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black bg-opacity-30 animate__animated animate__fadeIn"
-                >
-                    <span
-                        class="text-indigo-600 font-semibold text-base flex items-center gap-1"
-                    >
-                        Cargando
-                        <span class="typing-dot"></span>
-                        <span class="typing-dot"></span>
-                        <span class="typing-dot"></span>
-                    </span>
-                    <span
-                        class="text-gray-400 text-xs transition-opacity duration-500 mt-2"
-                    >
-                        Por favor espera, obteniendo registros...
-                    </span>
-                </div>
-            </transition>
             <div
-                class="overflow-x-auto rounded-xl border border-gray-100 bg-gray-50"
+                class="overflow-x-auto rounded-xl border border-gray-100 bg-gray-50 relative"
                 ref="scrollContainer"
             >
                 <ExcelLikeGrid
@@ -748,10 +834,92 @@ async function asignarRegistros(slotForm) {
                     :canViewGlobal="canViewGlobal"
                     :canEdit="canDo('vodafone.editar')"
                     :canDelete="canDo('vodafone.eliminar')"
+                    :isLoading="isLoading"
+                    :canViewHistory="canViewHistory"
                     v-model:selected="selectedRows"
                     @edit="abrirModalEditar"
                     @delete="eliminar"
+                    @showHistory="abrirHistorial"
                 />
+                <!-- =======================
+             MODAL DE HISTORIAL DE ASIGNACIONES
+        ======================= -->
+                <ModalGestion
+                    v-if="canViewHistory"
+                    :show="showHistorialModal"
+                    title="Historial de Asignaciones"
+                    infoOnly
+                    @close="cerrarHistorial"
+                >
+                    <template #default>
+                        <HistorialAsignaciones
+                            :cabeceras="
+                                [
+                                    registroHistorial?.ultima_asignacion
+                                        ? {
+                                              ...registroHistorial.ultima_asignacion,
+                                              auditoria:
+                                                  registroHistorial.auditoria_historial ||
+                                                  [],
+                                          }
+                                        : null,
+                                    ...historialSeleccionado
+                                        .filter(
+                                            (hh) =>
+                                                !registroHistorial?.ultima_asignacion ||
+                                                hh.id !==
+                                                    registroHistorial
+                                                        .ultima_asignacion.id
+                                        )
+                                        .map((hh) => ({
+                                            ...hh,
+                                            auditoria:
+                                                hh.auditoria_historial || [],
+                                        })),
+                                ].filter(Boolean)
+                            "
+                        />
+                    </template>
+                </ModalGestion>
+                <!-- Overlay de loading SOLO sobre la tabla -->
+                <transition name="fade">
+                    <div
+                        v-if="isLoading"
+                        class="absolute inset-0 z-30 flex flex-col items-center justify-center backdrop-blur-sm bg-black/40 animate__animated animate__fadeIn"
+                        style="pointer-events: none"
+                    >
+                        <div class="flex flex-col items-center gap-3">
+                            <svg
+                                class="animate-spin h-10 w-10 text-indigo-500"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle
+                                    class="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    stroke-width="4"
+                                ></circle>
+                                <path
+                                    class="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                ></path>
+                            </svg>
+                            <span
+                                class="text-indigo-600 font-semibold text-lg text-center drop-shadow"
+                            >
+                                Cargando registros...
+                            </span>
+                            <span class="text-gray-300 text-xs text-center">
+                                Por favor espera, obteniendo registros.
+                            </span>
+                        </div>
+                    </div>
+                </transition>
             </div>
         </div>
 
@@ -771,6 +939,18 @@ async function asignarRegistros(slotForm) {
             :method="registroEditar ? 'put' : 'post'"
             @close="cerrarModal"
             @success="handleSuccess"
+            @general-error="
+                (msg) => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'No se puede editar',
+                        text: msg,
+                        confirmButtonText: 'Entendido',
+                    });
+                    showModal = false;
+                    registroEditar = null;
+                }
+            "
         >
             <template #default="{ form: slotForm, errors }">
                 <InputField
@@ -942,35 +1122,59 @@ async function asignarRegistros(slotForm) {
                         <!-- Progreso -->
                         <transition name="fade">
                             <div
-                                v-if="importStatus || importError"
-                                class="pt-2"
+                                v-if="
+                                    importStatus === 'Subiendo archivo...' ||
+                                    importando ||
+                                    importError
+                                "
+                                class="flex items-center gap-3 mt-2 w-full min-h-[24px]"
                             >
-                                <p
-                                    v-if="importError"
-                                    class="text-sm text-red-600 animate__animated animate__shakeX"
-                                >
-                                    {{ importError }}
-                                </p>
                                 <div
+                                    class="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden shadow-inner"
+                                >
+                                    <div
+                                        class="bg-gradient-to-r from-indigo-400 to-indigo-700 h-2 animate-pulse transition-all duration-500"
+                                        :style="{ width: progress + '%' }"
+                                    ></div>
+                                </div>
+                                <span
                                     v-if="
                                         importStatus === 'Subiendo archivo...'
                                     "
-                                    class="flex items-center gap-2 mt-2"
+                                    class="text-xs font-semibold text-indigo-700 w-10 text-right"
+                                    >{{ progress }}%</span
                                 >
-                                    <div
-                                        class="w-full bg-gray-200 rounded-full h-3 overflow-hidden"
-                                    >
-                                        <div
-                                            class="bg-gradient-to-r from-indigo-400 to-indigo-700 h-3 transition-all duration-500"
-                                            :style="{ width: progress + '%' }"
-                                        ></div>
-                                    </div>
-                                    <span
-                                        class="text-xs font-semibold text-indigo-700 w-10 text-right"
-                                    >
-                                        {{ progress }}%
-                                    </span>
-                                </div>
+                                <svg
+                                    v-if="importando"
+                                    class="w-4 h-4 text-indigo-500 animate-spin ml-2"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <circle
+                                        class="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        stroke-width="4"
+                                    ></circle>
+                                    <path
+                                        class="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                    ></path>
+                                </svg>
+                                <span
+                                    v-if="importando && !importError"
+                                    class="text-xs text-indigo-700 font-semibold ml-1"
+                                    >Procesando...</span
+                                >
+                                <span
+                                    v-if="importError"
+                                    class="text-xs text-red-600 animate__animated animate__shakeX ml-2"
+                                    >{{ importError }}</span
+                                >
                             </div>
                         </transition>
                     </div>
@@ -1041,23 +1245,14 @@ async function asignarRegistros(slotForm) {
                                 </table>
                             </div>
                             <div
-                                v-if="previewRows.length > 1000"
-                                class="text-xs text-gray-500 mt-2 text-center"
+                                v-if="previewTruncado"
+                                class="text-xs text-orange-600 mt-2 text-center font-semibold animate__animated animate__fadeIn"
                             >
-                                Mostrando {{ previewRows.length }} registros
-                                duplicados.
+                                Mostrando solo los primeros
+                                {{ allPreviewRows.length }} registros de
+                                {{ previewTotal }} totales. Si necesitas
+                                importar más, divide el archivo.
                             </div>
-                        </div>
-                    </transition>
-                    <transition name="fade">
-                        <div
-                            v-if="importando"
-                            class="flex items-center gap-2 mt-4 justify-center"
-                        >
-                            <span class="loader"></span>
-                            <span class="text-xs text-indigo-700">{{
-                                importStatus
-                            }}</span>
                         </div>
                     </transition>
                     <!-- Resumen y opciones -->

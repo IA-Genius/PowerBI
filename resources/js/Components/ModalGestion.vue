@@ -4,9 +4,7 @@
             v-if="show"
             class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
         >
-            <div
-                class="bg-gradient-to-br from-blue-600 to-indigo-600 p-1 rounded-xl shadow-2xl w-full max-w-lg transition-all"
-            >
+            <div class="rounded-2xl shadow-2xl w-full max-w-2xl transition-all">
                 <div class="bg-white rounded-lg p-6">
                     <h2
                         class="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2"
@@ -27,6 +25,7 @@
                         {{ title }}
                     </h2>
                     <form
+                        v-if="!props.infoOnly"
                         @submit.prevent="handleSubmit"
                         class="space-y-4"
                         autocomplete="off"
@@ -40,27 +39,50 @@
                             >
                                 Cancelar
                             </button>
-
                             <button
                                 type="submit"
                                 :disabled="props.loading"
-                                :class="[
-                                    'px-5 py-2 rounded-lg font-semibold shadow transition flex items-center gap-2',
-                                    props.loading
-                                        ? 'bg-gray-400 cursor-not-allowed text-gray-700'
-                                        : 'bg-indigo-600 hover:bg-indigo-700 text-white',
-                                ]"
+                                class="px-5 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow hover:scale-105 transition-transform flex items-center gap-2 border border-indigo-700/10 disabled:opacity-70 disabled:cursor-not-allowed"
                             >
-                                <span
-                                    v-if="props.loading"
-                                    class="loader"
-                                ></span>
-                                <span v-else>{{
-                                    submitLabel || "Guardar"
-                                }}</span>
+                                <template v-if="loading">
+                                    <svg
+                                        class="w-5 h-5 animate-spin text-white"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            class="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            stroke-width="4"
+                                        ></circle>
+                                        <path
+                                            class="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                        ></path>
+                                    </svg>
+                                </template>
+                                <template v-else>
+                                    <span>{{ submitLabel }}</span>
+                                </template>
                             </button>
                         </div>
                     </form>
+                    <div v-else>
+                        <slot :form="form" :errors="errors"></slot>
+                        <div class="flex justify-end gap-2 mt-6">
+                            <button
+                                type="button"
+                                @click="$emit('close')"
+                                class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -99,9 +121,13 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    infoOnly: {
+        type: Boolean,
+        default: false,
+    },
 });
 
-const emit = defineEmits(["close", "success", "submit"]);
+const emit = defineEmits(["close", "success", "submit", "general-error"]);
 
 const form = reactive({});
 const errors = ref({});
@@ -114,6 +140,7 @@ watchEffect(() => {
 });
 
 function handleSubmit() {
+    if (props.infoOnly) return; // No hacer nada si es solo informativo
     errors.value = {};
 
     const data = props.transform(form);
@@ -136,6 +163,9 @@ function handleSubmit() {
             },
             onError: (err) => {
                 errors.value = err;
+                if (err && err.general) {
+                    emit("general-error", err.general);
+                }
             },
         });
     } else {
@@ -147,6 +177,9 @@ function handleSubmit() {
             },
             onError: (err) => {
                 errors.value = err;
+                if (err && err.general) {
+                    emit("general-error", err.general);
+                }
             },
         });
     }

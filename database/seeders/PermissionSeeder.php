@@ -25,6 +25,7 @@ class PermissionSeeder extends Seeder
                 'importar',   // importar registros de otros
                 'asignar',       // asignar registros
                 'recibe-asignacion', // se puede asignar a este usuario
+                'ver-historial', // ver historial de asignaciones
             ],
         ];
 
@@ -67,6 +68,7 @@ class PermissionSeeder extends Seeder
             'vodafone.importar',
             'vodafone.ver-global',
             'vodafone.asignar',
+            'vodafone.ver-historial',
         ]);
 
         // ROL FILTRADOR

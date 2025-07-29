@@ -64,7 +64,7 @@ class VodafoneImportJob implements ShouldQueue
                     'trazabilidad' => 'pendiente',
                     'asignado_a_id' => $row['asignado_a_id'] ?? null,
                     'user_id' => $this->userId,
-                    'upload_id' => $row['upload_id'] ?? null,
+                    'upload_id' => $this->logId,
                 ];
 
                 try {

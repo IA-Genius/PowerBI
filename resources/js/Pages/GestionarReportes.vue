@@ -325,113 +325,40 @@ const reportesFiltrados = computed(() => {
                 <div
                     v-for="reporte in reportesFiltrados"
                     :key="reporte.id"
-                    class="rounded-lg border border-gray-200 bg-white/90 shadow-sm hover:shadow-md transition-all p-4 flex flex-col min-h-[110px]"
+                    class="group transition-all duration-300 rounded-xl border border-gray-200 bg-white/95 shadow hover:shadow-lg hover:border-indigo-300 p-5 flex flex-col min-h-[140px] relative overflow-hidden"
                 >
-                    <!-- Header -->
-                    <div class="">
-                        <div class="headerReportes">
+                    <!-- Icono y acciones -->
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-3">
                             <span
-                                class="rounded-full bgPrincipal flex items-center justify-center text-base font-bold shadow w-full p-m-10"
+                                class="w-11 h-11 rounded-full bg-gradient-to-tr from-indigo-500 to-indigo-400 flex items-center justify-center text-xl font-bold shadow-lg border-2 border-white group-hover:scale-105 transition-transform"
                             >
                                 <div
-                                    class="w-10 h-10 [&_svg]:w-full [&_svg]:h-full [&_svg]:fill-white [&_svg]:stroke-white [&_svg]:color-white"
+                                    class="w-7 h-7 [&_svg]:w-full [&_svg]:h-full [&_svg]:fill-white [&_svg]:stroke-white"
                                     v-html="reporte.icon"
                                 ></div>
                             </span>
                             <span
-                                class="text-base font-medium text-gray-900 truncate max-w-[170px] sm:max-w-[250px]"
+                                class="text-lg font-semibold text-gray-900 truncate max-w-[180px] sm:max-w-[260px] group-hover:text-indigo-700 transition-colors"
                                 :title="reporte.nombre"
                             >
                                 {{ reporte.nombre }}
                             </span>
                         </div>
-                    </div>
-
-                    <!-- Cartera -->
-                    <div
-                        class="flex flex-wrap gap-1 mb-1 justify-center"
-                        style="padding: 10px"
-                    >
-                        <template v-if="reporte.cartera_id">
-                            <span
-                                class="flex bgSecundario items-center bg-gray-100 border border-gray-200 rounded-full px-2 py-0.5 text-xs text-gray-700 font-medium"
-                                :title="
-                                    carteras.find(
-                                        (c) => c.id === reporte.cartera_id
-                                    )?.nombre
-                                "
-                            >
-                                <svg
-                                    data-v-f62e011f=""
-                                    style="margin-right: 10px"
-                                    class="w-6 h-6 text-white flex-shrink-0"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 512 512"
-                                    fill="currentColor"
-                                >
-                                    <path
-                                        data-v-f62e011f=""
-                                        d="M80 32C35.8 32 0 67.8 0 112L0 400c0 44.2 35.8 80 80 80h352c44.2 0 80-35.8 80-80V176c0-44.2-35.8-80-80-80H112c-8.8 0-16 7.2-16 16s7.2 16 16 16h320c26.5 0 48 21.5 48 48v224c0 26.5-21.5 48-48 48H80c-26.5 0-48-21.5-48-48V112c0-26.5 21.5-48 48-48h384c8.8 0 16-7.2 16-16s-7.2-16-16-16H80zM384 312a24 24 0 1 0 0-48 24 24 0 1 0 0 48z"
-                                    ></path>
-                                </svg>
-                                {{
-                                    carteras.find(
-                                        (c) => c.id === reporte.cartera_id
-                                    )?.nombre ?? "Sin cartera"
-                                }}
-                            </span>
-                        </template>
-                        <span v-else class="text-gray-400 italic text-xs"
-                            >Sin cartera</span
-                        >
-                    </div>
-
-                    <Actions
-                        :edit="canDo('reportes.editar')"
-                        :remove="canDo('reportes.eliminar')"
-                        class="botonesTablaReportes"
-                        @edit="abrirModalEditarReporte(reporte)"
-                        @delete="eliminarReporte(reporte)"
-                    />
-                </div>
-
-                <!--<div
-                    v-for="reporte in reportesFiltrados"
-                    :key="reporte.id"
-                    class="transition-opacity duration-300 opacity-100 rounded-lg border border-gray-200 bg-white/90 shadow-sm hover:shadow-md p-4 flex flex-col min-h-[110px]"
-                >
-                   
-                    <div class="flex justify-between items-center mb-2">
-                        <div class="flex items-center gap-2">
-                            <span
-                                class="w-8 h-8 rounded-full bgPrincipal flex items-center justify-center text-base font-bold shadow"
-                            >
-                                <div
-                                    class="w-5 h-5 [&_svg]:w-full [&_svg]:h-full [&_svg]:fill-white [&_svg]:stroke-white"
-                                    v-html="reporte.icon"
-                                ></div>
-                            </span>
-                            <span
-                                class="text-base font-medium text-gray-900 truncate max-w-[170px] sm:max-w-[250px]"
-                                :title="reporte.nombre"
-                            >
-                                {{ reporte.nombre }}
-                            </span>
-                        </div>
-
                         <Actions
                             :edit="true"
                             :remove="true"
                             @edit="abrirModalEditarReporte(reporte)"
                             @delete="eliminarReporte(reporte)"
+                            class="opacity-80 group-hover:opacity-100 transition"
                         />
                     </div>
 
-                   
-                    <div class="flex flex-wrap gap-1 mb-1">
+                    <!-- Cartera -->
+                    <div class="flex flex-wrap gap-2 mb-2">
                         <template v-if="reporte.cartera_id">
                             <span
-                                class="flex items-center bg-gray-100 border border-gray-200 rounded-full px-2 py-0.5 text-xs text-gray-700 font-medium"
+                                class="flex items-center bg-indigo-50 border border-indigo-100 rounded-full px-3 py-1 text-xs text-indigo-700 font-medium shadow-sm"
                                 :title="
                                     carteras.find(
                                         (c) => c.id === reporte.cartera_id
@@ -463,48 +390,62 @@ const reportesFiltrados = computed(() => {
                         >
                     </div>
 
-                   
-                    <LinkCopiable
-                        :link="reporte.link_desktop"
-                        title="Enlace Desktop"
-                    >
-                        <template #icon>
-                            <svg
-                                class="w-4 h-4 text-indigo-500"
-                                fill="currentColor"
-                                viewBox="0 0 512 512"
-                            >
-                                <path
-                                    d="M160 64l0 64 320 0 0-32c0-17.7-14.3-32-32-32L160 64zm-32 0L64 64C46.3 64 32 78.3 32 96l0 32 96 0 0-64zM32 160l0 256c0 17.7 14.3 32 32 32l384 0c17.7 0 32-14.3 32-32l0-256-336 0L32 160zM0 96C0 60.7 28.7 32 64 32l384 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96z"
-                                />
-                            </svg>
-                        </template>
-                    </LinkCopiable>
+                    <!-- Enlaces -->
+                    <div class="flex gap-3 mb-3">
+                        <LinkCopiable
+                            :link="reporte.link_desktop"
+                            title="Enlace Desktop"
+                            class="flex-1"
+                        >
+                            <template #icon>
+                                <svg
+                                    class="w-4 h-4 text-indigo-500"
+                                    fill="currentColor"
+                                    viewBox="0 0 512 512"
+                                >
+                                    <path
+                                        d="M160 64l0 64 320 0 0-32c0-17.7-14.3-32-32-32L160 64zm-32 0L64 64C46.3 64 32 78.3 32 96l0 32 96 0 0-64zM32 160l0 256c0 17.7 14.3 32 32 32l384 0c17.7 0 32-14.3 32-32l0-256-336 0L32 160zM0 96C0 60.7 28.7 32 64 32l384 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96z"
+                                    />
+                                </svg>
+                            </template>
+                        </LinkCopiable>
+                        <LinkCopiable
+                            :link="reporte.link_mobile"
+                            title="Enlace Mobile"
+                            class="flex-1"
+                        >
+                            <template #icon>
+                                <svg
+                                    class="w-4 h-4 text-indigo-500"
+                                    fill="currentColor"
+                                    viewBox="0 0 448 512"
+                                >
+                                    <path
+                                        d="M64 32C46.3 32 32 46.3 32 64l0 384c0 17.7 14.3 32 32 32l320 0c17.7 0 32-14.3 32-32l0-384c0-17.7-14.3-32-32-32L64 32zM0 64C0 28.7 28.7 0 64 0L384 0c35.3 0 64 28.7 64 64l0 384c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 64zM192 400l64 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-64 0c-8.8 0-16-7.2-16-16s7.2-16 16-16z"
+                                    />
+                                </svg>
+                            </template>
+                        </LinkCopiable>
+                    </div>
 
-                    <LinkCopiable
-                        :link="reporte.link_mobile"
-                        title="Enlace Mobile"
-                    >
-                        <template #icon>
-                            <svg
-                                class="w-4 h-4 text-indigo-500"
-                                fill="currentColor"
-                                viewBox="0 0 448 512"
-                            >
-                                <path
-                                    d="M64 32C46.3 32 32 46.3 32 64l0 384c0 17.7 14.3 32 32 32l320 0c17.7 0 32-14.3 32-32l0-384c0-17.7-14.3-32-32-32L64 32zM0 64C0 28.7 28.7 0 64 0L384 0c35.3 0 64 28.7 64 64l0 384c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 64zM192 400l64 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-64 0c-8.8 0-16-7.2-16-16s7.2-16 16-16z"
-                                />
-                            </svg>
-                        </template>
-                    </LinkCopiable>
-
-                   
+                    <!-- Footer -->
                     <div
                         class="flex justify-between items-center border-t border-gray-100 pt-2 mt-auto text-[11px] text-gray-400"
                     >
-                        <span>ID: {{ reporte.id }}</span>
+                        <span>
+                            <span class="font-semibold text-indigo-400"
+                                >ID:</span
+                            >
+                            {{ reporte.id }}
+                        </span>
+                        <span v-if="reporte.orden !== undefined" class="ml-2">
+                            <span class="font-semibold text-gray-400"
+                                >Orden:</span
+                            >
+                            {{ reporte.orden }}
+                        </span>
                     </div>
-                </div>-->
+                </div>
                 <div
                     v-if="reportesFiltrados.length === 0"
                     key="no-data"

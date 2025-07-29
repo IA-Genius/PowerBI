@@ -4,11 +4,9 @@
             v-if="show"
             class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
         >
-            <div
-                class="bg-gradient-to-br from-blue-600 to-indigo-600 p-1 rounded-xl shadow-2xl w-full max-w-2xl transition-all"
-            >
+            <div class="rounded-2xl shadow-2xl w-full max-w-2xl transition-all">
                 <div
-                    class="bg-white rounded-lg flex flex-col"
+                    class="bg-white rounded-2xl flex flex-col shadow-lg border border-gray-100"
                     style="min-height: 580px; max-height: 92vh"
                 >
                     <!-- Header y Tabs -->
@@ -83,15 +81,39 @@
                             <button
                                 type="button"
                                 @click="$emit('close')"
-                                class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
+                                class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition border border-gray-300 shadow-sm"
                             >
                                 Cancelar
                             </button>
                             <button
                                 type="submit"
-                                class="px-5 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow hover:scale-105 transition-transform"
+                                :disabled="loading"
+                                class="px-5 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow hover:scale-105 transition-transform flex items-center gap-2 border border-indigo-700/10 disabled:opacity-70 disabled:cursor-not-allowed"
                             >
-                                {{ submitLabel }}
+                                <template v-if="loading">
+                                    <svg
+                                        class="w-5 h-5 animate-spin text-white"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            class="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            stroke-width="4"
+                                        ></circle>
+                                        <path
+                                            class="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                        ></path>
+                                    </svg>
+                                </template>
+                                <template v-else>
+                                    <span>{{ submitLabel }}</span>
+                                </template>
                             </button>
                         </div>
                     </form>
@@ -104,6 +126,8 @@
 <script setup>
 import { ref } from "vue";
 import { router } from "@inertiajs/vue3";
+
+const loading = ref(false);
 
 const props = defineProps({
     show: Boolean,
@@ -128,14 +152,22 @@ const errors = ref({});
 
 function handleSubmit() {
     errors.value = {};
+    loading.value = true;
     const data = props.transform(props.form);
     router[props.method](props.endpoint, data, {
         onSuccess: (page) => {
+            loading.value = false;
             if (page.props?.success) {
                 emit("success", page.props.success);
             }
         },
-        onError: (err) => (errors.value = err),
+        onError: (err) => {
+            loading.value = false;
+            errors.value = err;
+        },
+        onFinish: () => {
+            loading.value = false;
+        },
     });
 }
 </script>

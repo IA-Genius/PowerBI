@@ -1,53 +1,117 @@
 <template>
-    <div>
-        <!-- Botones de selección -->
-        <div
-            class="flex gap-2 flex-wrap"
-            style="background-color: white; border: none"
-        >
+    <div class="relative">
+        <!-- Botones de selección modernos, esquina inferior derecha -->
+        <div class="fixed bottom-6 right-8 z-40 flex gap-2 select-none">
             <button
                 @click="selectAll"
-                class="btn bgPrincipal btnTablas flex gap-2 itens-center"
+                class="modern-btn"
+                title="Seleccionar todo"
             >
-                <!-- Icono seleccionar todo -->
                 <svg
-                    class="w-5 h-5"
+                    class="w-5 h-5 text-indigo-500"
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 448 512"
                 >
-                    <!--! Font Awesome Pro 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2025 Fonticons, Inc. -->
                     <path
                         fill="currentColor"
                         d="M64 64C46.3 64 32 78.3 32 96l0 320c0 17.7 14.3 32 32 32l320 0c17.7 0 32-14.3 32-32l0-320c0-17.7-14.3-32-32-32L64 64zM0 96C0 60.7 28.7 32 64 32l320 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96zM301.6 200.5l-80 128c-2.8 4.5-7.6 7.3-12.9 7.5s-10.3-2.2-13.5-6.4l-48-64c-5.3-7.1-3.9-17.1 3.2-22.4s17.1-3.9 22.4 3.2l34 45.3 67.6-108.2c4.7-7.5 14.6-9.8 22-5.1s9.8 14.6 5.1 22z"
                     />
                 </svg>
-                Seleccionar todo
             </button>
             <button
                 @click="clearSelection"
-                class="btn bgPrincipal btnTablas flex gap-2 itens-center"
+                class="modern-btn"
+                title="Limpiar selección"
             >
-                <!-- Icono limpiar selección -->
                 <svg
-                    class="w-5 h-5"
+                    class="w-5 h-5 text-indigo-500"
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 640 640"
                 >
-                    <!--! Font Awesome Pro 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2025 Fonticons, Inc. -->
                     <path
                         fill="currentColor"
-                        d="M605.7 45.7C608.8 42.6 608.8 37.5 605.7 34.4C602.6 31.3 597.5 31.3 594.4 34.4L378.4 250.4L354.2 226.2C334 206 302.8 201.6 277.9 215.5L48.4 342.9C38.3 348.5 32 359.2 32 370.8C32 379.2 35.4 387.4 41.3 393.3L246.7 598.7C252.7 604.7 260.8 608 269.3 608C280.9 608 291.6 601.7 297.2 591.6L424.6 362.2C438.5 337.2 434.1 306.1 413.9 285.9L389.7 261.7L605.7 45.7zM342.8 237.4L402.5 297.1C417.7 312.3 420.9 335.6 410.5 354.4L383.1 403.8L236.1 256.9L285.5 229.5C304.2 219.1 327.6 222.4 342.8 237.5zM221.6 264.9L375 418.4L283.1 583.8C280.3 588.9 275 592 269.2 592C265 592 260.9 590.3 257.9 587.3L128.9 458.3L189.6 397.6C192.7 394.5 192.7 389.4 189.6 386.3C186.5 383.2 181.4 383.2 178.3 386.3L117.6 447L52.6 382C49.6 379 47.9 375 47.9 370.7C47.9 364.9 51 359.6 56.1 356.8L221.5 264.9z"
-                    />
+                        d="M601 73C610.4 63.6 610.4 48.4 601 39.1C591.6 29.8 576.4 29.7 567.1 39.1L367.1 239.1L354.2 226.2C334 206 302.8 201.6 277.9 215.5L48.4 342.9C38.3 348.5 32 359.2 32 370.8C32 379.2 35.4 387.4 41.3 393.3L246.7 598.7C252.7 604.7 260.8 608 269.3 608C280.9 608 291.6 601.7 297.2 591.6L424.6 362.2C438.5 337.2 434.1 306.1 413.9 285.9L401 273L601 73zM320.2 260.1L379.9 319.8C385 324.9 386 332.6 382.6 338.9L367.7 365.7L274.3 272.3L301.1 257.4C307.3 253.9 315.1 255 320.2 260.1zM230.6 296.6L343.4 409.4L265.5 549.7L169 453.2L187 399.3C189.1 393 183.1 387.1 176.9 389.2L123 407.2L90.5 374.7L230.8 296.8z"
+                    ></path>
                 </svg>
-                Limpiar
             </button>
         </div>
         <!-- Grid principal -->
-        <div
-            ref="gridContainer"
-            id="myGrid"
-            class="ag-theme-alpine w-full h-[700px] rounded-lg shadow border"
-        ></div>
+        <div class="relative">
+            <div
+                ref="gridContainer"
+                id="myGrid"
+                :class="'ag-theme-alpine w-full rounded-lg shadow border'"
+                :style="{ height: gridHeightStyle.height }"
+            ></div>
+            <transition name="fade">
+                <div
+                    v-if="isLoading"
+                    class="absolute inset-0 z-30 flex flex-col items-center justify-center backdrop-blur-sm bg-black/40 animate__animated animate__fadeIn"
+                    style="pointer-events: none"
+                >
+                    <div class="flex flex-col items-center gap-3">
+                        <svg
+                            class="animate-spin h-10 w-10 text-indigo-500"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <circle
+                                class="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                stroke-width="4"
+                            ></circle>
+                            <path
+                                class="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                            ></path>
+                        </svg>
+                        <span
+                            class="text-indigo-600 font-semibold text-lg text-center drop-shadow"
+                        >
+                            Cargando registros...
+                        </span>
+                        <span class="text-gray-300 text-xs text-center">
+                            Por favor espera, obteniendo registros.
+                        </span>
+                    </div>
+                </div>
+            </transition>
+            <transition name="fade">
+                <div
+                    v-if="
+                        !isLoading && (!props.rows || props.rows.length === 0)
+                    "
+                    class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 animate__animated animate__fadeIn"
+                    style="pointer-events: none"
+                >
+                    <div class="flex flex-col items-center gap-2">
+                        <svg
+                            class="h-10 w-10 text-gray-300"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                        </svg>
+                        <span
+                            class="text-gray-500 font-semibold text-base text-center"
+                            >Sin registros para mostrar</span
+                        >
+                    </div>
+                </div>
+            </transition>
+        </div>
     </div>
 </template>
 
@@ -64,13 +128,37 @@ const props = defineProps({
     canEdit: Boolean,
     canDelete: Boolean,
     canList: Boolean,
+    isLoading: Boolean, // <-- para evitar el warning
+    canViewHistory: Boolean, // <-- ¡AQUÍ!
 });
 
-const emit = defineEmits(["edit", "delete", "list", "update:selected"]);
+const emit = defineEmits([
+    "edit",
+    "delete",
+    "list",
+    "update:selected",
+    "showHistory",
+]);
 
 // ===== VARIABLES REACTIVAS =====
 const gridContainer = ref(null);
 let gridApi = null;
+
+// ===== Altura dinámica del grid =====
+import { computed } from "vue";
+const gridHeightStyle = computed(() => {
+    // Si no hay datos, altura mínima fija
+    if (!props.rows || props.rows.length === 0) {
+        return { height: "700px" };
+    }
+    const rowCount = props.rows.length;
+    const rowHeight = 37;
+    const headerHeight = 35;
+    let totalHeight = headerHeight + rowCount * rowHeight + 2;
+    if (totalHeight < 200) totalHeight = 200;
+    if (totalHeight > 700) totalHeight = 700;
+    return { height: totalHeight + "px" };
+});
 
 // ===== DEFINICIÓN DE COLUMNAS =====
 const columnDefs = props.columns
@@ -78,17 +166,62 @@ const columnDefs = props.columns
         // Mapea cada columna a su definición
         switch (col) {
             case "id":
-                return { field: "id", headerName: "ID" };
+                return {
+                    field: "id",
+                    headerName: "ID",
+                    minWidth: 50,
+                    maxWidth: 60,
+                    width: 50,
+                };
             case "upload_id":
-                return { field: "upload_id", headerName: "Nro. Carga" };
+                return {
+                    field: "upload_id",
+                    headerName: "Carga",
+                    minWidth: 75,
+                    maxWidth: 100,
+                    width: 70,
+                };
             case "created_at_formatted":
                 return {
                     valueGetter: (params) =>
                         params.data?.created_at_formatted || "",
                     headerName: "Fecha de Carga",
+                    minWidth: 130,
+                    maxWidth: 180,
+                    width: 150,
                 };
             case "trazabilidad":
-                return { field: "trazabilidad", headerName: "Trazabilidad" };
+                return {
+                    field: "trazabilidad",
+                    headerName: "Trazabilidad",
+                    minWidth: 100,
+                    maxWidth: 340,
+                    width: 220,
+                    cellRenderer: ({ data }) => {
+                        const estado = (data.trazabilidad || "—").toLowerCase();
+                        let bg = "bg-gray-200",
+                            text = "text-gray-700";
+                        if (estado === "pendiente") {
+                            bg = "bg-yellow-100";
+                            text = "text-yellow-800";
+                        } else if (estado === "asignado") {
+                            bg = "bg-blue-100";
+                            text = "text-blue-700";
+                        } else if (estado === "completado") {
+                            bg = "bg-green-100";
+                            text = "text-green-700";
+                        } else if (estado === "agendado") {
+                            bg = "bg-red-100";
+                            text = "text-red-700";
+                        }
+                        const span = document.createElement("span");
+                        span.className = `${bg} ${text} inline-block px-2 py-1 rounded-full text-xs font-semibold min-w-[70px] text-center whitespace-nowrap`;
+                        span.textContent = data.trazabilidad || "—";
+                        // Tooltip nativo para mostrar el texto completo
+                        span.title = data.trazabilidad || "—";
+                        return span;
+                    },
+                };
             case "asignado_a":
                 return {
                     headerName: "Asignado",
@@ -158,8 +291,11 @@ columnDefs.push({
         const vnode = h(Actions, {
             edit: props.canEdit,
             remove: props.canDelete,
+            list: props.canList,
+            canViewHistory: props.canViewHistory, // <-- ¡AQUÍ!
             onEdit: () => emit("edit", params.data),
             onDelete: () => emit("delete", params.data),
+            onHistory: () => emit("showHistory", params.data),
         });
 
         render(vnode, container);
@@ -277,7 +413,7 @@ watch(
         if (!newRows || newRows.length === 0) {
             rowDataInternal.value = [];
             gridApi.setGridOption("rowData", []);
-            gridApi.showLoadingOverlay();
+            gridApi.hideOverlay();
         } else if (isAppending) {
             const added = newRows.slice(rowDataInternal.value.length);
             rowDataInternal.value = [...rowDataInternal.value, ...added];
@@ -327,10 +463,8 @@ onMounted(() => {
                 params.columnApi.autoSizeColumns(allColumnIds, false);
             }
 
-            // Mostrar loading si no hay datos
-            if (!props.rows || props.rows.length === 0) {
-                gridApi.showLoadingOverlay();
-            }
+            // No mostrar overlay de loading de ag-Grid, el overlay propio ya se muestra
+            gridApi.hideOverlay();
         },
     };
 
@@ -373,6 +507,24 @@ function clearSelection() {
 .btn:hover {
     background-color: #0056b3;
 }
+.modern-btn {
+    background: rgba(255, 255, 255, 0.85);
+    border: none;
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+    box-shadow: none;
+    outline: none;
+}
+.modern-btn:hover {
+    background: #eef2ff;
+    transform: scale(1.12);
+}
 .ag-theme-alpine {
     min-height: 700px;
     font-size: 13px;
@@ -380,4 +532,5 @@ function clearSelection() {
     --ag-header-foreground-color: #333;
     --ag-selected-row-background-color: #ffcc99; /* ← naranja suave */
 }
+/* Eliminado no-vertical-scroll para permitir scroll vertical natural de ag-Grid */
 </style>

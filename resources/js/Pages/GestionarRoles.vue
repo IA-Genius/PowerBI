@@ -324,15 +324,16 @@ function transformarForm(form) {
                         <div
                             v-for="role in roles"
                             :key="role.id"
-                            class="rounded-lg border border-gray-200 bg-white/90 shadow-sm hover:shadow-md transition-all p-4 flex flex-col min-h-[110px]"
+                            class="group transition-all duration-300 rounded-xl border border-gray-200 bg-white/95 shadow hover:shadow-lg hover:border-indigo-300 p-5 flex flex-col min-h-[140px] relative overflow-hidden"
                         >
-                            <div class="flex justify-between items-center mb-2">
-                                <div class="flex items-center gap-2">
+                            <!-- Icono y acciones -->
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="flex items-center gap-3">
                                     <span
-                                        class="w-8 h-8 rounded-full bgPrincipal text-white flex items-center justify-center text-base font-bold shadow"
+                                        class="w-11 h-11 rounded-full bg-gradient-to-tr from-indigo-500 to-indigo-400 flex items-center justify-center text-xl font-bold shadow-lg border-2 border-white group-hover:scale-105 transition-transform"
                                     >
                                         <svg
-                                            class="w-4 h-4"
+                                            class="w-6 h-6 text-white"
                                             fill="none"
                                             stroke="currentColor"
                                             stroke-width="2"
@@ -346,7 +347,7 @@ function transformarForm(form) {
                                         </svg>
                                     </span>
                                     <span
-                                        class="text-base font-medium text-gray-900 truncate max-w-[150px]"
+                                        class="text-lg font-semibold text-gray-900 truncate max-w-[180px] sm:max-w-[260px] group-hover:text-indigo-700 transition-colors"
                                         :title="role.name"
                                     >
                                         {{ role.name }}
@@ -357,32 +358,22 @@ function transformarForm(form) {
                                     :remove="canDo('roles.eliminar')"
                                     @edit="abrirModalEditar(role)"
                                     @delete="eliminarRol(role)"
+                                    class="opacity-80 group-hover:opacity-100 transition"
                                 />
                             </div>
-                            <div class="flex flex-wrap gap-1 mb-1">
+
+                            <!-- Carteras -->
+                            <div class="flex flex-wrap gap-2 mb-2">
                                 <template v-if="role.carteras.length">
                                     <span
                                         v-for="c in role.carteras"
                                         :key="c.id"
-                                        class="flex items-center bg-gray-100 border border-gray-200 rounded-full px-2 py-0.5 text-xs text-gray-700 font-medium"
+                                        class="flex items-center bg-indigo-50 border border-indigo-100 rounded-full px-3 py-1 text-xs text-indigo-700 font-medium shadow-sm"
                                         :title="c.nombre"
                                     >
-                                        <!-- <svg
-                                                class="w-3 h-3 mr-1 text-indigo-400"
-                                                fill="none"
-                                                stroke="currentColor"
- stroke-width="2"
-                                                                                               viewBox="0 0 24 24"
-                                            >
-                                                <path
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    d="M3 7h18"
-                                                ></path>
-                                            </svg> -->
                                         {{ c.nombre }}
                                         <span
-                                            class="ml-1 w-4 h-4 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold flex items-center justify-center border border-indigo-100"
+                                            class="ml-1 w-4 h-4 rounded-full bg-white text-indigo-600 text-[10px] font-bold flex items-center justify-center border border-indigo-200"
                                         >
                                             {{
                                                 role.reportes.filter(
@@ -395,15 +386,19 @@ function transformarForm(form) {
                                 <span
                                     v-else
                                     class="text-gray-400 italic text-xs"
+                                    >Sin carteras</span
                                 >
-                                    Sin carteras
-                                </span>
                             </div>
+
+                            <!-- Footer -->
                             <div
-                                class="flex justify-between items-center border-t border-gray-100 pt-2 mt-auto"
+                                class="flex justify-between items-center border-t border-gray-100 pt-2 mt-auto text-[11px] text-gray-400"
                             >
-                                <span class="text-[11px] text-gray-400">
-                                    ID: {{ role.id }}
+                                <span>
+                                    <span class="font-semibold text-indigo-400"
+                                        >ID:</span
+                                    >
+                                    {{ role.id }}
                                 </span>
                                 <span
                                     v-if="

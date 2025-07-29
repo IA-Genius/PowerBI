@@ -46,7 +46,27 @@ class VodafoneImportController extends Controller
                     return $row['dni_cliente'] || $row['telefono_principal'] || $row['nombre_cliente'];
                 });
 
-            return response()->json(['preview' => array_values($rows->toArray())]);
+            $maxPreview = 1000;
+            $truncado = $rows->count() > $maxPreview;
+            $previewRows = $rows->take($maxPreview)->values()->toArray();
+
+            // Calcular totales reales
+            $total_registros = $rows->count();
+            $total_duplicados = $rows->filter(function ($row) {
+                return $row['duplicado'];
+            })->count();
+            $total_nuevos = $rows->filter(function ($row) {
+                return !$row['duplicado'];
+            })->count();
+
+            return response()->json([
+                'preview' => $previewRows,
+                'truncado' => $truncado,
+                'total' => $total_registros,
+                'total_registros' => $total_registros,
+                'total_duplicados' => $total_duplicados,
+                'total_nuevos' => $total_nuevos,
+            ]);
         } catch (\Throwable $e) {
             return response()->json([
                 'status' => 'error',
