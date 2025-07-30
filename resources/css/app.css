@@ -35,7 +35,13 @@ a,
 button {
     transition: 200ms;
 }
+.sin-justify-center {
+    padding-left: 26px;
+}
 
+.pl-26 {
+    padding-left: 26px;
+}
 /*==============
 MENU
 ==============*/
@@ -63,7 +69,14 @@ label.linkCarteras {
     margin: 0;
     padding-top: 20px;
     padding-bottom: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    display: block;
+    text-align: left;
 }
+
 .customMenu nav {
     overflow: visible;
 }
@@ -92,6 +105,19 @@ label.linkCarteras {
     text-transform: capitalize;
 }
 
+
+.menu-scroll > ul::-webkit-scrollbar {
+    display: none;
+}
+.linkTablaReportes {
+    max-width: 300px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    display: block;
+    text-align: left;
+}
 /*==============
 SCROLLBAR
 ==============*/
@@ -486,6 +512,9 @@ TABLAS Y REPORTES
 }
 .headerReportes {
     text-align: center;
+}
+.headerReportes svg {
+    color: #fff;
 }
 .width-50 {
     width: 49%;

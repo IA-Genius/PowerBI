@@ -128,7 +128,7 @@ console.log(page.props);
                 <button
                     @click="toggleSidebar"
                     class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition"
-                    :class="isSidebarOpen ? 'justify-start' : 'justify-center'"
+                    :class="isSidebarOpen ? 'justify-start pl-26' : 'sin-justify-center'"
                 >
                     <svg
                         v-if="isSidebarOpen"
@@ -173,7 +173,7 @@ console.log(page.props);
                     :href="route('carteras.index')"
                     :active="route().current('carteras.index')"
                     class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition group relative"
-                    :class="isSidebarOpen ? 'justify-start' : 'justify-center'"
+                    :class="isSidebarOpen ? 'justify-start pl-26' : 'sin-justify-center'"
                 >
                     <svg
                         class="w-6 h-6 text-white flex-shrink-0"
@@ -208,7 +208,7 @@ console.log(page.props);
                     :href="route('reportes.index')"
                     :active="route().current('reportes.index')"
                     class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition group relative"
-                    :class="isSidebarOpen ? 'justify-start' : 'justify-center'"
+                    :class="isSidebarOpen ? 'justify-start pl-26' : 'sin-justify-center'"
                 >
                     <svg
                         class="w-6 h-6 text-white flex-shrink-0"
@@ -239,7 +239,7 @@ console.log(page.props);
                     :href="route('roles.index')"
                     :active="route().current('roles.index')"
                     class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition group relative"
-                    :class="isSidebarOpen ? 'justify-start' : 'justify-center'"
+                    :class="isSidebarOpen ? 'justify-start pl-26' : 'sin-justify-center'"
                 >
                     <svg
                         class="w-6 h-6 text-white flex-shrink-0"
@@ -271,7 +271,7 @@ console.log(page.props);
                     :href="route('users.index')"
                     :active="route().current('users.index')"
                     class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition group relative"
-                    :class="isSidebarOpen ? 'justify-start' : 'justify-center'"
+                    :class="isSidebarOpen ? 'justify-start pl-26' : 'sin-justify-center'"
                 >
                     <svg
                         class="w-6 h-6 text-white flex-shrink-0"
@@ -301,7 +301,7 @@ console.log(page.props);
                     :href="route('vodafone.index')"
                     :active="route().current('vodafone.index')"
                     class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition group relative"
-                    :class="isSidebarOpen ? 'justify-start' : 'justify-center'"
+                    :class="isSidebarOpen ? 'justify-start pl-26' : 'sin-justify-center'"
                 >
                     <svg
                         class="w-6 h-6 text-white flex-shrink-0"
@@ -333,7 +333,7 @@ console.log(page.props);
                 </NavLink>
                 <div class="separador" v-if="reportes.length > 0"></div>
 
-                <div class="h-90" v-if="reportes.length > 0">
+                <div class="h-90 menu-scroll" v-if="reportes.length > 0">
                     <label
                         v-if="isSidebarOpen && selectedCartera"
                         class="block text-xs text-white mt-4 mb-2 linkCarteras"
@@ -350,8 +350,8 @@ console.log(page.props);
                                     :class="[
                                         'w-full flex items-center px-3 py-3 transition focus:outline-none linkCarteras',
                                         isSidebarOpen
-                                            ? 'justify-start'
-                                            : 'justify-center',
+                                            ? 'justify-start pl-26'
+                                            : 'sin-justify-center',
                                         selectedReporteId === r.id
                                             ? 'menuActivado linkMenu'
                                             : 'text-white linkMenu',
