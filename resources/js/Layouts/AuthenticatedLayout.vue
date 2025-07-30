@@ -386,7 +386,8 @@ console.log(page.props);
                 <div class="separador" v-if="reportes.length > 0"></div>
 
                 <div
-                    class="max-h-[20vh] overflow-y-auto"
+                    class="overflow-y-auto custom-scroll"
+                    :style="{ maxHeight: `calc(100vh - 360px)` }"
                     v-if="reportes.length > 0"
                 >
                     <label
@@ -743,5 +744,25 @@ console.log(page.props);
         visibility: hidden !important;
         opacity: 0 !important;
     }
+}
+/* Scrollbar moderno y fino para el contenedor de reportes */
+.custom-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #a3a3a3 #f3f4f6;
+}
+.custom-scroll::-webkit-scrollbar {
+    width: 6px;
+    background: transparent;
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+    background: #a3a3a3;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+}
+.custom-scroll::-webkit-scrollbar-track {
+    background: transparent;
 }
 </style>
