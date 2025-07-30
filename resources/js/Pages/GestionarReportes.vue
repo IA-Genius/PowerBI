@@ -440,8 +440,8 @@ const reportesFiltrados = computed(() => {
                                 v-if="reporte.link_desktop"
                                 :href="reporte.link_desktop"
                                 target="_blank"
-                                class="text-indigo-600 underline"
-                                >Desktop</a
+                                class="text-indigo-600 underline linkTablaReportes"
+                                >{{ reporte.link_desktop }}</a
                             >
                             <span v-else class="text-gray-400 italic"
                                 >No disponible</span
@@ -452,8 +452,8 @@ const reportesFiltrados = computed(() => {
                                 v-if="reporte.link_mobile"
                                 :href="reporte.link_mobile"
                                 target="_blank"
-                                class="text-indigo-600 underline"
-                                >Mobile</a
+                                class="text-indigo-600 underline linkTablaReportes"
+                                >{{ reporte.link_mobile }}</a
                             >
                             <span v-else class="text-gray-400 italic"
                                 >No disponible</span
