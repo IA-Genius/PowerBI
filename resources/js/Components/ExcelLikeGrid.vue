@@ -86,7 +86,7 @@
                     v-if="
                         !isLoading && (!props.rows || props.rows.length === 0)
                     "
-                    class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 animate__animated animate__fadeIn"
+                    class="absolute inset-0 flex flex-col items-center justify-center bg-white/80 animate__animated animate__fadeIn"
                     style="pointer-events: none"
                 >
                     <div class="flex flex-col items-center gap-2">

@@ -110,7 +110,7 @@ onMounted(() => {
         }
     });
 });
-console.log(page.props);
+//console.log(page.props);
 </script>
 
 <!-- =========================

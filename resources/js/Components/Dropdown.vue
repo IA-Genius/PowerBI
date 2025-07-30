@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref, watch, nextTick } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 
 const props = defineProps({
     align: { type: String, default: "right" },
@@ -11,7 +11,6 @@ const props = defineProps({
 const open = ref(false);
 const triggerRef = ref(null);
 const dropdownRef = ref(null);
-const dropdownWidth = ref(parseInt(props.minWidth)); // default
 
 const closeOnEscape = (e) => {
     if (open.value && e.key === "Escape") {
@@ -24,18 +23,6 @@ onMounted(() => {
 });
 onUnmounted(() => {
     document.removeEventListener("keydown", closeOnEscape);
-});
-
-watch(open, async (isOpen) => {
-    if (isOpen) {
-        await nextTick();
-        if (triggerRef.value) {
-            const triggerW = triggerRef.value.offsetWidth;
-            const minW = parseInt(props.minWidth);
-            const maxW = parseInt(props.maxWidth);
-            dropdownWidth.value = Math.max(minW, Math.min(triggerW, maxW));
-        }
-    }
 });
 
 const alignmentClasses = computed(() => {
@@ -63,30 +50,36 @@ const alignmentClasses = computed(() => {
             @click="open = false"
         ></div>
 
-        <!-- Dropdown -->
-        <Transition
-            enter-active-class="transition ease-out duration-200"
-            enter-from-class="opacity-0 scale-95"
-            enter-to-class="opacity-100 scale-100"
-            leave-active-class="transition ease-in duration-75"
-            leave-from-class="opacity-100 scale-100"
-            leave-to-class="opacity-0 scale-95"
+        <!-- Dropdown animado con Motion -->
+        <Motion
+            v-show="open"
+            ref="dropdownRef"
+            tag="div"
+            :initial="{ opacity: 0, y: -18, scale: 0.93 }"
+            :enter="{
+                opacity: 1,
+                y: 0,
+                scale: 1,
+                transition: { type: 'spring', stiffness: 320, damping: 18 },
+            }"
+            :leave="{
+                opacity: 0,
+                y: 16,
+                scale: 0.95,
+                transition: { duration: 0.18 },
+            }"
+            class="absolute z-50 mt-2 rounded-xl shadow-xl border border-gray-200 bg-white/95 backdrop-blur-sm"
+            :class="alignmentClasses"
+            @click="open = false"
+            style="width: 100%"
         >
             <div
-                ref="dropdownRef"
-                v-show="open"
-                class="absolute z-50 mt-2 rounded-md shadow-lg"
-                :class="alignmentClasses"
-                :style="{ width: dropdownWidth + 'px' }"
-                @click="open = false"
+                class="rounded-md ring-1 ring-black/10 ring-opacity-10 shadow-sm"
+                :class="contentClasses"
+                style="backdrop-filter: blur(2px)"
             >
-                <div
-                    class="rounded-md ring-1 ring-black ring-opacity-5"
-                    :class="contentClasses"
-                >
-                    <slot name="content" />
-                </div>
+                <slot name="content" />
             </div>
-        </Transition>
+        </Motion>
     </div>
 </template>

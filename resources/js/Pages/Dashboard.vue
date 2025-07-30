@@ -50,10 +50,7 @@ const linkReporte = computed(() => {
                         class="inset-0 flex flex-col items-center rounded-lg border border-indigo-100 justify-center w-full h-[90vh] transition-all duration-500 bg-gradient-to-br from-indigo-100 via-white to-blue-200 overflow-hidden z-50"
                     >
                         <div
-                            class="absolute inset-0 backdrop-blur-[2px] pointer-events-none"
-                        ></div>
-                        <div
-                            class="flex flex-col items-center justify-center w-full h-full z-10 relative"
+                            class="flex flex-col items-center justify-center w-full h-full relative"
                         >
                             <h2
                                 v-motion="{

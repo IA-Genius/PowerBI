@@ -132,7 +132,6 @@ function abrirModalAsignacion() {
 
 onMounted(() => {
     inicializarItems();
-    console.log("Items recibidos:", items.value); // <-- Así ves el array real
 });
 function abrirModalEditar(item) {
     registroEditar.value = item;
