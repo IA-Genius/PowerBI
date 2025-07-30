@@ -82,6 +82,7 @@ onMounted(() => {
         }
     });
 });
+console.log(page.props);
 </script>
 
 <!-- =========================
@@ -509,21 +510,15 @@ onMounted(() => {
                                             }}
                                         </div>
                                         <div
-                                            class="hidden sm:block text-gray-800 leading-tight max-w-[100px]"
+                                            class="hidden sm:block text-gray-800 leading-tight"
                                         >
-                                            <div
-                                                class="font-semibold text-sm truncate"
-                                                title="{{ $page.props.auth.user.name }}"
-                                            >
+                                            <div class="font-semibold text-sm">
                                                 {{ $page.props.auth.user.name }}
+                                                <span class="rollBar">{{
+                                                    $page.props.auth.role
+                                                }}</span>
                                             </div>
-                                            <span
-                                                class="rollBar text-xs text-gray-500 truncate mt-0.5 block"
-                                            >
-                                                {{ $page.props.auth.role }}
-                                            </span>
                                         </div>
-
                                         <!-- Flecha caret -->
                                         <svg
                                             class="w-4 h-4 text-gray-400 ml-2 mr-1"

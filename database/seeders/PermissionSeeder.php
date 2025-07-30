@@ -76,10 +76,19 @@ class PermissionSeeder extends Seeder
             'name' => 'filtrador-vodafone',
             'guard_name' => 'web',
         ]);
+
         $rolFiltrador->syncPermissions([
             'vodafone.ver',
             'vodafone.editar',
             'vodafone.recibe-asignacion',
+        ]);
+        // ROL ASESOR VODAFONE
+        $rolAsesorVodafone = Role::firstOrCreate([
+            'name' => 'asesor-vodafone',
+            'guard_name' => 'web',
+        ]);
+        $rolAsesorVodafone->syncPermissions([
+            'vodafone.ver',
         ]);
     }
 }
