@@ -390,12 +390,6 @@ console.log(page.props);
                     :style="{ maxHeight: `calc(100vh - 360px)` }"
                     v-if="reportes.length > 0"
                 >
-                    <label
-                        v-if="isSidebarOpen && selectedCartera"
-                        class="block text-xs text-white mt-4 mb-2 linkCarteras"
-                    >
-                        Reportes de {{ selectedCartera.nombre }}
-                    </label>
                     <ul v-if="reportesFiltrados.length">
                         <!-- class="overflowHijo" -->
                         <li v-for="r in reportesFiltrados" :key="r.id">

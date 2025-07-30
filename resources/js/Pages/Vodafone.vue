@@ -521,6 +521,15 @@ async function esperarImportacion(logId) {
                     importError.value = "Importación completada con errores.";
                     console.warn("Errores de importación:", errores);
                 } else {
+                    Swal.fire({
+                        icon: "success",
+                        title: "Importación completada",
+                        text: "Los registros se importaron correctamente.",
+                        timer: 2000,
+                        showConfirmButton: false,
+                        position: "top-end",
+                        toast: true,
+                    });
                     handleSuccess("Importación realizada correctamente.");
                 }
                 return;
