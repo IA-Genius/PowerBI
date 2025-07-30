@@ -61,7 +61,6 @@ const visible = ref(false);
                 :value="modelValue"
                 @input="emit('update:modelValue', $event.target.value)"
                 :placeholder="placeholder"
-                :required="required"
                 :minlength="6"
                 autocomplete="new-password"
                 class="border border-gray-300 px-3 py-2 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none pr-10"

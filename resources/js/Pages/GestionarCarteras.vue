@@ -117,7 +117,7 @@
                     name="cartera_nombre"
                     placeholder="Telefonía, Etc"
                     :error="errors.nombre"
-                    :required="true"
+
                 />
                 <InputField
                     class="modalInputs"

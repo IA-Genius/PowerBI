@@ -55,20 +55,25 @@ const alignmentClasses = computed(() => {
             v-show="open"
             ref="dropdownRef"
             tag="div"
-            :initial="{ opacity: 0, y: -18, scale: 0.93 }"
+            :initial="{ opacity: 0, y: -8, scale: 0.98 }"
             :enter="{
                 opacity: 1,
                 y: 0,
                 scale: 1,
-                transition: { type: 'spring', stiffness: 320, damping: 18 },
+                transition: {
+                    type: 'spring',
+                    stiffness: 320,
+                    damping: 22,
+                    duration: 0.18,
+                },
             }"
             :leave="{
                 opacity: 0,
-                y: 16,
-                scale: 0.95,
-                transition: { duration: 0.18 },
+                y: 8,
+                scale: 0.98,
+                transition: { duration: 0.13 },
             }"
-            class="absolute z-50 mt-2 rounded-xl shadow-xl border border-gray-200 bg-white/95 backdrop-blur-sm"
+            class="absolute z-50 mt-2 rounded-xl shadow-xl border border-gray-200 bg-white"
             :class="alignmentClasses"
             @click="open = false"
             style="width: 100%"

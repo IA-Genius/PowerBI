@@ -258,7 +258,6 @@ function transformarForm(form) {
                                 v-model="form.name"
                                 placeholder="role name"
                                 :error="errors.name"
-                                :required="true"
                             />
 
                             <div>

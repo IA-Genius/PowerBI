@@ -518,7 +518,6 @@ const reportesFiltrados = computed(() => {
                         name="reporte_nombre"
                         placeholder="Nombre del reporte"
                         :error="errors.nombre"
-                        :required="true"
                     />
                     <InputField
                         class="modalInputs"
@@ -537,7 +536,6 @@ const reportesFiltrados = computed(() => {
                         name="reporte_link_desktop"
                         placeholder="https://ejemplo.com/desktop"
                         :error="errors.link_desktop"
-                        :required="true"
                     />
                     <InputField
                         class="modalInputs"
@@ -568,7 +566,6 @@ const reportesFiltrados = computed(() => {
                             id="cartera_id"
                             v-model="form.cartera_id"
                             class="border border-gray-300 px-3 py-2 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none"
-                            required
                         >
                             <option
                                 v-for="c in carteras"

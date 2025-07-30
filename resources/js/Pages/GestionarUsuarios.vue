@@ -331,14 +331,12 @@ const tabs = [
                             label="Nombre"
                             v-model="form.name"
                             :error="errors.name"
-                            :required="true"
                         />
                         <InputField
                             class="modalInputs"
                             label="Email"
                             v-model="form.email"
                             :error="errors.email"
-                            :required="true"
                         />
                         <FakePasswordInput
                             class="modalInputs"

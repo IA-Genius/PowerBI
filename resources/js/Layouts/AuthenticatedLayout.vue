@@ -529,6 +529,10 @@ onMounted(() => {
                                         'bg-purple-50 text-purple-600':
                                             !!selectedCartera,
                                     }"
+                                    :title="
+                                        selectedCartera?.nombre || 'Carteras'
+                                    "
+                                    style="max-width: 220px; min-width: 100px"
                                 >
                                     <svg
                                         class="h-6 w-6"
@@ -544,7 +548,13 @@ onMounted(() => {
                                         />
                                     </svg>
                                     <transition name="fade">
-                                        <span class="ml-3">
+                                        <span
+                                            class="ml-3 truncate block max-w-[150px]"
+                                            :title="
+                                                selectedCartera?.nombre ||
+                                                'Carteras'
+                                            "
+                                        >
                                             {{
                                                 selectedCartera?.nombre ||
                                                 "Carteras"
@@ -562,7 +572,12 @@ onMounted(() => {
                                     @click="selectedCarteraId = cartera.id"
                                     class="w-full text-left px-4 py-2 text-sm text-gray-700"
                                 >
-                                    {{ cartera.nombre }}
+                                    <span
+                                        class="block truncate max-w-full"
+                                        :title="cartera.nombre"
+                                    >
+                                        {{ cartera.nombre }}
+                                    </span>
                                 </button>
                             </template>
                         </Dropdown>
