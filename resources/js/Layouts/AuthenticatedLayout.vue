@@ -745,22 +745,28 @@ console.log(page.props);
         opacity: 0 !important;
     }
 }
-/* Scrollbar moderno y fino para el contenedor de reportes */
 .custom-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: #a3a3a3 #f3f4f6;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE 10+ */
 }
 .custom-scroll::-webkit-scrollbar {
-    width: 6px;
+    display: none; /* Chrome/Safari/Edge */
+}
+.custom-scroll::-webkit-scrollbar {
+    width: 0px;
     background: transparent;
+    transition: width 0.2s;
+}
+.custom-scroll:hover::-webkit-scrollbar {
+    width: 6px;
 }
 .custom-scroll::-webkit-scrollbar-thumb {
-    background: #a3a3a3;
+    background: #bdbdbd;
     border-radius: 4px;
     transition: background 0.2s;
 }
-.custom-scroll::-webkit-scrollbar-thumb:hover {
-    background: #6b7280;
+.custom-scroll:hover::-webkit-scrollbar-thumb {
+    background: #888;
 }
 .custom-scroll::-webkit-scrollbar-track {
     background: transparent;

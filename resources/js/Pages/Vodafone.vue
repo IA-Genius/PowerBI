@@ -582,10 +582,7 @@ const columnasGrid = computed(() => {
     }
     return [
         "id",
-        "upload_id",
-        "created_at_formatted",
         "trazabilidad",
-        "asignado_a",
         "marca_base",
         "origen_motivo_cancelacion",
         "nombre_cliente",
@@ -596,7 +593,6 @@ const columnasGrid = computed(() => {
         "correo_referencia",
         "direccion_historico",
         "observaciones",
-        "user",
     ];
 });
 

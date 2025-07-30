@@ -279,30 +279,38 @@ const columnDefs = props.columns
         }
     })
     .filter(Boolean);
+const hasActions =
+    props.canEdit || props.canDelete || props.canList || props.canViewHistory;
+if (hasActions) {
+    columnDefs.push({
+        headerName: "Acciones",
+        field: "acciones",
+        pinned: "right",
+        minWidth: 120,
+        maxWidth: 140,
+        width: 130,
+        resizable: false,
+        flex: undefined, // No flex para que no se expanda
+        cellRenderer: (params) => {
+            const container = document.createElement("div");
+            container.className =
+                "flex items-center justify-center gap-1 h-full";
 
-columnDefs.push({
-    headerName: "Acciones",
-    field: "acciones",
-    pinned: "right",
-    cellRenderer: (params) => {
-        const container = document.createElement("div");
-        container.className = "flex items-center justify-center gap-1 h-full";
+            const vnode = h(Actions, {
+                edit: props.canEdit,
+                remove: props.canDelete,
+                list: props.canList,
+                canViewHistory: props.canViewHistory,
+                onEdit: () => emit("edit", params.data),
+                onDelete: () => emit("delete", params.data),
+                onHistory: () => emit("showHistory", params.data),
+            });
 
-        const vnode = h(Actions, {
-            edit: props.canEdit,
-            remove: props.canDelete,
-            list: props.canList,
-            canViewHistory: props.canViewHistory, // <-- ¡AQUÍ!
-            onEdit: () => emit("edit", params.data),
-            onDelete: () => emit("delete", params.data),
-            onHistory: () => emit("showHistory", params.data),
-        });
-
-        render(vnode, container);
-        return container;
-    },
-});
-
+            render(vnode, container);
+            return container;
+        },
+    });
+}
 const defaultColDef = {
     resizable: true,
     flex: 1,

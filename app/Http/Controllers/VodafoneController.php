@@ -36,6 +36,10 @@ class VodafoneController extends Controller
             $query->where('asignado_a_id', $user->id)
                 ->where('trazabilidad', 'asignado')
                 ->whereBetween('created_at', [$hoy, $manana]);
+        } else if ($user->can('vodafone.ver') && !$user->can('vodafone.ver-global') && !$user->can('vodafone.recibe-asignacion')) {
+            // Solo ver los completados si solo tiene el permiso 'vodafone.ver'
+            $query->where('trazabilidad', 'completado')
+                ->whereBetween('created_at', [$desde, $hasta]);
         } else {
             $query->whereBetween('created_at', [$desde, $hasta]);
             if (!$user->can('vodafone.ver-global')) {
@@ -296,6 +300,31 @@ class VodafoneController extends Controller
             'campos' => $camposEditados,
             'cambios' => $cambios,
         ]);
+
+
+        // Si todos los campos requeridos están completos, cambiar trazabilidad a 'completado'
+        $camposRequeridos = [
+            'marca_base',
+            'origen_motivo_cancelacion',
+            'nombre_cliente',
+            'dni_cliente',
+            'orden_trabajo_anterior',
+            'telefono_principal',
+            'telefono_adicional',
+            'correo_referencia',
+            'direccion_historico',
+            'observaciones',
+        ];
+        $todosCompletos = true;
+        foreach ($camposRequeridos as $campo) {
+            if (empty($data[$campo])) {
+                $todosCompletos = false;
+                break;
+            }
+        }
+        if ($todosCompletos) {
+            $data['trazabilidad'] = 'completado';
+        }
 
         $vodafone->update($data);
 
