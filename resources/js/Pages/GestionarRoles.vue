@@ -112,6 +112,7 @@ function handleSuccess(message) {
         timer: 2000,
         timerProgressBar: true,
     });
+    cerrarModal();
     recargar();
 }
 

@@ -88,6 +88,7 @@ function handleSuccess(message) {
         showConfirmButton: false,
         timer: 2000,
     });
+    cerrarModalReporte();
     router.visit(route("reportes.index"), {
         preserveScroll: true,
         only: ["reportes", "success"],

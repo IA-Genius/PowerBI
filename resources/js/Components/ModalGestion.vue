@@ -5,7 +5,7 @@
             class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
         >
             <div class="rounded-2xl shadow-2xl w-full max-w-2xl transition-all">
-                <div class="bg-white rounded-lg p-6">
+                <div class="bg-white rounded-lg p-6 relative min-h-[250px]">
                     <h2
                         class="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2"
                     >
@@ -35,16 +35,17 @@
                             <button
                                 type="button"
                                 @click="$emit('close')"
-                                class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
+                                :disabled="isLoading"
+                                class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition disabled:opacity-70 disabled:cursor-not-allowed"
                             >
                                 Cancelar
                             </button>
                             <button
                                 type="submit"
-                                :disabled="props.loading"
+                                :disabled="isLoading"
                                 class="px-5 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow hover:scale-105 transition-transform flex items-center gap-2 border border-indigo-700/10 disabled:opacity-70 disabled:cursor-not-allowed"
                             >
-                                <template v-if="loading">
+                                <template v-if="isLoading">
                                     <svg
                                         class="w-5 h-5 animate-spin text-white"
                                         fill="none"
@@ -87,19 +88,6 @@
             </div>
         </div>
     </transition>
-
-    <!-- Overlay de carga -->
-    <transition name="fade">
-        <div
-            v-if="props.loading"
-            class="absolute inset-0 z-30 flex items-center justify-center bg-black bg-opacity-30"
-        >
-            <span class="loader-big"></span>
-            <span class="ml-3 text-white font-semibold"
-                >Asignando registros...</span
-            >
-        </div>
-    </transition>
 </template>
 
 <script setup>
@@ -131,7 +119,7 @@ const emit = defineEmits(["close", "success", "submit", "general-error"]);
 
 const form = reactive({});
 const errors = ref({});
-
+const isLoading = ref(false);
 watchEffect(() => {
     if (props.show) {
         Object.assign(form, props.initialForm);
@@ -140,6 +128,7 @@ watchEffect(() => {
 });
 
 function handleSubmit() {
+    isLoading.value = true;
     if (props.infoOnly) return; // No hacer nada si es solo informativo
     errors.value = {};
 
@@ -159,10 +148,12 @@ function handleSubmit() {
             onSuccess: (page) => {
                 if (page.props?.success) {
                     emit("success", page.props.success);
+                    isLoading.value = false;
                 }
             },
             onError: (err) => {
                 errors.value = err;
+                isLoading.value = false;
                 if (err && err.general) {
                     emit("general-error", err.general);
                 }
@@ -173,10 +164,12 @@ function handleSubmit() {
             onSuccess: (page) => {
                 if (page.props?.success) {
                     emit("success", page.props.success);
+                    isLoading.value = false;
                 }
             },
             onError: (err) => {
                 errors.value = err;
+                isLoading.value = false;
                 if (err && err.general) {
                     emit("general-error", err.general);
                 }
@@ -185,31 +178,3 @@ function handleSubmit() {
     }
 }
 </script>
-
-<style scoped>
-.loader-big {
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #6366f1;
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    animation: spin 0.8s linear infinite;
-    display: inline-block;
-}
-.loader {
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid #6366f1;
-    border-radius: 50%;
-    width: 18px;
-    height: 18px;
-    animation: spin 0.8s linear infinite;
-}
-@keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-    100% {
-        transform: rotate(360deg);
-    }
-}
-</style>

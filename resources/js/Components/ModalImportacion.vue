@@ -66,19 +66,38 @@
                                 type="button"
                                 @click="emit('confirmar')"
                                 :disabled="importando"
-                                :class="[
-                                    'px-5 py-2 rounded-lg font-semibold shadow transition flex items-center gap-2',
+                                class="px-5 py-2 rounded-lg font-semibold shadow transition flex items-center gap-2 border border-indigo-700/10 disabled:opacity-70 disabled:cursor-not-allowed"
+                                :class="
                                     importando
-                                        ? 'bg-gray-400 cursor-not-allowed text-gray-700'
-                                        : 'bg-indigo-600 hover:bg-indigo-700 text-white',
-                                ]"
+                                        ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+                                        : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                                "
                                 style="height: 40px"
                             >
-                                <span
-                                    v-if="importando"
-                                    class="loader-big"
-                                ></span>
-                                <span v-else>Confirmar</span>
+                                <template v-if="importando">
+                                    <svg
+                                        class="w-5 h-5 animate-spin text-white"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            class="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            stroke-width="4"
+                                        ></circle>
+                                        <path
+                                            class="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                        ></path>
+                                    </svg>
+                                </template>
+                                <template v-else>
+                                    <span>Confirmar</span>
+                                </template>
                             </button>
                         </div>
                     </form>
@@ -120,23 +139,3 @@ function emitirEnvio() {
     emit("submit", form, () => emit("close"));
 }
 </script>
-
-<style scoped>
-.loader-big {
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #3498db;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    animation: spin 0.8s linear infinite;
-    display: inline-block;
-}
-@keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-    100% {
-        transform: rotate(360deg);
-    }
-}
-</style>

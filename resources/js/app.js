@@ -4,6 +4,7 @@ import "./bootstrap";
 import { createInertiaApp, Link, Head } from "@inertiajs/vue3";
 import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
 import { createApp, h } from "vue";
+import { MotionPlugin } from "@vueuse/motion";
 import { ZiggyVue } from "../../vendor/tightenco/ziggy";
 
 const appName = import.meta.env.VITE_APP_NAME || "Geatel";
@@ -18,7 +19,8 @@ createInertiaApp({
     setup({ el, App, props, plugin }) {
         const app = createApp({ render: () => h(App, props) })
             .use(plugin)
-            .use(ZiggyVue);
+            .use(ZiggyVue)
+            .use(MotionPlugin);
 
         // Registrar globalmente los componentes de Inertia
         app.component("Head", Head);

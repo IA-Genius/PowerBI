@@ -231,6 +231,7 @@ function handleSuccess(message) {
         showConfirmButton: false,
         timer: 2000,
     });
+    cerrarModal();
     recargar();
 }
 
