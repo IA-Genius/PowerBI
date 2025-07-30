@@ -65,6 +65,34 @@ const reportesFiltrados = computed(() => {
     );
 });
 
+// Tooltip global para reportes
+const tooltip = ref({ show: false, label: "", top: 0, left: 0 });
+let tooltipTimeout = null;
+
+function showTooltipReporte(e, label) {
+    if (tooltipTimeout) clearTimeout(tooltipTimeout);
+    const btn = e.currentTarget;
+    const rect = btn.getBoundingClientRect();
+    const sidebar = document.querySelector("aside");
+    const sidebarRect = sidebar.getBoundingClientRect();
+    // Calcula posición absoluta respecto a la ventana, pegado al sidebar
+    let left = sidebarRect.right + 8;
+    // Si el sidebar está muy pegado al borde derecho, que no se corte
+    const maxLeft = window.innerWidth - 220; // 220px de ancho máx del tooltip
+    if (left > maxLeft) left = maxLeft;
+    tooltip.value = {
+        show: true,
+        label,
+        top: rect.top + rect.height / 2,
+        left,
+    };
+}
+function hideTooltipReporte() {
+    tooltipTimeout = setTimeout(() => {
+        tooltip.value.show = false;
+    }, 80);
+}
+
 function seleccionarReporte(reporte) {
     router.visit(route("dashboard.reporte", reporte.id), {
         preserveState: true,
@@ -128,7 +156,11 @@ console.log(page.props);
                 <button
                     @click="toggleSidebar"
                     class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition"
-                    :class="isSidebarOpen ? 'justify-start pl-26' : 'sin-justify-center'"
+                    :class="
+                        isSidebarOpen
+                            ? 'justify-start pl-26'
+                            : 'sin-justify-center'
+                    "
                 >
                     <svg
                         v-if="isSidebarOpen"
@@ -173,7 +205,11 @@ console.log(page.props);
                     :href="route('carteras.index')"
                     :active="route().current('carteras.index')"
                     class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition group relative"
-                    :class="isSidebarOpen ? 'justify-start pl-26' : 'sin-justify-center'"
+                    :class="
+                        isSidebarOpen
+                            ? 'justify-start pl-26'
+                            : 'sin-justify-center'
+                    "
                 >
                     <svg
                         class="w-6 h-6 text-white flex-shrink-0"
@@ -208,7 +244,11 @@ console.log(page.props);
                     :href="route('reportes.index')"
                     :active="route().current('reportes.index')"
                     class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition group relative"
-                    :class="isSidebarOpen ? 'justify-start pl-26' : 'sin-justify-center'"
+                    :class="
+                        isSidebarOpen
+                            ? 'justify-start pl-26'
+                            : 'sin-justify-center'
+                    "
                 >
                     <svg
                         class="w-6 h-6 text-white flex-shrink-0"
@@ -239,7 +279,11 @@ console.log(page.props);
                     :href="route('roles.index')"
                     :active="route().current('roles.index')"
                     class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition group relative"
-                    :class="isSidebarOpen ? 'justify-start pl-26' : 'sin-justify-center'"
+                    :class="
+                        isSidebarOpen
+                            ? 'justify-start pl-26'
+                            : 'sin-justify-center'
+                    "
                 >
                     <svg
                         class="w-6 h-6 text-white flex-shrink-0"
@@ -271,7 +315,11 @@ console.log(page.props);
                     :href="route('users.index')"
                     :active="route().current('users.index')"
                     class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition group relative"
-                    :class="isSidebarOpen ? 'justify-start pl-26' : 'sin-justify-center'"
+                    :class="
+                        isSidebarOpen
+                            ? 'justify-start pl-26'
+                            : 'sin-justify-center'
+                    "
                 >
                     <svg
                         class="w-6 h-6 text-white flex-shrink-0"
@@ -301,7 +349,11 @@ console.log(page.props);
                     :href="route('vodafone.index')"
                     :active="route().current('vodafone.index')"
                     class="w-full flex items-center px-3 py-3 hover:bg-white/10 transition group relative"
-                    :class="isSidebarOpen ? 'justify-start pl-26' : 'sin-justify-center'"
+                    :class="
+                        isSidebarOpen
+                            ? 'justify-start pl-26'
+                            : 'sin-justify-center'
+                    "
                 >
                     <svg
                         class="w-6 h-6 text-white flex-shrink-0"
@@ -333,7 +385,10 @@ console.log(page.props);
                 </NavLink>
                 <div class="separador" v-if="reportes.length > 0"></div>
 
-                <div class="h-90 menu-scroll" v-if="reportes.length > 0">
+                <div
+                    class="max-h-[20vh] overflow-y-auto"
+                    v-if="reportes.length > 0"
+                >
                     <label
                         v-if="isSidebarOpen && selectedCartera"
                         class="block text-xs text-white mt-4 mb-2 linkCarteras"
@@ -346,6 +401,20 @@ console.log(page.props);
                             <div class="relative group">
                                 <button
                                     @click="seleccionarReporte(r)"
+                                    @mouseenter="
+                                        !isSidebarOpen &&
+                                            showTooltipReporte($event, r.nombre)
+                                    "
+                                    @mouseleave="
+                                        !isSidebarOpen && hideTooltipReporte()
+                                    "
+                                    @focus="
+                                        !isSidebarOpen &&
+                                            showTooltipReporte($event, r.nombre)
+                                    "
+                                    @blur="
+                                        !isSidebarOpen && hideTooltipReporte()
+                                    "
                                     class="w-full flex items-center px-3 py-3 transition hover:bg-white/10 focus:outline-none linkCarteras"
                                     :class="[
                                         'w-full flex items-center px-3 py-3 transition focus:outline-none linkCarteras',
@@ -392,11 +461,6 @@ console.log(page.props);
                                         </span>
                                     </transition>
                                 </button>
-                                <!-- Tooltip solo en desktop -->
-                                <DataTool
-                                    :label="r.nombre"
-                                    :show="!isSidebarOpen"
-                                />
                             </div>
                         </li>
                     </ul>
@@ -406,6 +470,24 @@ console.log(page.props);
                 </div>
             </nav>
         </aside>
+
+        <!-- Tooltip global para reportes -->
+        <DataTool
+            v-if="tooltip.show && !isSidebarOpen"
+            :label="tooltip.label"
+            :show="true"
+            :style="{
+                position: 'fixed',
+                top: tooltip.top + 'px',
+                left: tooltip.left + 'px',
+                zIndex: 9999,
+                pointerEvents: 'none',
+                transition: 'opacity 0.15s',
+                visibility: 'visible',
+                opacity: 1,
+                color: 'white',
+            }"
+        />
 
         <!-- ===== MAIN CONTENT ===== -->
         <div
