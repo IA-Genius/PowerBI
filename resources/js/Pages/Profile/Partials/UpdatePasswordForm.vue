@@ -61,7 +61,6 @@ onMounted(() => {
                     type="password"
                     class="mt-1 block w-full inputs"
                     autocomplete="current-password"
-                    required
                 />
                 <InputError
                     :message="form.errors.current_password"
@@ -78,7 +77,6 @@ onMounted(() => {
                     type="password"
                     class="mt-1 block w-full inputs"
                     autocomplete="new-password"
-                    required
                 />
                 <InputError :message="form.errors.password" class="mt-2" />
             </div>
@@ -94,7 +92,6 @@ onMounted(() => {
                     type="password"
                     class="mt-1 block w-full inputs"
                     autocomplete="new-password"
-                    required
                 />
                 <InputError
                     :message="form.errors.password_confirmation"

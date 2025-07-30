@@ -81,7 +81,8 @@
                             <button
                                 type="button"
                                 @click="$emit('close')"
-                                class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition border border-gray-300 shadow-sm"
+                                :disabled="loading"
+                                class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition border border-gray-300 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
                             >
                                 Cancelar
                             </button>

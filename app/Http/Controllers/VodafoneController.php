@@ -373,7 +373,7 @@ class VodafoneController extends Controller
             'marca_base' => 'nullable|string|max:255',
             'origen_motivo_cancelacion' => 'nullable|string|max:255',
             'nombre_cliente' => 'nullable|string|max:255',
-            'dni_cliente' => ['nullable', 'string', 'max:255', 'unique:historial_registros_vodafone,dni_cliente,' . $ignoreId],
+            'dni_cliente' => ['required', 'string', 'max:255', 'unique:historial_registros_vodafone,dni_cliente,' . $ignoreId],
             'orden_trabajo_anterior' => 'nullable|string|max:255',
             'telefono_principal' => 'nullable|string|max:20',
             'telefono_adicional' => 'nullable|string|max:20',
