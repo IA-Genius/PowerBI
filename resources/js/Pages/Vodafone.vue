@@ -867,10 +867,7 @@ const isLoadingAsignacion = computed(
                     <!-- Filtro de Fechas -->
 
                     <!-- Botón y modal de filtros -->
-                    <div
-                        class="modalFiltros"
-                        v-if="canDo('vodafone.asignar') || canFiltrar"
-                    >
+                    <div class="modalFiltros" v-if="canFiltrar">
                         <button
                             @click="showFiltro = !showFiltro"
                             class="flex items-center h-full gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md shadow hover:bg-gray-50 transition"
