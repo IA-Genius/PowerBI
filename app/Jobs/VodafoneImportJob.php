@@ -69,7 +69,7 @@ class VodafoneImportJob implements ShouldQueue
 
                 try {
                     $dniStr = (string) $dni;
-                    Log::info("Procesando fila", ['fila' => $row['index'], 'dni' => $dniStr]);
+                    Log::info("Procesando fila", ['dni' => $dniStr]);
 
                     $existente = Vodafone::withTrashed()
                         ->whereRaw('CAST(dni_cliente AS CHAR) = ?', [$dniStr])
@@ -103,8 +103,8 @@ class VodafoneImportJob implements ShouldQueue
                         Log::info("Registro creado exitosamente", ['dni' => $dniStr, 'nuevo_id' => $nuevo->id]);
                     }
                 } catch (\Throwable $e) {
-                    $errores[] = "Fila {$row['index']}: " . $e->getMessage();
-                    Log::error("Error en fila {$row['index']}: " . $e->getMessage());
+                    $errores[] = "Error con dni {$dniStr}: " . $e->getMessage();
+                    Log::error("Error con dni {$dniStr}: " . $e->getMessage());
                 }
             }
 

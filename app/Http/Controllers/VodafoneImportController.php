@@ -38,8 +38,9 @@ class VodafoneImportController extends Controller
                         'correo_electronico' => $row[6] ?? '',
                         'operador_origen' => $row[7] ?? '',
                         'operador_destino' => $row[8] ?? '',
+                        'observaciones' => $row[9] ?? '', // <-- agrega esto según la posición real en tu Excel
                         'duplicado' => ($dni && in_array($dni, $dnilist)) || ($tel && in_array($tel, $tellist)),
-                    ];
+                    ];  
                 })
                 ->filter(function ($row) {
                     // Excluir registros donde todos los campos principales estén vacíos
@@ -78,6 +79,10 @@ class VodafoneImportController extends Controller
 
     public function importarConfirmado(Request $request)
     {
+        Log::info('Iniciando importación confirmada', [
+            'datos' => $request->datos,
+            'modo' => $request->modo,
+        ]);
         $request->validate([
             'datos' => 'required|array',
             'modo' => 'nullable|string|in:omitir,actualizar',
@@ -93,19 +98,43 @@ class VodafoneImportController extends Controller
             return isset($row['dni_cliente']) && isset($row['telefono_principal']);
         });
 
+        // Mapeo de campos del array recibido a los campos esperados por Vodafone
+        $mapeo = [
+            'id_interno' => 'marca_base',
+            'fecha_registro' => 'origen_motivo_cancelacion',
+            'nombre_cliente' => 'nombre_cliente',
+            'dni_cliente' => 'dni_cliente',
+            'direccion_cliente' => 'orden_trabajo_anterior',
+            'telefono_principal' => 'telefono_principal',
+            'correo_electronico' => 'telefono_adicional',
+            'operador_origen' => 'correo_referencia',
+            'operador_destino' => 'direccion_historico',
+            'observaciones' => 'observaciones',
+        ];
+
+        $datosMapeados = array_map(function ($row) use ($mapeo) {
+            $nuevo = [];
+            foreach ($mapeo as $origen => $destino) {
+                $nuevo[$destino] = $row[$origen] ?? null;
+            }
+            // Si quieres agregar observaciones, descomenta y ajusta:
+            // $nuevo['observaciones'] = $row['observaciones'] ?? null;
+            return $nuevo;
+        }, $datos);
+
         $log = LogImportacionVodafone::create([
             'user_id' => $user->id,
             'nombre_archivo' => 'importacion-confirmada',
-            'cantidad_registros' => count($datos),
+            'cantidad_registros' => count($datosMapeados),
         ]);
 
         Log::info('Importando registros', [
-            'cantidad' => count($datos),
-            'primer_registro' => $datos[0] ?? null,
+            'cantidad' => count($datosMapeados),
+            'primer_registro' => $datosMapeados[0] ?? null,
         ]);
 
-        // Lanzar el job en background
-        dispatch(new VodafoneImportJob($datos, $request->modo, $log->id, $user->id));
+        // Lanzar el job en background con los datos mapeados
+        dispatch(new VodafoneImportJob($datosMapeados, $request->modo, $log->id, $user->id));
 
         return response()->json([
             'message' => 'Importación en proceso',

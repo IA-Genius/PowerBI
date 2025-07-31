@@ -475,6 +475,7 @@ function confirmarImportacion() {
 }
 
 async function enviarImportacion() {
+    console.log("Datos a enviar:", allPreviewRows.value);
     const datosAEnviar = Array.isArray(allPreviewRows.value)
         ? allPreviewRows.value
         : Object.values(allPreviewRows.value);

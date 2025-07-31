@@ -85,11 +85,6 @@ class VodafoneController extends Controller
                     ->values();
             }
 
-            // Filtrar cabeceras sin detalles relevantes
-            $item->asignaciones_historial = $item->asignaciones_historial->filter(function ($cabecera) {
-                return $cabecera->auditoria_historial && $cabecera->auditoria_historial->count() > 0;
-            })->values();
-
             // Última cabecera relevante
             $ultimaAsignacion = $item->asignaciones_historial->first();
             $item->ultima_asignacion = $ultimaAsignacion;
