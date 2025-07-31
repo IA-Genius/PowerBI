@@ -1086,7 +1086,7 @@ const isLoadingAsignacion = computed(
                 <transition name="fade">
                     <div
                         v-if="isLoading"
-                        class="absolute inset-0 z-30 flex flex-col items-center justify-center backdrop-blur-sm bg-black/40 animate__animated animate__fadeIn"
+                        class="absolute inset-0 z-30 flex flex-col items-center justify-center backdrop-blur-sm bg-black/8 animate__animated animate__fadeIn"
                         style="pointer-events: none"
                     >
                         <div class="flex flex-col items-center gap-3">
@@ -1106,16 +1106,16 @@ const isLoadingAsignacion = computed(
                                 ></circle>
                                 <path
                                     class="opacity-75"
-                                    fill="currentColor"
+                                    fill="#fff"
                                     d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                                 ></path>
                             </svg>
                             <span
-                                class="text-indigo-600 font-semibold text-lg text-center drop-shadow"
+                                class="text-gray-100 font-semibold text-lg text-center drop-shadow"
                             >
                                 Cargando registros...
                             </span>
-                            <span class="text-gray-300 text-xs text-center">
+                            <span class="text-gray-100 text-xs text-center">
                                 Por favor espera, obteniendo registros.
                             </span>
                         </div>
