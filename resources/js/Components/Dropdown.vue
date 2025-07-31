@@ -51,27 +51,24 @@ const alignmentClasses = computed(() => {
         ></div>
 
         <!-- Dropdown animado con Motion -->
-        <Motion
+        <div
             v-show="open"
+            v-motion="open ? 'visible' : 'hidden'"
             ref="dropdownRef"
-            tag="div"
             :initial="{ opacity: 0, y: -8, scale: 0.98 }"
-            :enter="{
-                opacity: 1,
-                y: 0,
-                scale: 1,
-                transition: {
-                    type: 'spring',
-                    stiffness: 320,
-                    damping: 22,
-                    duration: 0.18,
+            :variants="{
+                hidden: { opacity: 0, y: -8, scale: 0.98 },
+                visible: {
+                    opacity: 1,
+                    y: 0,
+                    scale: 1,
+                    transition: {
+                        type: 'spring',
+                        stiffness: 320,
+                        damping: 22,
+                        duration: 180,
+                    },
                 },
-            }"
-            :leave="{
-                opacity: 0,
-                y: 8,
-                scale: 0.98,
-                transition: { duration: 0.13 },
             }"
             class="absolute z-50 mt-2 rounded-xl shadow-xl border border-gray-200 bg-white"
             :class="alignmentClasses"
@@ -85,6 +82,6 @@ const alignmentClasses = computed(() => {
             >
                 <slot name="content" />
             </div>
-        </Motion>
+        </div>
     </div>
 </template>

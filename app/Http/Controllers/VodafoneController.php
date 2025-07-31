@@ -147,16 +147,44 @@ class VodafoneController extends Controller
         $hoy = Carbon::today();
         $ayer = Carbon::yesterday();
         $items->transform(function ($item) use ($hoy, $ayer) {
+            // Formato de fecha amigable
             $fecha = Carbon::parse($item->created_at);
-            if ($fecha->isSameDay($hoy)) {
-                $dia = 'Hoy';
-            } elseif ($fecha->isSameDay($ayer)) {
-                $dia = 'Ayer';
-            } else {
-                $dia = $fecha->format('d/m/Y');
-            }
+            $dia = $fecha->isSameDay($hoy) ? 'Hoy' : ($fecha->isSameDay($ayer) ? 'Ayer' : $fecha->format('d/m/Y'));
             $hora = $fecha->format('g:i A');
-            $item->created_at_formatted = "{$dia} {$hora}";
+            $item->created_at_formatted = "$dia $hora";
+
+            // Historial de asignaciones (cabeceras)
+            $item->asignaciones_historial = VodafoneAsignacion::with(['asignadoDe:id,name', 'asignadoA:id,name', 'usuarioCambio:id,name'])
+                ->where('vodafone_id', $item->id)
+                ->orderByDesc('fecha')
+                ->get();
+
+            // Agregar historial de auditoría a cada cabecera y filtrar cambios irrelevantes
+            foreach ($item->asignaciones_historial as $cabecera) {
+                $cabecera->auditoria_historial = \App\Models\VodafoneAuditoria::with('usuario')
+                    ->where('asignacion_id', $cabecera->id)
+                    ->orderByDesc('fecha')
+                    ->get()
+                    ->map(function ($auditoria) {
+                        $campos = $auditoria->campos_editados;
+                        if (is_array($campos)) {
+                            unset($campos['asignado_a_id']);
+                            $auditoria->setAttribute('campos_editados', $campos);
+                        }
+                        $auditoria->hasRelevantChanges = is_array($auditoria->campos_editados) && count($auditoria->campos_editados) > 0;
+                        return $auditoria;
+                    })
+                    ->filter(function ($auditoria) {
+                        return $auditoria->hasRelevantChanges;
+                    })
+                    ->values();
+            }
+
+            // Última cabecera relevante
+            $ultimaAsignacion = $item->asignaciones_historial->first();
+            $item->ultima_asignacion = $ultimaAsignacion;
+            $item->auditoria_historial = $ultimaAsignacion ? $ultimaAsignacion->auditoria_historial : collect();
+
             return $item;
         });
 
