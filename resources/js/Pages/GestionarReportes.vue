@@ -4,7 +4,7 @@ import ModalGestion from "@/Components/ModalGestion.vue";
 import Actions from "@/Components/Actions.vue";
 import InputField from "@/Components/InputField.vue";
 import { Head, usePage, router } from "@inertiajs/vue3";
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import Swal from "sweetalert2";
 import Dropdown from "@/Components/Dropdown.vue";
 import SvgUploader from "@/Components/SvgUploader.vue";
@@ -27,20 +27,40 @@ const reporteForm = ref({
     orden: 0,
     cartera_id: null,
 });
+
+// Función para cargar preferencia de vista desde localStorage
+function loadViewModeFromStorage() {
+    const stored = localStorage.getItem("reportes_view_mode");
+    return stored ? stored === "grid" : false; // por defecto cards (false)
+}
+
+// Función para guardar preferencia de vista en localStorage
+function saveViewModeToStorage(isGridView) {
+    localStorage.setItem("reportes_view_mode", isGridView ? "grid" : "cards");
+}
+
 window.addEventListener("resize", () => {
+    const wasMobile = esMobile.value;
     esMobile.value = window.innerWidth < 640;
+
     if (esMobile.value) {
-        vistaTabla.value = false;
+        vistaTabla.value = false; // fuerza vista tarjetas en mobile
+    } else if (wasMobile && !esMobile.value) {
+        // Cambió de mobile a desktop: restaurar preferencia
+        vistaTabla.value = loadViewModeFromStorage();
     }
 });
 
-const vistaTabla = ref(false);
+const vistaTabla = ref(loadViewModeFromStorage());
 const esMobile = ref(false);
 onMounted(() => {
     esMobile.value = window.innerWidth < 640;
 
     if (esMobile.value) {
         vistaTabla.value = false; // fuerza vista tarjetas en mobile
+    } else {
+        // En desktop, cargar preferencia guardada
+        vistaTabla.value = loadViewModeFromStorage();
     }
 
     if (success) {
@@ -54,6 +74,17 @@ onMounted(() => {
         });
     }
 });
+
+// Watcher para guardar preferencia de vista en localStorage
+watch(
+    () => vistaTabla.value,
+    (newValue) => {
+        // No guardar si estamos en mobile (siempre cards)
+        if (!esMobile.value) {
+            saveViewModeToStorage(newValue);
+        }
+    }
+);
 
 function abrirModalCrearReporte(carteraId = null) {
     editandoReporte.value = false;

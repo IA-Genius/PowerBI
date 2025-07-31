@@ -38,7 +38,18 @@ const scrollContainer = ref(null);
 // =======================
 // 3.1. VISTA TARJETAS/TABLA
 // =======================
-const vistaTabla = ref(false);
+// Función para cargar preferencia de vista desde localStorage
+function loadViewModeFromStorage() {
+    const stored = localStorage.getItem("vodafone_view_mode");
+    return stored ? stored === "grid" : false; // por defecto cards (false)
+}
+
+// Función para guardar preferencia de vista en localStorage
+function saveViewModeToStorage(isGridView) {
+    localStorage.setItem("vodafone_view_mode", isGridView ? "grid" : "cards");
+}
+
+const vistaTabla = ref(loadViewModeFromStorage());
 const esMobile = ref(false);
 
 // =======================
@@ -714,23 +725,43 @@ function confirmarImportacion() {
 }
 
 async function enviarImportacion() {
-    const datosAEnviar = Array.isArray(importacion.value.allPreviewRows)
-        ? importacion.value.allPreviewRows
-        : Object.values(importacion.value.allPreviewRows);
+    // Enviar el archivo original, NO los datos del preview
+    const archivo = importacion.value.formImportar.archivo;
+
+    if (!(archivo instanceof File)) {
+        importacion.value.importError =
+            "No se encontró el archivo para importar.";
+        return;
+    }
 
     importacion.value.importando = true;
-    importacion.value.importStatus = "Procesando importación...";
+    importacion.value.importStatus = "Procesando importación completa...";
 
     try {
+        // Crear FormData con el archivo original
+        const formData = new FormData();
+        formData.append("archivo", archivo);
+        formData.append("modo", importacion.value.modoDuplicados || "omitir");
+        formData.append(
+            "descripcion",
+            importacion.value.formImportar.descripcion || ""
+        );
+
         const response = await axios.post(
             route("vodafone.importarConfirmado"),
+            formData,
             {
-                datos: datosAEnviar,
-                modo: importacion.value.modoDuplicados,
-                descripcion: importacion.value.formImportar.descripcion,
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
             }
         );
+
         const logId = response.data.log_id;
+        const totalRegistros = response.data.total_registros;
+
+        importacion.value.importStatus = `Procesando ${totalRegistros} registros...`;
+
         await esperarImportacion(logId);
     } catch (error) {
         importacion.value.importError =
@@ -860,6 +891,17 @@ watch(
     { deep: true }
 );
 
+// Watcher para guardar preferencia de vista en localStorage
+watch(
+    () => vistaTabla.value,
+    (newValue) => {
+        // No guardar si estamos en mobile (siempre cards)
+        if (!esMobile.value) {
+            saveViewModeToStorage(newValue);
+        }
+    }
+);
+
 watchEffect(() => {
     if (modales.value.showModal && modalData.value.generalError) {
         mostrarAlerta(
@@ -882,6 +924,9 @@ onMounted(() => {
     esMobile.value = window.innerWidth < 640;
     if (esMobile.value) {
         vistaTabla.value = false; // fuerza vista tarjetas en mobile
+    } else {
+        // En desktop, cargar preferencia guardada
+        vistaTabla.value = loadViewModeFromStorage();
     }
 
     inicializarItems();
@@ -894,9 +939,14 @@ onMounted(() => {
 
     // Listener para cambios de tamaño de ventana
     window.addEventListener("resize", () => {
+        const wasMobile = esMobile.value;
         esMobile.value = window.innerWidth < 640;
+
         if (esMobile.value) {
-            vistaTabla.value = false;
+            vistaTabla.value = false; // fuerza vista tarjetas en mobile
+        } else if (wasMobile && !esMobile.value) {
+            // Cambió de mobile a desktop: restaurar preferencia
+            vistaTabla.value = loadViewModeFromStorage();
         }
     });
 });
@@ -1235,8 +1285,11 @@ const isLoadingAsignacion = computed(
                 <transition name="fade">
                     <div
                         v-if="isLoading"
-                        class="absolute inset-0 z-30 flex flex-col items-center justify-center backdrop-blur-sm bg-black/8 animate__animated animate__fadeIn"
-                        style="pointer-events: none"
+                        class="absolute inset-0 z-30 rounded-md flex flex-col items-center justify-center backdrop-blur-sm bg-black/8 animate__animated animate__fadeIn"
+                        style="
+                            pointer-events: none;
+                            background-color: rgba(0, 0, 0, 0.5);
+                        "
                     >
                         <div class="flex flex-col items-center gap-3">
                             <svg
