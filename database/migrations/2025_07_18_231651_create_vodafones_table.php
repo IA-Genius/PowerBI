@@ -36,7 +36,7 @@ return new class extends Migration {
                 'asignado',
                 'irrelevante',
                 'completado',
-                'agendado'
+                'retornado'
             ])->default('pendiente');
 
             // Datos nuevos solicitados

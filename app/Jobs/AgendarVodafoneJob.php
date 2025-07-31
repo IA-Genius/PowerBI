@@ -10,7 +10,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 
-class AgendarVodafoneJob implements ShouldQueue
+class RetornarVodafoneJob implements ShouldQueue
 {
     use InteractsWithQueue, Queueable, SerializesModels;
 
@@ -42,21 +42,21 @@ class AgendarVodafoneJob implements ShouldQueue
             })
             ->get();
 
-        Log::info('AgendarVodafoneJob: Registros encontrados', [
+        Log::info('RetornarVodafoneJob: Registros encontrados', [
             'ids' => $registros->pluck('id')->toArray(),
             'cantidad' => $registros->count(),
         ]);
 
         foreach ($registros as $registro) {
-            $registro->update(['trazabilidad' => 'agendado']);
+            $registro->update(['trazabilidad' => 'retornado']);
             VodafoneAuditoria::create([
                 'vodafone_id' => $registro->id,
                 'user_id' => $registro->asignado_a_id,
-                'accion' => 'agendado',
+                'accion' => 'retornado',
                 'campos_editados' => null,
                 'fecha' => now(),
             ]);
-            Log::info('AgendarVodafoneJob: Registro agendado', [
+            Log::info('RetornarVodafoneJob: Registro retornado', [
                 'id' => $registro->id,
                 'asignado_a_id' => $registro->asignado_a_id,
             ]);

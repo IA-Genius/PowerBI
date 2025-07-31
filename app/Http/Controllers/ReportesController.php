@@ -9,11 +9,20 @@ use Inertia\Inertia;
 
 class ReportesController extends Controller
 {
-    // Mostrar lista de carteras y reportes
+    // =======================
+    // MÉTODOS PRINCIPALES DE VISTA
+    // =======================
+
+    /**
+     * Display the reports index with all reports and carteras.
+     */
     public function index()
     {
-        $reportes = Reporte::with('cartera')->get();
-        $carteras = Cartera::all();
+        // Obtener reportes con relaciones
+        $reportes = $this->getReportsWithRelations();
+
+        // Obtener datos auxiliares para formularios
+        $carteras = $this->getCarteras();
 
         return Inertia::render('GestionarReportes', [
             'reportes' => $reportes,
@@ -22,58 +31,108 @@ class ReportesController extends Controller
         ]);
     }
 
-    // Crear un nuevo reporte
+    // =======================
+    // MÉTODOS CRUD
+    // =======================
+
+    /**
+     * Store a newly created report in storage.
+     */
     public function store(Request $request)
     {
-        $request->validate([
-            'nombre' => 'required|string|max:255',
-            'link_desktop' => 'required|string|max:255',
-            'link_mobile' => 'nullable|string|max:255',
-            'icon' => 'nullable|string',
-            'orden' => 'nullable|integer',
-            'cartera_id' => 'required|exists:carteras,id',
-        ]);
+        $data = $request->validate($this->validationRules());
 
-        $reporte = Reporte::create([
-            'nombre' => $request->nombre,
-            'link_desktop' => $request->link_desktop,
-            'link_mobile' => $request->link_mobile,
-            'icon' => $request->icon,
-            'orden' => $request->orden,
-            'cartera_id' => $request->cartera_id,
-        ]);
+        // Crear reporte
+        $reporte = $this->createReport($data);
 
-        return redirect()->route('reportes.index')->with('success', "Reporte «{$reporte->nombre}» creado correctamente.");
+        return redirect()
+            ->route('reportes.index')
+            ->with('success', "Reporte «{$reporte->nombre}» creado correctamente.");
     }
 
-    // Actualizar un reporte
+    /**
+     * Update the specified report in storage.
+     */
     public function update(Request $request, Reporte $reporte)
     {
-        $request->validate([
+        $data = $request->validate($this->validationRules());
+
+        // Actualizar reporte
+        $this->updateReport($reporte, $data);
+
+        return redirect()
+            ->route('reportes.index')
+            ->with('success', "Reporte «{$reporte->nombre}» actualizado correctamente.");
+    }
+
+    /**
+     * Remove the specified report from storage.
+     */
+    public function destroy(Reporte $reporte)
+    {
+        $nombre = $reporte->nombre;
+        $reporte->delete();
+
+        return redirect()
+            ->route('reportes.index')
+            ->with('success', "Reporte «{$nombre}» eliminado correctamente.");
+    }
+
+    // =======================
+    // MÉTODOS AUXILIARES PARA DATOS
+    // =======================
+
+    private function getReportsWithRelations()
+    {
+        return Reporte::with('cartera')->get();
+    }
+
+    private function getCarteras()
+    {
+        return Cartera::all();
+    }
+
+    // =======================
+    // MÉTODOS AUXILIARES PARA CRUD
+    // =======================
+
+    private function createReport($data)
+    {
+        return Reporte::create([
+            'nombre' => $data['nombre'],
+            'link_desktop' => $data['link_desktop'],
+            'link_mobile' => $data['link_mobile'],
+            'icon' => $data['icon'],
+            'orden' => $data['orden'],
+            'cartera_id' => $data['cartera_id'],
+        ]);
+    }
+
+    private function updateReport($reporte, $data)
+    {
+        $reporte->update([
+            'nombre' => $data['nombre'],
+            'link_desktop' => $data['link_desktop'],
+            'link_mobile' => $data['link_mobile'],
+            'icon' => $data['icon'],
+            'orden' => $data['orden'],
+            'cartera_id' => $data['cartera_id'],
+        ]);
+    }
+
+    // =======================
+    // REGLAS DE VALIDACIÓN
+    // =======================
+
+    private function validationRules(): array
+    {
+        return [
             'nombre' => 'required|string|max:255',
             'link_desktop' => 'required|string|max:255',
             'link_mobile' => 'nullable|string|max:255',
             'icon' => 'nullable|string',
             'orden' => 'nullable|integer',
             'cartera_id' => 'required|exists:carteras,id',
-        ]);
-
-        $reporte->update([
-            'nombre' => $request->nombre,
-            'link_desktop' => $request->link_desktop,
-            'link_mobile' => $request->link_mobile,
-            'icon' => $request->icon,
-            'orden' => $request->orden,
-            'cartera_id' => $request->cartera_id,
-        ]);
-
-        return redirect()->route('reportes.index')->with('success', "Reporte «{$reporte->nombre}» actualizado correctamente.");
-    }
-
-    // Eliminar un reporte
-    public function destroy(Reporte $reporte)
-    {
-        $reporte->delete();
-        return redirect()->route('reportes.index')->with('success', "Reporte «$reporte->nombre» eliminado");
+        ];
     }
 }

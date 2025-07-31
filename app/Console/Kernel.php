@@ -12,7 +12,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        $schedule->command('vodafone:agendar-incompletos')
+        $schedule->command('vodafone:retornar-incompletos')
             ->dailyAt('18:46')
             ->appendOutputTo(storage_path('logs/schedule.log'));
     }

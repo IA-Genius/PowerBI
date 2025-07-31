@@ -130,6 +130,8 @@ const props = defineProps({
     canList: Boolean,
     isLoading: Boolean, // <-- para evitar el warning
     canViewHistory: Boolean, // <-- ¡AQUÍ!
+    canEditRecord: Function, // <-- Nueva prop para función de validación
+    canEditComplete: Boolean, // <-- Nueva prop para indicar si se puede editar completamente
 });
 
 const emit = defineEmits([
@@ -210,7 +212,7 @@ const columnDefs = props.columns
                         } else if (estado === "completado") {
                             bg = "bg-green-100";
                             text = "text-green-700";
-                        } else if (estado === "agendado") {
+                        } else if (estado === "retornado") {
                             bg = "bg-red-100";
                             text = "text-red-700";
                         }
@@ -280,7 +282,11 @@ const columnDefs = props.columns
     })
     .filter(Boolean);
 const hasActions =
-    props.canEdit || props.canDelete || props.canList || props.canViewHistory;
+    props.canEdit ||
+    props.canDelete ||
+    props.canList ||
+    props.canViewHistory ||
+    props.canEditComplete;
 if (hasActions) {
     columnDefs.push({
         headerName: "Acciones",
@@ -296,8 +302,17 @@ if (hasActions) {
             container.className =
                 "flex items-center justify-center gap-1 h-full";
 
+            // Verificar si el usuario puede editar este registro específico
+            const canEditThisRecord = props.canEditRecord
+                ? props.canEditRecord(params.data)
+                : true;
+
+            // El botón está habilitado si puede editar Y (no es completado O tiene permisos especiales)
+            const isEditEnabled = canEditThisRecord;
+
             const vnode = h(Actions, {
                 edit: props.canEdit,
+                editDisabled: props.canEdit && !isEditEnabled,
                 remove: props.canDelete,
                 list: props.canList,
                 canViewHistory: props.canViewHistory,

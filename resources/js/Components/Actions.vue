@@ -2,9 +2,19 @@
     <div class="flex justify-center gap-2">
         <button
             v-if="edit"
-            @click="$emit('edit')"
-            class="action-btn bg-gradient-to-tr from-indigo-500 to-indigo-400 hover:from-indigo-600 hover:to-indigo-500 text-white"
-            :title="editTitle"
+            @click="editDisabled ? null : $emit('edit')"
+            class="action-btn"
+            :class="
+                editDisabled
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-gradient-to-tr from-indigo-500 to-indigo-400 hover:from-indigo-600 hover:to-indigo-500 text-white'
+            "
+            :title="
+                editDisabled
+                    ? 'No se puede editar - Registro completado'
+                    : editTitle
+            "
+            :disabled="editDisabled"
         >
             <span class="sr-only">Editar</span>
             <svg
@@ -93,6 +103,7 @@
 <script setup>
 const props = defineProps({
     edit: { type: Boolean, default: false },
+    editDisabled: { type: Boolean, default: false },
     remove: { type: Boolean, default: false },
     list: { type: Boolean, default: false },
     editTitle: { type: String, default: "Editar" },
@@ -134,6 +145,11 @@ const props = defineProps({
     filter: brightness(1.08) saturate(1.2);
     box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.1);
     z-index: 2;
+}
+.action-btn:disabled {
+    cursor: not-allowed;
+    filter: none;
+    box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.07);
 }
 .action-btn:focus {
     box-shadow: 0 0 0 2px #6366f1;

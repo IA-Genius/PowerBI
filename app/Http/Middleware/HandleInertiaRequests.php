@@ -32,8 +32,6 @@ class HandleInertiaRequests extends Middleware
         $user = $request->user();
 
         return array_merge(parent::share($request), [
-            'errors' => fn() => $request->session()->get('errors'),
-
             'auth' => [
                 'user' => $user ? $user->toArray() : null,
                 'role' => $user ? $user->getRoleNames()->first() : null,
@@ -55,9 +53,19 @@ class HandleInertiaRequests extends Middleware
                 ? $user->getAllPermissions()->pluck('name')->mapWithKeys(fn($name) => [$name => true])
                 : [],
             'errors' => function () use ($request) {
-                return $request->session()->get('errors')
-                    ? $request->session()->get('errors')->getBag('default')->getMessages()
-                    : (object)[];
+                $errors = $request->session()->get('errors');
+                if (!$errors) {
+                    return new \stdClass();
+                }
+
+                $messages = $errors->getBag('default')->getMessages();
+                $flattenedErrors = [];
+
+                foreach ($messages as $field => $fieldErrors) {
+                    $flattenedErrors[$field] = is_array($fieldErrors) ? $fieldErrors[0] : $fieldErrors;
+                }
+
+                return (object) $flattenedErrors;
             },
 
         ]);

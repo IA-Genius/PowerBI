@@ -2,7 +2,7 @@
 // =======================
 // 1. IMPORTS
 // =======================
-import { ref, computed, onMounted, watch, nextTick, watchEffect } from "vue";
+import { ref, computed, onMounted, watch, watchEffect } from "vue";
 import { usePage, router } from "@inertiajs/vue3";
 import Swal from "sweetalert2";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
@@ -17,18 +17,16 @@ import axios from "axios";
 import HistorialAsignaciones from "@/Components/HistorialAsignaciones.vue";
 
 // =======================
-// 2. PAGE PROPS & PERMISOS
+// 2. COMPOSABLES Y UTILIDADES
 // =======================
 const pageProps = usePage().props;
-const success = pageProps.success;
-const canViewGlobal = pageProps.canViewGlobal;
 const can = pageProps.can || {};
+
+// Función helper para verificar permisos
 const canDo = (key) => !!can[key];
-const canViewHistory = !!can["vodafone.ver-historial"];
-const usuariosAsignables = pageProps.usuariosAsignables || [];
 
 // =======================
-// 3. ESTADO PRINCIPAL
+// 3. PROPIEDADES REACTIVAS - ESTADO PRINCIPAL
 // =======================
 const items = ref([]);
 const selectedRows = ref([]);
@@ -36,37 +34,28 @@ const currentPage = ref(1);
 const lastPage = ref(1);
 const isLoading = ref(false);
 const scrollContainer = ref(null);
-const isLoadingAsignacion = ref(false);
 
 // =======================
-// 4. MODALES
+// 4. PROPIEDADES REACTIVAS - MODALES
 // =======================
-const showModal = ref(false);
-const registroEditar = ref(null);
-const showInportarModal = ref(false);
-const InportarTitulo = ref(null);
-const showAsignacionModal = ref(false);
-const asignacionTitulo = ref(null);
-// Manejo de errores generales del backend
-const generalError = ref(null);
-// Historial de asignaciones
-const showHistorialModal = ref(false);
-const historialSeleccionado = ref([]);
-const registroHistorial = ref(null);
+const modales = ref({
+    showModal: false,
+    showInportarModal: false,
+    showAsignacionModal: false,
+    showHistorialModal: false,
+});
 
-function abrirHistorial(item) {
-    historialSeleccionado.value = item.asignaciones_historial || [];
-    registroHistorial.value = item;
-    showHistorialModal.value = true;
-}
-function cerrarHistorial() {
-    showHistorialModal.value = false;
-    historialSeleccionado.value = [];
-    registroHistorial.value = null;
-}
+const modalData = ref({
+    registroEditar: null,
+    InportarTitulo: null,
+    asignacionTitulo: null,
+    generalError: null,
+    historialSeleccionado: [],
+    registroHistorial: null,
+});
 
 // =======================
-// 5. FORMULARIOS
+// 5. PROPIEDADES REACTIVAS - FORMULARIOS
 // =======================
 const form = ref({
     nombre_cliente: "",
@@ -82,10 +71,277 @@ const form = ref({
 });
 
 // =======================
-// 6. FUNCIONES DE MODALES
+// 6. PROPIEDADES REACTIVAS - FILTROS
+// =======================
+const filtros = ref({
+    search: "",
+    showFiltro: false,
+    fechaDesde: pageProps.fechaDesde || "",
+    fechaHasta: pageProps.fechaHasta || "",
+    filtrosActivos: {},
+});
+
+// =======================
+// 7. PROPIEDADES REACTIVAS - IMPORTACIÓN
+// =======================
+const importacion = ref({
+    excelFile: null,
+    fileName: null,
+    allPreviewRows: [],
+    previewRows: [],
+    modoDuplicados: "omitir",
+    importStatus: "",
+    importError: "",
+    totalRegistros: 0,
+    totalDuplicados: 0,
+    totalNuevos: 0,
+    previewTruncado: false,
+    previewTotal: 0,
+    formImportar: { archivo: null },
+    progress: 0,
+    importando: false,
+    isLoadingAsignacion: false,
+});
+
+// =======================
+// 8. PROPIEDADES COMPUTADAS - PERMISOS
+// =======================
+const permisos = computed(() => ({
+    success: pageProps.success,
+    canViewGlobal: pageProps.canViewGlobal,
+    canViewHistory: canDo("vodafone.ver-historial"),
+    canFiltrar: canDo("vodafone.filtrar"),
+    usuariosAsignables: pageProps.usuariosAsignables || [],
+    // Filtradores sin asignación no pueden cambiar fechas
+    puedeSeleccionarFechas: !(
+        canDo("vodafone.filtrar") && !canDo("vodafone.asignar")
+    ),
+}));
+
+// =======================
+// 9. PROPIEDADES COMPUTADAS - DATOS PROCESADOS
+// =======================
+const rawItems = computed(() => items.value);
+
+const filtrosDisponibles = computed(() => {
+    const list = rawItems.value;
+    return getFiltrosDisponibles(list);
+});
+
+const filteredItems = computed(() => {
+    const rawItemsData = rawItems.value;
+    return getItemsFiltrados(rawItemsData);
+});
+
+const columnasGrid = computed(() => {
+    return getColumnasGrid();
+});
+
+const activeFilterOptions = computed(() => {
+    return getActiveFilterOptions();
+});
+// =======================
+// 10. FUNCIONES AUXILIARES - INICIALIZACIÓN
+// =======================
+function inicializarItems() {
+    items.value = Array.isArray(pageProps.items) ? pageProps.items : [];
+    currentPage.value = 1;
+    lastPage.value = 1;
+}
+
+function getFiltrosIniciales() {
+    // Para usuarios sin permisos específicos, no aplicar filtros automáticos
+    if (!canDo("vodafone.asignar") && !permisos.value.canFiltrar) {
+        return {};
+    }
+
+    try {
+        const saved = localStorage.getItem("vodafoneFiltros");
+        if (saved) {
+            const parsedFilters = JSON.parse(saved);
+            return aplicarRestriccionesFiltros(parsedFilters);
+        }
+    } catch (e) {
+        console.warn("Error parseando localStorage:", e);
+    }
+
+    // Valores por defecto según rol
+    if (canDo("vodafone.asignar")) {
+        return { trazabilidad: ["pendiente"] };
+    } else if (permisos.value.canFiltrar) {
+        return { trazabilidad: ["asignado", "completado"] };
+    }
+
+    // Sin filtros por defecto para otros usuarios
+    return {};
+}
+
+function aplicarRestriccionesFiltros(filtros) {
+    if (permisos.value.canFiltrar && !canDo("vodafone.asignar")) {
+        // Filtrador sin permisos de asignar
+        const opcionesPermitidas = ["asignado", "completado"];
+
+        if (filtros.trazabilidad && Array.isArray(filtros.trazabilidad)) {
+            // Filtrar solo opciones permitidas
+            filtros.trazabilidad = filtros.trazabilidad.filter((opcion) =>
+                opcionesPermitidas.includes(opcion)
+            );
+        } else if (!filtros.trazabilidad) {
+            // Solo aplicar filtros por defecto si no existe el campo trazabilidad
+            filtros.trazabilidad = ["asignado", "completado"];
+        }
+
+        // Si quedó vacía después del filtro, usar valores por defecto
+        if (
+            Array.isArray(filtros.trazabilidad) &&
+            filtros.trazabilidad.length === 0
+        ) {
+            filtros.trazabilidad = ["asignado", "completado"];
+        }
+
+        // Limpiar otros filtros no permitidos para filtradores
+        delete filtros.upload_id;
+    }
+    return filtros;
+}
+
+// =======================
+// 11. FUNCIONES AUXILIARES - FILTROS Y BÚSQUEDA
+// =======================
+function getFiltrosDisponibles(list) {
+    let trazabilidadOpciones = [];
+
+    if (canDo("vodafone.asignar")) {
+        trazabilidadOpciones = [
+            "pendiente",
+            "asignado",
+            "irrelevante",
+            "completado",
+            "retornado",
+        ];
+    } else if (permisos.value.canFiltrar) {
+        trazabilidadOpciones = ["asignado", "completado"];
+    } else {
+        trazabilidadOpciones = [
+            "pendiente",
+            "asignado",
+            "irrelevante",
+            "completado",
+            "retornado",
+        ];
+    }
+
+    const filtros = {
+        operador_actual: [
+            ...new Set(list.map((i) => i.operador_actual).filter(Boolean)),
+        ],
+        trazabilidad: trazabilidadOpciones,
+        ...(canDo("vodafone.asignar") && {
+            upload_id: [
+                ...new Set(list.map((i) => i.upload_id).filter(Boolean)),
+            ]
+                .sort((a, b) => b - a)
+                .slice(0, 15)
+                .sort((a, b) => a - b),
+        }),
+    };
+
+    return Object.fromEntries(
+        Object.entries(filtros).filter(
+            ([key, arr]) =>
+                key === "trazabilidad" || (Array.isArray(arr) && arr.length > 0)
+        )
+    );
+}
+
+function getItemsFiltrados(rawItems) {
+    const filtrosActivos = filtros.value.filtrosActivos || {};
+    const searchValue = filtrosActivos.search;
+    const term =
+        (typeof searchValue === "string" ? searchValue.toLowerCase() : "") ||
+        "";
+    let data = [...rawItems];
+
+    if (term) {
+        data = data.filter((item) =>
+            [
+                item.nombre_cliente,
+                item.dni_cliente,
+                item.telefono_principal,
+            ].some((field) =>
+                (field || "").toString().toLowerCase().includes(term)
+            )
+        );
+    }
+
+    for (const [key, values] of Object.entries(filtrosActivos)) {
+        if (key === "search" || !Array.isArray(values) || values.length === 0)
+            continue;
+
+        data = data.filter((item) => values.includes(item[key]));
+    }
+
+    return data;
+}
+
+function getColumnasGrid() {
+    const columnasBase = [
+        "id",
+        "created_at_formatted",
+        "trazabilidad",
+        "marca_base",
+        "origen_motivo_cancelacion",
+        "nombre_cliente",
+        "dni_cliente",
+        "orden_trabajo_anterior",
+        "telefono_principal",
+        "telefono_adicional",
+        "correo_referencia",
+        "direccion_historico",
+        "observaciones",
+    ];
+
+    if (canDo("vodafone.asignar")) {
+        return [
+            "id",
+            "upload_id",
+            ...columnasBase.slice(1),
+            "asignado_a",
+            "user",
+        ];
+    }
+
+    if (permisos.value.canFiltrar) {
+        return columnasBase;
+    }
+
+    if (canDo("vodafone.recibe-asignacion")) {
+        return ["id", "trazabilidad", "asignado_a", ...columnasBase.slice(3)];
+    }
+
+    return columnasBase;
+}
+
+function getActiveFilterOptions() {
+    const filtrosData = filtros.value.filtrosActivos || {};
+    let opciones = [];
+
+    Object.keys(filtrosData).forEach((k) => {
+        if (
+            k !== "search" &&
+            Array.isArray(filtrosData[k]) &&
+            filtrosData[k].length > 0
+        ) {
+            opciones = opciones.concat(filtrosData[k]);
+        }
+    });
+
+    return opciones;
+} // =======================
+// 12. FUNCIONES DE MODALES - GESTIÓN
 // =======================
 function abrirModalAgregar() {
-    registroEditar.value = null;
+    resetearModal();
     form.value = {
         nombre_cliente: "",
         dni_cliente: "",
@@ -99,74 +355,87 @@ function abrirModalAgregar() {
         observaciones: "",
         trazabilidad: "pendiente",
     };
-    showModal.value = true;
+    modales.value.showModal = true;
 }
+
+function abrirModalEditar(item) {
+    modalData.value.registroEditar = item;
+    form.value = { ...item };
+    modales.value.showModal = true;
+    modalData.value.generalError = null;
+}
+
 function abrirModalInportar() {
-    showInportarModal.value = true;
-    // Solo reiniciar archivo, NO descripcion
-    formImportar.value.archivo = null;
-    fileName.value = null;
-    excelFile.value = null;
-    allPreviewRows.value = [];
-    previewRows.value = [];
-    modoDuplicados.value = "omitir";
-    importStatus.value = "";
-    importError.value = "";
-    totalRegistros.value = 0;
-    totalDuplicados.value = 0;
-    totalNuevos.value = 0;
-    progress.value = 0;
+    modales.value.showInportarModal = true;
+    resetearImportacion();
 }
+
 function abrirModalAsignacion() {
     if (selectedRows.value.length === 0) {
-        Swal.fire({
-            icon: "warning",
-            title: "Ningún registro seleccionado",
-            text: "Por favor selecciona al menos un registro para asignar.",
-            confirmButtonText: "Entendido",
-        });
+        mostrarAlerta(
+            "warning",
+            "Ningún registro seleccionado",
+            "Por favor selecciona al menos un registro para asignar."
+        );
         return;
     }
-    showAsignacionModal.value = true;
+    modales.value.showAsignacionModal = true;
 }
 
-onMounted(() => {
-    inicializarItems();
-});
-function abrirModalEditar(item) {
-    registroEditar.value = item;
-    form.value = { ...item };
-    showModal.value = true;
-    // Limpiar error general al abrir
-    generalError.value = null;
+function abrirHistorial(item) {
+    modalData.value.historialSeleccionado = item.asignaciones_historial || [];
+    modalData.value.registroHistorial = item;
+    modales.value.showHistorialModal = true;
 }
+
 function cerrarModal() {
-    showModal.value = false;
-    registroEditar.value = null;
-    showInportarModal.value = false;
-    InportarTitulo.value = null;
-    showAsignacionModal.value = false;
-    asignacionTitulo.value = null;
-    generalError.value = null;
+    Object.keys(modales.value).forEach((key) => {
+        modales.value[key] = false;
+    });
+    resetearModal();
+}
+
+function cerrarHistorial() {
+    modales.value.showHistorialModal = false;
+    modalData.value.historialSeleccionado = [];
+    modalData.value.registroHistorial = null;
+}
+
+function resetearModal() {
+    modalData.value.registroEditar = null;
+    modalData.value.InportarTitulo = null;
+    modalData.value.asignacionTitulo = null;
+    modalData.value.generalError = null;
+}
+
+function resetearImportacion() {
+    Object.assign(importacion.value, {
+        fileName: null,
+        excelFile: null,
+        allPreviewRows: [],
+        previewRows: [],
+        modoDuplicados: "omitir",
+        importStatus: "",
+        importError: "",
+        totalRegistros: 0,
+        totalDuplicados: 0,
+        totalNuevos: 0,
+        progress: 0,
+        formImportar: { archivo: null },
+        previewTruncado: false,
+        previewTotal: 0,
+    });
 }
 
 // =======================
-// 7. CRUD Y UTILIDADES
+// 13. FUNCIONES DE CRUD Y UTILIDADES
 // =======================
 function handleSuccess(msg) {
-    Swal.fire({
-        toast: true,
-        icon: "success",
-        title: msg,
-        position: "top-end",
-        timer: 2000,
-        showConfirmButton: false,
-    });
+    mostrarToast("success", msg);
     cerrarModal();
-    router.visit(route("vodafone.index"), {
-        only: ["items", "success"],
-    });
+    router.visit(route("vodafone.index"), { only: ["items", "success"] });
 }
+
 function eliminar(item) {
     Swal.fire({
         title: "¿Eliminar registro?",
@@ -180,19 +449,12 @@ function eliminar(item) {
         if (res.isConfirmed) {
             router.delete(`/vodafone/${item.id}`, {
                 onSuccess: () => handleSuccess("Registro eliminado"),
-                onError: () =>
-                    Swal.fire({
-                        toast: true,
-                        icon: "error",
-                        title: "Error al eliminar",
-                        position: "top-end",
-                        timer: 2000,
-                        showConfirmButton: false,
-                    }),
+                onError: () => mostrarToast("error", "Error al eliminar"),
             });
         }
     });
 }
+
 function mostrarInfoUsuario(user) {
     Swal.fire({
         title: user.name,
@@ -203,308 +465,190 @@ function mostrarInfoUsuario(user) {
     });
 }
 
-// =======================
-// 8. INICIALIZACIÓN Y WATCHERS
-// =======================
-function inicializarItems() {
-    items.value = Array.isArray(pageProps.items) ? pageProps.items : [];
-    currentPage.value = 1;
-    lastPage.value = 1;
+function canEditRecord(record) {
+    // Verificar permisos básicos de edición
+    if (!canDo("vodafone.editar")) {
+        return false;
+    }
+
+    // Si el registro está completado, verificar permisos especiales
+    if (record?.trazabilidad === "completado") {
+        return canDo("vodafone.editar-completados");
+    }
+
+    return true;
 }
-onMounted(() => {
-    inicializarItems();
-    if (success) {
-        Swal.fire({
-            toast: true,
-            icon: "success",
-            title: success,
-            position: "top-end",
-            timer: 2000,
-            showConfirmButton: false,
-        });
-    }
-    // Mostrar error general si viene de backend
-    if (pageProps.errors && pageProps.errors.general) {
-        generalError.value = pageProps.errors.general;
-    }
-});
-
-// Mostrar SweetAlert si hay error general y el modal de edición está abierto
-watchEffect(() => {
-    if (showModal.value && generalError.value) {
-        Swal.fire({
-            icon: "error",
-            title: "No se puede editar",
-            text: generalError.value,
-            confirmButtonText: "Entendido",
-        });
-        // Cerrar el modal automáticamente
-        showModal.value = false;
-        registroEditar.value = null;
-    }
-});
-watch(
-    () => pageProps.items,
-    () => {
-        items.value = Array.isArray(pageProps.items) ? pageProps.items : [];
-        currentPage.value = 1;
-        lastPage.value = 1;
-    }
-);
 
 // =======================
-// 9. FILTROS Y BÚSQUEDA
+// 14. FUNCIONES DE FILTROS
 // =======================
-const search = ref("");
-const showFiltro = ref(false);
-const fechaDesde = ref(pageProps.fechaDesde || "");
-const fechaHasta = ref(pageProps.fechaHasta || "");
-
-const filtrosActivos = ref(
-    canDo("vodafone.asignar")
-        ? (() => {
-              // Intenta cargar filtros desde localStorage
-              try {
-                  const saved = localStorage.getItem("vodafoneFiltros");
-                  if (saved) {
-                      return JSON.parse(saved);
-                  }
-              } catch (e) {}
-              // Si no hay nada guardado, valor por defecto
-              return { trazabilidad: ["pendiente"] };
-          })()
-        : { trazabilidad: [] }
-);
-
-watch(
-    filtrosActivos,
-    (val) => {
-        if (canDo("vodafone.asignar")) {
-            try {
-                localStorage.setItem("vodafoneFiltros", JSON.stringify(val));
-            } catch (e) {}
-        }
-    },
-    { deep: true }
-);
-
-const rawItems = computed(() => items.value);
-
-const filtrosDisponibles = computed(() => {
-    const list = rawItems.value;
-    const filtros = {
-        operador_actual: [
-            ...new Set(list.map((i) => i.operador_actual).filter(Boolean)),
-        ],
-        trazabilidad: [
-            "pendiente",
-            "asignado",
-            "irrelevante",
-            "completado",
-            "agendado",
-        ],
-        upload_id: [...new Set(list.map((i) => i.upload_id).filter(Boolean))]
-            .sort((a, b) => b - a)
-            .slice(0, 15)
-            .sort((a, b) => a - b),
-    };
-    // Solo los filtros con opciones (trazabilidad siempre)
-    return Object.fromEntries(
-        Object.entries(filtros).filter(
-            ([key, arr]) =>
-                key === "trazabilidad" || (Array.isArray(arr) && arr.length > 0)
-        )
-    );
-});
-
-const filteredItems = computed(() => {
-    const term = filtrosActivos.value.search?.toLowerCase() || "";
-    let data = [...rawItems.value];
-    if (term) {
-        data = data.filter((item) =>
-            [
-                item.nombre_cliente,
-                item.dni_cliente,
-                item.telefono_principal,
-            ].some((field) =>
-                (field || "").toString().toLowerCase().includes(term)
-            )
-        );
-    }
-    for (const [key, values] of Object.entries(filtrosActivos.value)) {
-        if (key === "search") continue;
-        if (!Array.isArray(values) || values.length === 0) continue;
-        data = data.filter((item) => values.includes(item[key]));
-    }
-    return data;
-});
 function aplicarBusquedaInstantanea(val) {
-    filtrosActivos.value = { ...filtrosActivos.value, search: val };
+    filtros.value.filtrosActivos = {
+        ...filtros.value.filtrosActivos,
+        search: val,
+    };
 }
+
 async function aplicarFiltrosDesdeFlotante(f) {
-    filtrosActivos.value = { ...filtrosActivos.value, ...f };
-    if (f.fecha_desde !== undefined) fechaDesde.value = f.fecha_desde;
-    if (f.fecha_hasta !== undefined) fechaHasta.value = f.fecha_hasta;
+    // Aplicar restricciones a los filtros recibidos
+    const filtrosFiltrados = aplicarRestriccionesFiltros({ ...f });
+
+    filtros.value.filtrosActivos = {
+        ...filtros.value.filtrosActivos,
+        ...filtrosFiltrados,
+    };
+    if (f.fecha_desde !== undefined) filtros.value.fechaDesde = f.fecha_desde;
+    if (f.fecha_hasta !== undefined) filtros.value.fechaHasta = f.fecha_hasta;
+
     isLoading.value = true;
     try {
         const response = await axios.get(route("vodafone.page"), {
             params: {
-                ...filtrosActivos.value,
-                fecha_desde: fechaDesde.value,
-                fecha_hasta: fechaHasta.value,
+                ...filtros.value.filtrosActivos,
+                fecha_desde: filtros.value.fechaDesde,
+                fecha_hasta: filtros.value.fechaHasta,
             },
         });
         items.value = response.data.items;
     } catch (e) {
-        Swal.fire("Error", "No se pudo filtrar por fecha", "error");
+        mostrarAlerta("error", "Error", "No se pudo filtrar por fecha");
     } finally {
         isLoading.value = false;
     }
 }
 
 // =======================
-// 10. IMPORTACIÓN DE EXCEL
+// 15. FUNCIONES DE IMPORTACIÓN
 // =======================
-const excelFile = ref(null);
-const fileName = ref(null);
-const allPreviewRows = ref([]);
-const previewRows = ref([]);
-const modoDuplicados = ref("omitir");
-const importStatus = ref("");
-const importError = ref("");
-const totalRegistros = ref(0);
-const totalDuplicados = ref(0);
-const totalNuevos = ref(0);
-const previewTruncado = ref(false); // <-- NUEVO
-const previewTotal = ref(0); // <-- NUEVO
-const formImportar = ref({
-    archivo: null,
-});
-const progress = ref(0);
-const importando = ref(false); // <-- Agrega esta línea
-
 function handleFileUpload(event) {
     const file = event.target.files[0];
     if (file) {
-        fileName.value = file.name;
-        excelFile.value = file;
-        formImportar.value.archivo = file;
+        importacion.value.fileName = file.name;
+        importacion.value.excelFile = file;
+        importacion.value.formImportar.archivo = file;
     }
 }
-watch(fileName, () => {
-    formImportar.value.archivo = excelFile.value;
-});
 
 async function importarArchivo(_, close) {
     try {
-        importStatus.value = "Subiendo archivo...";
-        importError.value = "";
-        progress.value = 0;
+        importacion.value.importStatus = "Subiendo archivo...";
+        importacion.value.importError = "";
+        importacion.value.progress = 0;
+
         const payload = new FormData();
-        const archivo = formImportar.value.archivo;
+        const archivo = importacion.value.formImportar.archivo;
+
         if (!(archivo instanceof File)) {
-            importError.value = "Debes seleccionar un archivo Excel válido.";
+            importacion.value.importError =
+                "Debes seleccionar un archivo Excel válido.";
             return;
         }
-        payload.append("archivo", archivo);
-        payload.append("descripcion", formImportar.value.descripcion);
 
-        // Subida con barra de progreso
+        payload.append("archivo", archivo);
+        payload.append(
+            "descripcion",
+            importacion.value.formImportar.descripcion
+        );
+
         const response = await axios.post(route("vodafone.preview"), payload, {
             headers: { "Content-Type": "multipart/form-data" },
             onUploadProgress: (event) => {
                 if (event.lengthComputable) {
-                    progress.value = Math.round(
+                    importacion.value.progress = Math.round(
                         (event.loaded * 100) / event.total
                     );
                 }
             },
         });
 
-        // Al terminar la subida, mostrar "Procesando..."
-        importStatus.value = "Procesando archivo...";
-        progress.value = 100;
-        // Guardar truncado y total
-        previewTruncado.value = !!response.data.truncado;
-        previewTotal.value = response.data.total || 0;
-
-        // Asignar los valores reales enviados por el backend
-        totalRegistros.value = response.data.total_registros || 0;
-        totalDuplicados.value = response.data.total_duplicados || 0;
-        totalNuevos.value = response.data.total_nuevos || 0;
-
-        // Solo para la tabla de preview
-        if (Array.isArray(response.data?.preview)) {
-            allPreviewRows.value = response.data.preview;
-            previewRows.value = allPreviewRows.value.filter(
-                (r) => r.duplicado === true
-            );
-            importStatus.value = `Se analizaron ${totalRegistros.value} registros`;
-        } else {
-            allPreviewRows.value = [];
-            previewRows.value = [];
-        }
+        procesarRespuestaImportacion(response);
     } catch (error) {
-        importError.value =
-            error.response?.data?.message || "Error al importar archivo";
-        importStatus.value = "";
-        progress.value = 0;
-        previewTruncado.value = false;
-        previewTotal.value = 0;
+        manejarErrorImportacion(error);
+    }
+}
+console.log("props de la pagina", pageProps);
+function procesarRespuestaImportacion(response) {
+    importacion.value.importStatus = "Procesando archivo...";
+    importacion.value.progress = 100;
+    importacion.value.previewTruncado = !!response.data.truncado;
+    importacion.value.previewTotal = response.data.total || 0;
+    importacion.value.totalRegistros = response.data.total_registros || 0;
+    importacion.value.totalDuplicados = response.data.total_duplicados || 0;
+    importacion.value.totalNuevos = response.data.total_nuevos || 0;
+
+    if (Array.isArray(response.data?.preview)) {
+        importacion.value.allPreviewRows = response.data.preview;
+        importacion.value.previewRows = response.data.preview.filter(
+            (r) => r.duplicado === true
+        );
+        importacion.value.importStatus = `Se analizaron ${importacion.value.totalRegistros} registros`;
+    } else {
+        importacion.value.allPreviewRows = [];
+        importacion.value.previewRows = [];
     }
 }
 
+function manejarErrorImportacion(error) {
+    importacion.value.importError =
+        error.response?.data?.message || "Error al importar archivo";
+    importacion.value.importStatus = "";
+    importacion.value.progress = 0;
+    importacion.value.previewTruncado = false;
+    importacion.value.previewTotal = 0;
+}
+
 function confirmarImportacion() {
-    if (previewRows.value.length > 0) {
+    if (importacion.value.previewRows.length > 0) {
         Swal.fire({
             title: "Duplicados detectados",
-            text: "¿Qué deseas hacer con los registros duplicados?",
-            icon: "warning",
+            icon: "question",
             showCancelButton: true,
-            confirmButtonText: "Actualizar duplicados",
+            confirmButtonText: "Reemplazar duplicados",
             cancelButtonText: "Omitir duplicados",
             reverseButtons: true,
         }).then((result) => {
-            modoDuplicados.value = result.isConfirmed ? "actualizar" : "omitir";
+            importacion.value.modoDuplicados = result.isConfirmed
+                ? "actualizar"
+                : "omitir";
             enviarImportacion();
         });
     } else {
-        modoDuplicados.value = null;
+        importacion.value.modoDuplicados = null;
         enviarImportacion();
     }
 }
 
 async function enviarImportacion() {
-    console.log("Datos a enviar:", allPreviewRows.value);
-    const datosAEnviar = Array.isArray(allPreviewRows.value)
-        ? allPreviewRows.value
-        : Object.values(allPreviewRows.value);
+    const datosAEnviar = Array.isArray(importacion.value.allPreviewRows)
+        ? importacion.value.allPreviewRows
+        : Object.values(importacion.value.allPreviewRows);
 
-    importando.value = true;
-    importStatus.value = "Procesando importación...";
+    importacion.value.importando = true;
+    importacion.value.importStatus = "Procesando importación...";
 
     try {
         const response = await axios.post(
             route("vodafone.importarConfirmado"),
             {
                 datos: datosAEnviar,
-                modo: modoDuplicados.value,
-                descripcion: formImportar.value.descripcion,
+                modo: importacion.value.modoDuplicados,
+                descripcion: importacion.value.formImportar.descripcion,
             }
         );
         const logId = response.data.log_id;
         await esperarImportacion(logId);
     } catch (error) {
-        importError.value =
+        importacion.value.importError =
             error.response?.data?.message || "Error al importar";
-        importando.value = false;
-        importStatus.value = "";
+        importacion.value.importando = false;
+        importacion.value.importStatus = "";
     }
 }
 
 async function esperarImportacion(logId) {
     let intentos = 0;
-    const maxIntentos = 60; // espera hasta 60 segundos
+    const maxIntentos = 60;
+
     while (intentos < maxIntentos) {
         intentos++;
         try {
@@ -515,101 +659,43 @@ async function esperarImportacion(logId) {
             const errores = resp.data.errores ?? [];
 
             if (estado === "finalizado") {
-                importando.value = false;
-                importStatus.value = "";
+                importacion.value.importando = false;
+                importacion.value.importStatus = "";
+
                 if (errores.length) {
-                    importError.value = "Importación completada con errores.";
-                    console.warn("Errores de importación:", errores);
+                    importacion.value.importError =
+                        "Importación completada con errores.";
                 } else {
-                    Swal.fire({
-                        icon: "success",
-                        title: "Importación completada",
-                        text: "Los registros se importaron correctamente.",
-                        timer: 2000,
-                        showConfirmButton: false,
-                        position: "top-end",
-                        toast: true,
-                    });
+                    mostrarToast(
+                        "success",
+                        "Los registros se importaron correctamente."
+                    );
                     handleSuccess("Importación realizada correctamente.");
                 }
                 return;
             } else if (estado === "procesando") {
-                importStatus.value = "Procesando registros...";
+                importacion.value.importStatus = "Procesando registros...";
             } else {
-                importStatus.value =
+                importacion.value.importStatus =
                     "Esperando a que inicie el procesamiento...";
             }
         } catch (e) {
             console.warn("Error verificando estado:", e);
         }
 
-        await new Promise((r) => setTimeout(r, 1000)); // Espera 1s
+        await new Promise((r) => setTimeout(r, 1000));
     }
 
-    importando.value = false;
-    importStatus.value = "";
-    importError.value = "La importación está tardando demasiado.";
+    importacion.value.importando = false;
+    importacion.value.importStatus = "";
+    importacion.value.importError = "La importación está tardando demasiado.";
 }
 
-const columnasGrid = computed(() => {
-    if (canDo("vodafone.asignar")) {
-        return [
-            "id",
-            "upload_id",
-            "created_at_formatted",
-            "trazabilidad",
-            "asignado_a",
-            "marca_base",
-            "origen_motivo_cancelacion",
-            "nombre_cliente",
-            "dni_cliente",
-            "orden_trabajo_anterior",
-            "telefono_principal",
-            "telefono_adicional",
-            "correo_referencia",
-            "direccion_historico",
-            "observaciones",
-            "user",
-        ];
-    }
-
-    if (canDo("vodafone.recibe-asignacion")) {
-        return [
-            "id",
-            "asignado_a",
-            "marca_base",
-            "origen_motivo_cancelacion",
-            "nombre_cliente",
-            "dni_cliente",
-            "orden_trabajo_anterior",
-            "telefono_principal",
-            "telefono_adicional",
-            "correo_referencia",
-            "direccion_historico",
-            "observaciones",
-        ];
-    }
-    return [
-        "id",
-        "trazabilidad",
-        "marca_base",
-        "origen_motivo_cancelacion",
-        "nombre_cliente",
-        "dni_cliente",
-        "orden_trabajo_anterior",
-        "telefono_principal",
-        "telefono_adicional",
-        "correo_referencia",
-        "direccion_historico",
-        "observaciones",
-    ];
-});
-
 // =======================
-// 11. ASIGNACIÓN DE REGISTROS
+// 16. FUNCIONES DE ASIGNACIÓN
 // =======================
 async function asignarRegistros(slotForm) {
-    isLoadingAsignacion.value = true;
+    importacion.value.isLoadingAsignacion = true;
     try {
         await axios.post(route("vodafone.asignar"), {
             ids: slotForm.ids,
@@ -618,48 +704,150 @@ async function asignarRegistros(slotForm) {
         handleSuccess("Registros asignados correctamente.");
         cerrarModal();
     } catch (e) {
-        Swal.fire("Error", "No se pudo asignar registros", "error");
+        mostrarAlerta("error", "Error", "No se pudo asignar registros");
     } finally {
-        isLoadingAsignacion.value = false;
+        importacion.value.isLoadingAsignacion = false;
     }
 }
 
 // =======================
-// 12. CONTADOR DE FILTROS ACTIVOS
+// 17. FUNCIONES DE UTILIDAD
 // =======================
-
-const activeFilterOptions = computed(() => {
-    const filtros = filtrosActivos.value || {};
-    let opciones = [];
-    Object.keys(filtros).forEach((k) => {
-        if (
-            k !== "search" &&
-            Array.isArray(filtros[k]) &&
-            filtros[k].length > 0
-        ) {
-            opciones = opciones.concat(filtros[k]);
-        }
+function mostrarToast(icon, title) {
+    Swal.fire({
+        toast: true,
+        icon,
+        title,
+        position: "top-end",
+        timer: 2000,
+        showConfirmButton: false,
     });
-    return opciones;
+}
+
+function mostrarAlerta(icon, title, text) {
+    Swal.fire({
+        icon,
+        title,
+        text,
+        confirmButtonText: "Entendido",
+    });
+}
+
+// =======================
+// 18. WATCHERS Y CICLO DE VIDA
+// =======================
+watch(() => pageProps.items, inicializarItems);
+
+watch(
+    () => importacion.value.fileName,
+    () => {
+        importacion.value.formImportar.archivo = importacion.value.excelFile;
+    }
+);
+
+watch(
+    () => filtros.value.filtrosActivos,
+    (val) => {
+        if (!val) return; // Evitar problemas si aún no está inicializado
+
+        if (canDo("vodafone.asignar") || permisos.value.canFiltrar) {
+            try {
+                let filtrosAGuardar = aplicarRestriccionesFiltros({ ...val });
+                localStorage.setItem(
+                    "vodafoneFiltros",
+                    JSON.stringify(filtrosAGuardar)
+                );
+            } catch (e) {
+                console.warn("Error guardando en localStorage:", e);
+            }
+        }
+    },
+    { deep: true }
+);
+
+watchEffect(() => {
+    if (modales.value.showModal && modalData.value.generalError) {
+        mostrarAlerta(
+            "error",
+            "No se puede editar",
+            modalData.value.generalError
+        );
+        modales.value.showModal = false;
+        modalData.value.registroEditar = null;
+    }
 });
-const cabecerasHistorial = computed(() => {
-    const ult = registroHistorial.value?.ultima_asignacion
-        ? [
-              {
-                  ...registroHistorial.value.ultima_asignacion,
-                  auditoria: registroHistorial.value.auditoria_historial || [],
-              },
-          ]
-        : [];
-    const resto = historialSeleccionado.value
-        .filter(
-            (hh) =>
-                !registroHistorial.value?.ultima_asignacion ||
-                hh.id !== registroHistorial.value.ultima_asignacion.id
-        )
-        .map((hh) => ({ ...hh, auditoria: hh.auditoria_historial || [] }));
-    return [...ult, ...resto];
+
+onMounted(() => {
+    // Inicializar filtros activos
+    const filtrosIniciales = getFiltrosIniciales();
+
+    filtros.value.filtrosActivos = filtrosIniciales;
+
+    inicializarItems();
+    if (permisos.value.success) {
+        mostrarToast("success", permisos.value.success);
+    }
+    if (pageProps.errors && pageProps.errors.general) {
+        modalData.value.generalError = pageProps.errors.general;
+    }
+}); // =======================
+// 19. EXPOSICIÓN DE PROPIEDADES COMPUTADAS PARA EL TEMPLATE
+// =======================
+// Props individuales para compatibilidad con template existente
+const success = computed(() => permisos.value.success);
+const canViewGlobal = computed(() => permisos.value.canViewGlobal);
+const canViewHistory = computed(() => permisos.value.canViewHistory);
+const canFiltrar = computed(() => permisos.value.canFiltrar);
+const usuariosAsignables = computed(() => permisos.value.usuariosAsignables);
+const puedeSeleccionarFechas = computed(
+    () => permisos.value.puedeSeleccionarFechas
+);
+
+// Estados de modales individuales para template
+const showModal = computed(() => modales.value.showModal);
+const showInportarModal = computed(() => modales.value.showInportarModal);
+const showAsignacionModal = computed(() => modales.value.showAsignacionModal);
+const showHistorialModal = computed(() => modales.value.showHistorialModal);
+
+// Datos de modal individuales
+const registroEditar = computed(() => modalData.value.registroEditar);
+const InportarTitulo = computed(() => modalData.value.InportarTitulo);
+const asignacionTitulo = computed(() => modalData.value.asignacionTitulo);
+const generalError = computed(() => modalData.value.generalError);
+const historialSeleccionado = computed(
+    () => modalData.value.historialSeleccionado
+);
+const registroHistorial = computed(() => modalData.value.registroHistorial);
+
+// Estados de filtros individuales
+const search = computed(() => filtros.value.search);
+const showFiltro = computed({
+    get: () => filtros.value.showFiltro,
+    set: (val) => (filtros.value.showFiltro = val),
 });
+const fechaDesde = computed(() => filtros.value.fechaDesde);
+const fechaHasta = computed(() => filtros.value.fechaHasta);
+const filtrosActivos = computed(() => filtros.value.filtrosActivos);
+
+// Estados de importación individuales
+const excelFile = computed(() => importacion.value.excelFile);
+const fileName = computed(() => importacion.value.fileName);
+const allPreviewRows = computed(() => importacion.value.allPreviewRows);
+const previewRows = computed(() => importacion.value.previewRows);
+const modoDuplicados = computed(() => importacion.value.modoDuplicados);
+const importStatus = computed(() => importacion.value.importStatus);
+const importError = computed(() => importacion.value.importError);
+const totalRegistros = computed(() => importacion.value.totalRegistros);
+const totalDuplicados = computed(() => importacion.value.totalDuplicados);
+const totalNuevos = computed(() => importacion.value.totalNuevos);
+const previewTruncado = computed(() => importacion.value.previewTruncado);
+const previewTotal = computed(() => importacion.value.previewTotal);
+const formImportar = computed(() => importacion.value.formImportar);
+const progress = computed(() => importacion.value.progress);
+const importando = computed(() => importacion.value.importando);
+const isLoadingAsignacion = computed(
+    () => importacion.value.isLoadingAsignacion
+);
 </script>
 
 <!-- =======================
@@ -679,7 +867,10 @@ const cabecerasHistorial = computed(() => {
                     <!-- Filtro de Fechas -->
 
                     <!-- Botón y modal de filtros -->
-                    <div class="modalFiltros" v-if="canDo('vodafone.asignar')">
+                    <div
+                        class="modalFiltros"
+                        v-if="canDo('vodafone.asignar') || canFiltrar"
+                    >
                         <button
                             @click="showFiltro = !showFiltro"
                             class="flex items-center h-full gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md shadow hover:bg-gray-50 transition"
@@ -714,6 +905,9 @@ const cabecerasHistorial = computed(() => {
                             :selected="filtrosActivos"
                             :fechaDesdeProp="fechaDesde"
                             :fechaHastaProp="fechaHasta"
+                            :mostrarFiltrosFecha="
+                                permisos.puedeSeleccionarFechas
+                            "
                             @filtrar="aplicarFiltrosDesdeFlotante"
                             @search="aplicarBusquedaInstantanea"
                             @close="showFiltro = false"
@@ -838,6 +1032,8 @@ const cabecerasHistorial = computed(() => {
                     :columns="columnasGrid"
                     :canViewGlobal="canViewGlobal"
                     :canEdit="canDo('vodafone.editar')"
+                    :canEditRecord="canEditRecord"
+                    :canEditComplete="canDo('vodafone.editar-completados')"
                     :canDelete="canDo('vodafone.eliminar')"
                     :isLoading="isLoading"
                     :canViewHistory="canViewHistory"
@@ -1109,7 +1305,7 @@ const cabecerasHistorial = computed(() => {
                                     class="text-xs font-semibold animate__animated animate__fadeInRight flex items-center gap-2"
                                 >
                                     {{ fileName }}
-                                    <button
+                                    <!-- <button
                                         type="button"
                                         class="px-2 py-0.5 bg-orange-100 text-red-600 rounded hover:bg-orange-200 transition text-xs"
                                         @click.stop.prevent="
@@ -1119,7 +1315,7 @@ const cabecerasHistorial = computed(() => {
                                         "
                                     >
                                         Quitar
-                                    </button>
+                                    </button> -->
                                 </div>
                             </transition>
                         </label>
@@ -1183,7 +1379,36 @@ const cabecerasHistorial = computed(() => {
                             </div>
                         </transition>
                     </div>
-
+                    <div
+                        class="bg-white border border-gray-200 p-4 rounded-xl shadow-sm animate__animated animate__fadeIn mt-0"
+                    >
+                        <label class="colorMorado"
+                            >Descarga la plantilla Excel</label
+                        >
+                        <p>
+                            <a
+                                :href="route('vodafone.plantilla')"
+                                download="plantilla_vodafone.xlsx"
+                                class="flex items-center justify-start gap-3 cursor-pointer font-medium px-4 py-2 rounded-lg border bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 hover:text-indigo-900 relative transition"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="w-5 h-5 transition-transform duration-300"
+                                    :class="'text-indigo-500'"
+                                    viewBox="0 0 640 640"
+                                >
+                                    <!--! Font Awesome Pro 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2025 Fonticons, Inc. -->
+                                    <path
+                                        fill="currentColor"
+                                        d="M475.3 267.3L331.3 411.3C325.1 417.5 314.9 417.5 308.7 411.3L164.7 267.3C158.5 261.1 158.5 250.9 164.7 244.7C170.9 238.5 181.1 238.5 187.3 244.7L304 361.4L304 80C304 71.2 311.2 64 320 64C328.8 64 336 71.2 336 80L336 361.4L452.7 244.7C458.9 238.5 469.1 238.5 475.3 244.7C481.5 250.9 481.5 261.1 475.3 267.3zM128 400L128 480C128 515.3 156.7 544 192 544L448 544C483.3 544 512 515.3 512 480L512 400C512 391.2 519.2 384 528 384C536.8 384 544 391.2 544 400L544 480C544 533 501 576 448 576L192 576C139 576 96 533 96 480L96 400C96 391.2 103.2 384 112 384C120.8 384 128 391.2 128 400z"
+                                    />
+                                </svg>
+                                <span class="text-sm">
+                                    Descargar Plantilla Excel
+                                </span>
+                            </a>
+                        </p>
+                    </div>
                     <!-- Previsualización de duplicados -->
                     <transition name="fade">
                         <div
@@ -1192,7 +1417,7 @@ const cabecerasHistorial = computed(() => {
                         >
                             <div
                                 class="overflow-x-auto border rounded-xl shadow-sm"
-                                style="max-height: 400px; overflow-y: auto"
+                                style="max-height: 300px; overflow-y: auto"
                             >
                                 <table
                                     class="min-w-full text-xs text-left text-gray-700"

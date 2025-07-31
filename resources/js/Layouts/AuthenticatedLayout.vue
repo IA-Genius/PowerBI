@@ -2,6 +2,9 @@
     1. SCRIPT SETUP
 ========================= -->
 <script setup>
+// =======================
+// 1. IMPORTS Y DEPENDENCIAS
+// =======================
 import { ref, computed, onMounted, watch } from "vue";
 import { usePage, router, Link } from "@inertiajs/vue3";
 import ApplicationLogo from "@/Components/ApplicationLogo.vue";
@@ -11,52 +14,51 @@ import DropdownLink from "@/Components/DropdownLink.vue";
 import NavLink from "@/Components/NavLink.vue";
 import DataTool from "@/Components/DataTool.vue";
 
+// =======================
+// 2. COMPOSABLES Y PROPIEDADES BÁSICAS
+// =======================
 const page = usePage();
 const { can } = page.props;
+
+// Función helper para verificar permisos
 const canDo = (key) => !!can[key];
 
-const getIconHTML = (icon) => {
-    if (!icon) return null;
-    return icon
-        .replace("<svg", '<svg class="w-[26px] h-[26px]" fill="white"')
-        .replace('stroke="currentColor"', 'stroke="currentColor"');
-};
+// =======================
+// 3. ESTADO REACTIVO - SIDEBAR Y UI
+// =======================
+const ui = ref({
+    isSidebarOpen: false,
+    mobileSidebarOpen: false,
+});
 
-const reportes = computed(() => page.props.userReportes || []);
+// =======================
+// 4. ESTADO REACTIVO - CARTERAS Y REPORTES
+// =======================
 const carteras = computed(() => page.props.userCarteras || []);
+const reportes = computed(() => page.props.userReportes || []);
 
-const getCarteraIdFromStorage = () => {
-    const stored = localStorage.getItem("selectedCarteraId");
-    return stored
-        ? parseInt(stored)
-        : carteras.value.length
-        ? carteras.value[0].id
-        : null;
-};
 const selectedCarteraId = ref(
     page.props.selectedCarteraId ?? getCarteraIdFromStorage()
 );
 const selectedReporteId = computed(() => page.props.selectedReporteId || null);
 
-watch(
-    selectedCarteraId,
-    (val) => {
-        if (val) localStorage.setItem("selectedCarteraId", val);
-    },
-    { immediate: true }
-);
+// =======================
+// 5. ESTADO REACTIVO - TOOLTIP
+// =======================
+const tooltip = ref({
+    show: false,
+    label: "",
+    top: 0,
+    left: 0,
+});
+let tooltipTimeout = null;
+
+// =======================
+// 6. PROPIEDADES COMPUTADAS
+// =======================
 const selectedCartera = computed(
     () => carteras.value.find((c) => c.id === selectedCarteraId.value) || null
 );
-
-const isSidebarOpen = ref(false);
-const mobileSidebarOpen = ref(false);
-function toggleSidebar() {
-    isSidebarOpen.value = !isSidebarOpen.value;
-}
-function toggleMobileSidebar() {
-    mobileSidebarOpen.value = !mobileSidebarOpen.value;
-}
 
 const reportesFiltrados = computed(() => {
     if (!selectedCarteraId.value) return [];
@@ -65,21 +67,57 @@ const reportesFiltrados = computed(() => {
     );
 });
 
-// Tooltip global para reportes
-const tooltip = ref({ show: false, label: "", top: 0, left: 0 });
-let tooltipTimeout = null;
+// =======================
+// 7. FUNCIONES AUXILIARES - STORAGE
+// =======================
+function getCarteraIdFromStorage() {
+    const stored = localStorage.getItem("selectedCarteraId");
+    return stored
+        ? parseInt(stored)
+        : carteras.value.length
+        ? carteras.value[0].id
+        : null;
+}
 
+// =======================
+// 8. FUNCIONES AUXILIARES - UI
+// =======================
+function getIconHTML(icon) {
+    if (!icon) return null;
+    return icon
+        .replace("<svg", '<svg class="w-[26px] h-[26px]" fill="white"')
+        .replace('stroke="currentColor"', 'stroke="currentColor"');
+}
+
+// =======================
+// 9. FUNCIONES DE SIDEBAR
+// =======================
+function toggleSidebar() {
+    ui.value.isSidebarOpen = !ui.value.isSidebarOpen;
+}
+
+function toggleMobileSidebar() {
+    ui.value.mobileSidebarOpen = !ui.value.mobileSidebarOpen;
+}
+
+// =======================
+// 10. FUNCIONES DE TOOLTIP
+// =======================
 function showTooltipReporte(e, label) {
     if (tooltipTimeout) clearTimeout(tooltipTimeout);
+
     const btn = e.currentTarget;
     const rect = btn.getBoundingClientRect();
     const sidebar = document.querySelector("aside");
     const sidebarRect = sidebar.getBoundingClientRect();
+
     // Calcula posición absoluta respecto a la ventana, pegado al sidebar
     let left = sidebarRect.right + 8;
+
     // Si el sidebar está muy pegado al borde derecho, que no se corte
     const maxLeft = window.innerWidth - 220; // 220px de ancho máx del tooltip
     if (left > maxLeft) left = maxLeft;
+
     tooltip.value = {
         show: true,
         label,
@@ -87,12 +125,16 @@ function showTooltipReporte(e, label) {
         left,
     };
 }
+
 function hideTooltipReporte() {
     tooltipTimeout = setTimeout(() => {
         tooltip.value.show = false;
     }, 80);
 }
 
+// =======================
+// 11. FUNCIONES DE NAVEGACIÓN
+// =======================
 function seleccionarReporte(reporte) {
     router.visit(route("dashboard.reporte", reporte.id), {
         preserveState: true,
@@ -100,17 +142,39 @@ function seleccionarReporte(reporte) {
     });
 }
 
+// =======================
+// 12. WATCHERS Y CICLO DE VIDA
+// =======================
+watch(
+    selectedCarteraId,
+    (val) => {
+        if (val) localStorage.setItem("selectedCarteraId", val);
+    },
+    { immediate: true }
+);
+
 onMounted(() => {
+    // Inicializar cartera seleccionada si no hay ninguna
     if (!selectedCarteraId.value && carteras.value.length > 0) {
         selectedCarteraId.value = carteras.value[0].id;
     }
-    window.addEventListener("resize", () => {
-        if (window.innerWidth >= 1024) {
-            mobileSidebarOpen.value = false;
-        }
-    });
+
+    // Listener para cambios de tamaño de ventana
+    window.addEventListener("resize", handleWindowResize);
 });
-//console.log(page.props);
+
+function handleWindowResize() {
+    if (window.innerWidth >= 1024) {
+        ui.value.mobileSidebarOpen = false;
+    }
+}
+
+// =======================
+// 13. EXPOSICIÓN DE PROPIEDADES PARA EL TEMPLATE
+// =======================
+// Estados de UI individuales para compatibilidad con template
+const isSidebarOpen = computed(() => ui.value.isSidebarOpen);
+const mobileSidebarOpen = computed(() => ui.value.mobileSidebarOpen);
 </script>
 
 <!-- =========================

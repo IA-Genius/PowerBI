@@ -53,6 +53,7 @@
 
             <!-- Filtros de fecha -->
             <div
+                v-if="mostrarFiltrosFecha"
                 class="flex flex-wrap gap-4 px-5 py-4 bg-white border-b border-gray-100 justify-center items-center"
             >
                 <div
@@ -187,6 +188,7 @@ const props = defineProps({
     selected: { type: Object, default: () => ({}) },
     fechaDesdeProp: { type: String, default: "" },
     fechaHastaProp: { type: String, default: "" },
+    mostrarFiltrosFecha: { type: Boolean, default: true },
 });
 const emit = defineEmits(["filtrar", "close", "search"]);
 
@@ -213,9 +215,20 @@ onMounted(() => {
 // Watch para reinicializar la copia local cuando cambian los props
 watch(
     () => props.selected,
-    (nuevo) => {
-        selectedFiltros.value = JSON.parse(JSON.stringify(nuevo || {}));
-        originalFiltros.value = JSON.parse(JSON.stringify(nuevo || {}));
+    (nuevo, anterior) => {
+        // Solo actualizar si cambió algo más que la búsqueda
+        const nuevoSinSearch = { ...nuevo };
+        const anteriorSinSearch = { ...anterior };
+        delete nuevoSinSearch.search;
+        delete anteriorSinSearch.search;
+
+        // Si solo cambió la búsqueda, no sobrescribir selectedFiltros
+        if (
+            JSON.stringify(nuevoSinSearch) !== JSON.stringify(anteriorSinSearch)
+        ) {
+            selectedFiltros.value = JSON.parse(JSON.stringify(nuevo || {}));
+            originalFiltros.value = JSON.parse(JSON.stringify(nuevo || {}));
+        }
     }
 );
 

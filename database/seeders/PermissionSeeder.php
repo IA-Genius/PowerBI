@@ -26,6 +26,8 @@ class PermissionSeeder extends Seeder
                 'asignar',       // asignar registros
                 'recibe-asignacion', // se puede asignar a este usuario
                 'ver-historial', // ver historial de asignaciones
+                'filtrar',       // puede filtrar registros asignados (solo por trazabilidad)
+                'editar-completados', // puede editar campos limitados en registros completados
             ],
         ];
 
@@ -69,6 +71,7 @@ class PermissionSeeder extends Seeder
             'vodafone.ver-global',
             'vodafone.asignar',
             'vodafone.ver-historial',
+            'vodafone.editar-completados',
         ]);
 
         // ROL FILTRADOR
@@ -81,6 +84,8 @@ class PermissionSeeder extends Seeder
             'vodafone.ver',
             'vodafone.editar',
             'vodafone.recibe-asignacion',
+            'vodafone.filtrar',
+            'vodafone.editar-completados',
         ]);
         // ROL ASESOR VODAFONE
         $rolAsesorVodafone = Role::firstOrCreate([
