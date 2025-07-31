@@ -557,24 +557,12 @@ class VodafoneController extends Controller
                 'marca_base' => 'Vodafone',
                 'origen_motivo_cancelacion' => 'Cancelación por mudanza',
                 'nombre_cliente' => 'Juan Pérez García',
-                'dni_cliente' => '12345678A',
-                'orden_trabajo_anterior' => 'OT-2024-001',
-                'telefono_principal' => '600123456',
-                'telefono_adicional' => '91234567',
-                'correo_referencia' => 'juan.perez@email.com',
-                'direccion_historico' => 'Calle Ejemplo 123, Madrid',
-                'observaciones' => 'Cliente requiere llamada previa'
+                'observaciones' => 'Cliente requiere llamada previa',
             ],
             [
                 'marca_base' => 'Movistar',
                 'origen_motivo_cancelacion' => 'Cambio de operador',
                 'nombre_cliente' => 'María López Martín',
-                'dni_cliente' => '87654321B',
-                'orden_trabajo_anterior' => 'OT-2024-002',
-                'telefono_principal' => '654789123',
-                'telefono_adicional' => '912345678',
-                'correo_referencia' => 'maria.lopez@email.com',
-                'direccion_historico' => 'Avenida Principal 456, Barcelona',
                 'observaciones' => 'Horario preferido: mañanas'
             ]
         ];
