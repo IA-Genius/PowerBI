@@ -36,19 +36,22 @@ return new class extends Migration {
                 'asignado',
                 'irrelevante',
                 'completado',
-                'retornado'
+                'retornado',
+                'agendado',
+
             ])->default('pendiente');
 
             // Datos nuevos solicitados
-            $table->string('marca_base')->nullable();
-            $table->string('origen_motivo_cancelacion')->nullable();
+            $table->string('orden_trabajo_anterior')->nullable();
+            $table->string('origen_base')->nullable();
             $table->string('nombre_cliente')->nullable();
             $table->string('dni_cliente')->nullable()->unique();
-            $table->string('orden_trabajo_anterior')->nullable();
             $table->string('telefono_principal')->nullable();
             $table->string('telefono_adicional')->nullable();
             $table->string('correo_referencia')->nullable();
             $table->string('direccion_historico')->nullable();
+            $table->string('marca_base')->nullable();
+            $table->string('origen_motivo_cancelacion')->nullable();
             $table->text('observaciones')->nullable();
 
             $table->timestamps();

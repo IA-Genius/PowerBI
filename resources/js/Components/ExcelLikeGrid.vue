@@ -35,8 +35,9 @@
                 </svg>
             </button>
         </div>
-        <!-- Grid principal -->
-        <div class="relative">
+
+        <!-- Vista Grid (existente) -->
+        <div v-show="props.viewMode === 'grid'" class="relative">
             <div
                 ref="gridContainer"
                 id="myGrid"
@@ -112,13 +113,431 @@
                 </div>
             </transition>
         </div>
+
+        <!-- Nueva Vista de Tarjetas -->
+        <div v-show="props.viewMode === 'cards'" class="relative">
+            <div :style="{ minHeight: '700px' }">
+                <div
+                    v-if="isLoading"
+                    class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+                >
+                    <!-- Skeleton cards para loading -->
+                    <div
+                        v-for="n in 8"
+                        :key="n"
+                        class="bg-white rounded-lg border border-gray-200 animate-pulse"
+                    >
+                        <div class="p-4 space-y-3">
+                            <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                            <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                            <div class="space-y-2">
+                                <div class="h-3 bg-gray-200 rounded"></div>
+                                <div
+                                    class="h-3 bg-gray-200 rounded w-5/6"
+                                ></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    v-else-if="!props.rows || props.rows.length === 0"
+                    class="flex flex-col items-center justify-center py-20"
+                >
+                    <svg
+                        class="h-16 w-16 text-gray-300 mb-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                    </svg>
+                    <span class="text-gray-500 font-semibold text-lg"
+                        >Sin registros para mostrar</span
+                    >
+                </div>
+
+                <div v-else class="flex gap-4">
+                    <!-- Indicador para datasets grandes -->
+                    <div
+                        v-if="props.rows && props.rows.length > 1000"
+                        class="absolute top-2 right-2 z-10 bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-xs font-semibold shadow-sm"
+                    >
+                        📊 Mostrando primeros
+                        {{
+                            Math.min(
+                                getItemsForColumn(0).length * getColumnCount,
+                                props.rows.length
+                            )
+                        }}
+                        de {{ props.rows.length }} registros
+                    </div>
+
+                    <!-- Columnas fijas para mantener el layout controlado -->
+                    <div
+                        v-for="columnIndex in getColumnCount"
+                        :key="columnIndex"
+                        class="flex-1 min-w-0 card-column"
+                    >
+                        <TransitionGroup
+                            name="card-move"
+                            tag="div"
+                            class="space-y-4"
+                        >
+                            <div
+                                v-for="(item, itemIndex) in getItemsForColumn(
+                                    columnIndex - 1
+                                )"
+                                :key="item.id"
+                                @click="toggleCardSelection(item)"
+                                :class="[
+                                    'animated-card bg-white rounded-xl border cursor-pointer shadow-sm w-full max-w-full',
+                                    selectedItems.has(item.id)
+                                        ? 'border-blue-500 shadow-blue-100 shadow-lg ring-1 ring-blue-200'
+                                        : 'border-gray-200 hover:border-gray-300 hover:shadow-md',
+                                ]"
+                            >
+                                <!-- Header simplificado -->
+                                <div
+                                    :class="[
+                                        'p-4 border-b flex items-center justify-between',
+                                        selectedItems.has(item.id)
+                                            ? 'bg-blue-50 border-blue-100'
+                                            : 'bg-white border-gray-100',
+                                    ]"
+                                >
+                                    <div
+                                        class="flex items-center space-x-3 min-w-0 flex-1"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            :checked="
+                                                selectedItems.has(item.id)
+                                            "
+                                            @click.stop="
+                                                toggleCardSelection(item)
+                                            "
+                                            class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                        />
+                                        <div class="min-w-0 flex-1">
+                                            <h3
+                                                class="font-semibold text-gray-900 text-sm truncate"
+                                            >
+                                                {{
+                                                    item.nombre_cliente ||
+                                                    "Sin nombre"
+                                                }}
+                                            </h3>
+                                            <p class="text-xs text-gray-500">
+                                                ID: {{ item.id }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <span
+                                        :class="
+                                            getSimpleStatusClass(
+                                                item.trazabilidad
+                                            )
+                                        "
+                                    >
+                                        {{ item.trazabilidad || "—" }}
+                                    </span>
+                                </div>
+
+                                <!-- Contenido compacto -->
+                                <div class="p-4 space-y-3">
+                                    <!-- Info principal en una sola fila -->
+                                    <div class="space-y-2">
+                                        <div
+                                            class="flex justify-between items-center gap-2"
+                                        >
+                                            <span
+                                                class="text-xs text-gray-500 font-medium flex-shrink-0"
+                                                >DNI:</span
+                                            >
+                                            <span
+                                                class="text-sm font-medium text-gray-900 truncate max-w-[60%] text-right"
+                                                >{{
+                                                    item.dni_cliente || "—"
+                                                }}</span
+                                            >
+                                        </div>
+                                        <div
+                                            class="flex justify-between items-center gap-2"
+                                        >
+                                            <span
+                                                class="text-xs text-gray-500 font-medium flex-shrink-0"
+                                                >Teléfono:</span
+                                            >
+                                            <span
+                                                class="text-sm font-medium text-gray-900 truncate max-w-[60%] text-right"
+                                                >{{
+                                                    item.telefono_principal ||
+                                                    "—"
+                                                }}</span
+                                            >
+                                        </div>
+                                        <div
+                                            v-if="item.orden_trabajo_anterior"
+                                            class="flex justify-between items-center gap-2"
+                                        >
+                                            <span
+                                                class="text-xs text-gray-500 font-medium flex-shrink-0"
+                                                >Orden:</span
+                                            >
+                                            <span
+                                                class="text-xs text-gray-700 font-mono truncate max-w-[65%] text-right"
+                                                >{{
+                                                    item.orden_trabajo_anterior
+                                                }}</span
+                                            >
+                                        </div>
+                                    </div>
+
+                                    <!-- Más detalles colapsables con animación -->
+                                    <details class="group details-animated">
+                                        <summary
+                                            class="flex items-center justify-center cursor-pointer text-xs font-medium text-blue-600 hover:text-blue-800 py-2 border-t border-gray-100 transition-colors duration-200"
+                                        >
+                                            <span>Ver más detalles</span>
+                                            <svg
+                                                class="w-3 h-3 ml-1 transform group-open:rotate-180 transition-transform duration-200 ease-out"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M19 9l-7 7-7-7"
+                                                />
+                                            </svg>
+                                        </summary>
+
+                                        <div
+                                            class="details-content overflow-hidden"
+                                        >
+                                            <div
+                                                class="details-inner mt-2 space-y-2 text-xs"
+                                            >
+                                                <div
+                                                    v-if="item.origen_base"
+                                                    class="flex justify-between items-center gap-2"
+                                                >
+                                                    <span
+                                                        class="text-gray-500 flex-shrink-0"
+                                                        >Origen:</span
+                                                    >
+                                                    <span
+                                                        class="font-medium truncate max-w-[60%] text-right"
+                                                        >{{
+                                                            item.origen_base
+                                                        }}</span
+                                                    >
+                                                </div>
+                                                <div
+                                                    v-if="
+                                                        item.telefono_adicional
+                                                    "
+                                                    class="flex justify-between items-center gap-2"
+                                                >
+                                                    <span
+                                                        class="text-gray-500 flex-shrink-0"
+                                                        >Tel. Adicional:</span
+                                                    >
+                                                    <span
+                                                        class="font-medium truncate max-w-[55%] text-right"
+                                                        >{{
+                                                            item.telefono_adicional
+                                                        }}</span
+                                                    >
+                                                </div>
+                                                <div
+                                                    v-if="
+                                                        item.correo_referencia
+                                                    "
+                                                    class="flex justify-between items-center gap-2"
+                                                >
+                                                    <span
+                                                        class="text-gray-500 flex-shrink-0"
+                                                        >Email:</span
+                                                    >
+                                                    <span
+                                                        class="font-medium truncate max-w-[65%] text-right"
+                                                        >{{
+                                                            item.correo_referencia
+                                                        }}</span
+                                                    >
+                                                </div>
+                                                <div
+                                                    v-if="item.marca_base"
+                                                    class="flex justify-between items-center gap-2"
+                                                >
+                                                    <span
+                                                        class="text-gray-500 flex-shrink-0"
+                                                        >Marca:</span
+                                                    >
+                                                    <span
+                                                        class="font-medium truncate max-w-[60%] text-right"
+                                                        >{{
+                                                            item.marca_base
+                                                        }}</span
+                                                    >
+                                                </div>
+                                                <div
+                                                    v-if="
+                                                        item.direccion_historico
+                                                    "
+                                                    class="pt-2 border-t border-gray-100"
+                                                >
+                                                    <span
+                                                        class="text-gray-500 block"
+                                                        >Dirección:</span
+                                                    >
+                                                    <p
+                                                        class="text-gray-700 mt-1 truncate"
+                                                    >
+                                                        {{
+                                                            item.direccion_historico
+                                                        }}
+                                                    </p>
+                                                </div>
+                                                <div
+                                                    v-if="
+                                                        item.origen_motivo_cancelacion
+                                                    "
+                                                    class="pt-2 border-t border-gray-100"
+                                                >
+                                                    <span
+                                                        class="text-gray-500 block"
+                                                        >Motivo
+                                                        Cancelación:</span
+                                                    >
+                                                    <p
+                                                        class="text-gray-700 mt-1 truncate"
+                                                    >
+                                                        {{
+                                                            item.origen_motivo_cancelacion
+                                                        }}
+                                                    </p>
+                                                </div>
+                                                <div
+                                                    v-if="item.observaciones"
+                                                    class="pt-2 border-t border-gray-100"
+                                                >
+                                                    <span
+                                                        class="text-gray-500 block"
+                                                        >Observaciones:</span
+                                                    >
+                                                    <p
+                                                        class="text-gray-700 mt-1 truncate"
+                                                    >
+                                                        {{ item.observaciones }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </details>
+                                </div>
+
+                                <!-- Footer minimalista -->
+                                <div
+                                    class="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between"
+                                >
+                                    <div
+                                        class="text-xs text-gray-500 min-w-0 flex-1 mr-2"
+                                    >
+                                        <div class="truncate">
+                                            {{ item.created_at_formatted }}
+                                        </div>
+                                        <div
+                                            v-if="item.asignado_a?.name"
+                                            class="font-medium truncate"
+                                        >
+                                            {{ item.asignado_a.name }}
+                                        </div>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <Actions
+                                            :edit="props.canEdit"
+                                            :editDisabled="
+                                                props.canEdit &&
+                                                !canEditThisRecord(item)
+                                            "
+                                            :remove="props.canDelete"
+                                            :list="props.canList"
+                                            :canViewHistory="
+                                                props.canViewHistory
+                                            "
+                                            :canSchedule="props.canSchedule"
+                                            :scheduleDisabled="
+                                                props.canSchedule &&
+                                                !canScheduleThisRecord(item)
+                                            "
+                                            @edit="emit('edit', item)"
+                                            @delete="emit('delete', item)"
+                                            @history="emit('showHistory', item)"
+                                            @schedule="emit('schedule', item)"
+                                            @click.stop
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </TransitionGroup>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
 <script setup>
 // ===== IMPORTS =====
-import { onMounted, ref, watch, h, render, nextTick } from "vue";
+import {
+    onMounted,
+    ref,
+    watch,
+    h,
+    render,
+    nextTick,
+    computed,
+    onUnmounted,
+    TransitionGroup,
+    shallowRef,
+    markRaw,
+} from "vue";
 import Actions from "@/Components/Actions.vue";
+
+// ===== FUNCIONES DE ANIMACIÓN MANUAL =====
+function setupDetailAnimations() {
+    // OPTIMIZACIÓN MÁXIMA: Solo para datasets muy pequeños
+    if ((props.rows?.length || 0) > 100) return;
+
+    nextTick(() => {
+        const detailsElements = document.querySelectorAll(".details-animated");
+
+        // Usar requestAnimationFrame para mejor rendimiento
+        requestAnimationFrame(() => {
+            detailsElements.forEach((details) => {
+                details.removeEventListener("toggle", handleDetailsToggle);
+                details.addEventListener("toggle", handleDetailsToggle, {
+                    passive: true,
+                });
+            });
+        });
+    });
+}
+
+function handleDetailsToggle(event) {
+    // Función ultra optimizada
+    event.stopPropagation();
+}
 
 // ===== PROPS Y EMITS =====
 const props = defineProps({
@@ -130,8 +549,14 @@ const props = defineProps({
     canList: Boolean,
     isLoading: Boolean, // <-- para evitar el warning
     canViewHistory: Boolean, // <-- ¡AQUÍ!
+    canSchedule: Boolean, // <-- Nueva prop para permiso agendar
     canEditRecord: Function, // <-- Nueva prop para función de validación
     canEditComplete: Boolean, // <-- Nueva prop para indicar si se puede editar completamente
+    viewMode: {
+        type: String,
+        default: "grid",
+        validator: (value) => ["grid", "cards"].includes(value),
+    },
 });
 
 const emit = defineEmits([
@@ -140,14 +565,21 @@ const emit = defineEmits([
     "list",
     "update:selected",
     "showHistory",
+    "schedule",
 ]);
 
 // ===== VARIABLES REACTIVAS =====
 const gridContainer = ref(null);
+const selectedItems = ref(new Set()); // Para manejar selección en vista tarjetas
+const windowWidth = ref(
+    typeof window !== "undefined" ? window.innerWidth : 1280
+);
+// Usar shallowRef para mejor rendimiento con arrays grandes
+const rowDataInternal = shallowRef([]);
+const isUpdatingGrid = ref(false);
 let gridApi = null;
 
-// ===== Altura dinámica del grid =====
-import { computed } from "vue";
+// ===== ALTURA DINÁMICA DEL GRID =====
 const gridHeightStyle = computed(() => {
     // Si no hay datos, altura mínima fija
     if (!props.rows || props.rows.length === 0) {
@@ -161,6 +593,122 @@ const gridHeightStyle = computed(() => {
     if (totalHeight > 700) totalHeight = 700;
     return { height: totalHeight + "px" };
 });
+
+// ===== CÁLCULO RESPONSIVE DE COLUMNAS =====
+const getColumnCount = computed(() => {
+    // Responsive: 1 en móvil, 2 en tablet, 3 en laptop, 4 en desktop
+    const width = windowWidth.value;
+    if (width < 640) return 1; // sm: 1 columna
+    if (width < 1024) return 2; // md: 2 columnas
+    if (width < 1280) return 3; // lg: 3 columnas
+    return 4; // xl: 4 columnas
+});
+
+// ===== FUNCIONES PARA VISTA DE TARJETAS =====
+function toggleCardSelection(item) {
+    if (selectedItems.value.has(item.id)) {
+        selectedItems.value.delete(item.id);
+    } else {
+        selectedItems.value.add(item.id);
+    }
+    emitSelectedFromCards();
+}
+
+function emitSelectedFromCards() {
+    if (props.viewMode === "cards") {
+        const selected =
+            props.rows?.filter((item) => selectedItems.value.has(item.id)) ||
+            [];
+        emit("update:selected", selected);
+    }
+}
+
+function canEditThisRecord(item) {
+    return props.canEditRecord ? props.canEditRecord(item) : true;
+}
+
+function canScheduleThisRecord(item) {
+    // Solo se puede agendar si la trazabilidad es "completado"
+    return item?.trazabilidad === "completado";
+}
+
+function getStatusClass(status) {
+    const estado = (status || "—").toLowerCase();
+    if (estado === "pendiente") {
+        return "bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded-full text-xs font-semibold";
+    } else if (estado === "asignado") {
+        return "bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full text-xs font-semibold";
+    } else if (estado === "completado") {
+        return "bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full text-xs font-semibold";
+    } else if (estado === "retornado") {
+        return "bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full text-xs font-semibold";
+    } else if (estado === "agendado") {
+        return "bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full text-xs font-semibold";
+    }
+    return "bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded-full text-xs font-semibold";
+}
+
+function getEnhancedStatusClass(status) {
+    const estado = (status || "Sin estado").toLowerCase();
+    if (estado === "pendiente") {
+        return "bg-yellow-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm";
+    } else if (estado === "asignado") {
+        return "bg-blue-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm";
+    } else if (estado === "completado") {
+        return "bg-green-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm";
+    } else if (estado === "retornado") {
+        return "bg-red-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm";
+    } else if (estado === "agendado") {
+        return "bg-purple-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm";
+    }
+    return "bg-gray-400 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm";
+}
+
+function getSimpleStatusClass(status) {
+    const estado = (status || "—").toLowerCase();
+    if (estado === "pendiente") {
+        return "bg-yellow-100 text-yellow-700 px-2 py-1 rounded-md text-xs font-medium";
+    } else if (estado === "asignado") {
+        return "bg-blue-100 text-blue-700 px-2 py-1 rounded-md text-xs font-medium";
+    } else if (estado === "completado") {
+        return "bg-green-100 text-green-700 px-2 py-1 rounded-md text-xs font-medium";
+    } else if (estado === "retornado") {
+        return "bg-red-100 text-red-700 px-2 py-1 rounded-md text-xs font-medium";
+    } else if (estado === "agendado") {
+        return "bg-purple-100 text-purple-700 px-2 py-1 rounded-md text-xs font-medium";
+    }
+    return "bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-xs font-medium";
+}
+
+// Función para distribuir elementos por columnas con optimización BALANCEADA
+function getItemsForColumn(columnIndex) {
+    if (!props.rows) return [];
+
+    const totalColumns = getColumnCount.value;
+    const items = [];
+
+    // OPTIMIZACIÓN BALANCEADA: Más cards visibles manteniendo performance
+    const dataSize = props.rows.length;
+    let maxItems;
+
+    if (dataSize > 15000) maxItems = 1000; // Datasets gigantes: 1000 items
+    else if (dataSize > 10000) maxItems = 1500; // Datasets masivos: 1500 items
+    else if (dataSize > 5000)
+        maxItems = 2000; // Datasets muy grandes: 2000 items
+    else if (dataSize > 2000) maxItems = 2500; // Datasets grandes: 2500 items
+    else if (dataSize > 1000) maxItems = 3000; // Datasets medianos: 3000 items
+    else maxItems = dataSize; // Datasets pequeños: todos los items
+
+    for (
+        let i = columnIndex;
+        i < Math.min(props.rows.length, maxItems);
+        i += totalColumns
+    ) {
+        items.push(props.rows[i]);
+    }
+
+    return items;
+}
 
 // ===== DEFINICIÓN DE COLUMNAS =====
 const columnDefs = props.columns
@@ -215,6 +763,9 @@ const columnDefs = props.columns
                         } else if (estado === "retornado") {
                             bg = "bg-red-100";
                             text = "text-red-700";
+                        } else if (estado === "agendado") {
+                            bg = "bg-purple-100";
+                            text = "text-purple-700";
                         }
                         const span = document.createElement("span");
                         span.className = `${bg} ${text} inline-block px-2 py-1 rounded-full text-xs font-semibold min-w-[70px] text-center whitespace-nowrap`;
@@ -229,6 +780,38 @@ const columnDefs = props.columns
                     headerName: "Asignado",
                     valueGetter: (params) =>
                         params.data?.asignado_a?.name || "—",
+                };
+            case "origen_base":
+                return {
+                    field: "origen_base",
+                    headerName: "Origen de la Base",
+                    minWidth: 100,
+                    maxWidth: 200,
+                    width: 150,
+                    cellRenderer: ({ data }) => {
+                        const origen = (data.origen_base || "—").toLowerCase();
+                        let bg = "bg-gray-200",
+                            text = "text-gray-700";
+                        if (origen === "vodafone") {
+                            bg = "bg-blue-100";
+                            text = "text-blue-700";
+                        } else if (origen === "movistar") {
+                            bg = "bg-green-100";
+                            text = "text-green-700";
+                        } else if (origen === "orange") {
+                            bg = "bg-orange-100";
+                            text = "text-orange-700";
+                        } else if (origen === "otros") {
+                            bg = "bg-purple-100";
+                            text = "text-purple-700";
+                        }
+                        const span = document.createElement("span");
+                        span.className = `${bg} ${text} inline-block px-2 py-1 rounded-full text-xs font-semibold min-w-[70px] text-center whitespace-nowrap`;
+                        span.textContent = data.origen_base || "—";
+                        // Tooltip nativo para mostrar el texto completo
+                        span.title = data.origen_base || "—";
+                        return span;
+                    },
                 };
             case "marca_base":
                 return { field: "marca_base", headerName: "Marca de la Base" };
@@ -286,6 +869,7 @@ const hasActions =
     props.canDelete ||
     props.canList ||
     props.canViewHistory ||
+    props.canSchedule ||
     props.canEditComplete;
 if (hasActions) {
     columnDefs.push({
@@ -293,8 +877,8 @@ if (hasActions) {
         field: "acciones",
         pinned: "right",
         minWidth: 120,
-        maxWidth: 140,
-        width: 130,
+        maxWidth: 160,
+        width: 160,
         resizable: false,
         flex: undefined, // No flex para que no se expanda
         cellRenderer: (params) => {
@@ -310,15 +894,21 @@ if (hasActions) {
             // El botón está habilitado si puede editar Y (no es completado O tiene permisos especiales)
             const isEditEnabled = canEditThisRecord;
 
+            // Verificar si se puede agendar este registro específico
+            const isScheduleEnabled = canScheduleThisRecord(params.data);
+
             const vnode = h(Actions, {
                 edit: props.canEdit,
                 editDisabled: props.canEdit && !isEditEnabled,
                 remove: props.canDelete,
                 list: props.canList,
                 canViewHistory: props.canViewHistory,
+                canSchedule: props.canSchedule,
+                scheduleDisabled: props.canSchedule && !isScheduleEnabled,
                 onEdit: () => emit("edit", params.data),
                 onDelete: () => emit("delete", params.data),
                 onHistory: () => emit("showHistory", params.data),
+                onSchedule: () => emit("schedule", params.data),
             });
 
             render(vnode, container);
@@ -418,40 +1008,120 @@ function selectRowRange(start, end, additive = false) {
 }
 
 // ===== WATCHERS Y REACTIVIDAD =====
-const rowDataInternal = ref([]);
+// Optimización: Usar debounce para evitar actualizaciones excesivas
+let updateTimeout = null;
 
-watch(
-    () => props.rows,
-    async (newRows) => {
-        if (!gridApi || !Array.isArray(newRows)) return;
+function debounceUpdate(fn, delay = 150) {
+    return (...args) => {
+        clearTimeout(updateTimeout);
+
+        // OPTIMIZACIÓN ULTRA: Delays adaptativos más agresivos
+        const dataSize = args[0]?.length || 0;
+        let actualDelay;
+
+        if (dataSize > 5000) actualDelay = 800; // Datasets masivos: 800ms
+        else if (dataSize > 2000) actualDelay = 500; // Datasets grandes: 500ms
+        else if (dataSize > 1000) actualDelay = 300; // Datasets medianos: 300ms
+        else if (dataSize > 500) actualDelay = 200; // Datasets pequeños: 200ms
+        else actualDelay = 100; // Datasets muy pequeños: 100ms
+
+        updateTimeout = setTimeout(() => fn(...args), actualDelay);
+    };
+}
+
+const debouncedUpdateGrid = debounceUpdate(async (newRows) => {
+    if (!gridApi || !Array.isArray(newRows) || isUpdatingGrid.value) return;
+
+    isUpdatingGrid.value = true;
+
+    try {
+        // OPTIMIZACIÓN ULTRA: markRaw para todos los datasets grandes
+        const processedRows = newRows.length > 100 ? markRaw(newRows) : newRows;
 
         // Detectar si son nuevos (scroll infinito o reemplazo)
         const isAppending =
             newRows.length > rowDataInternal.value.length &&
             rowDataInternal.value.length > 0 &&
+            newRows.length < 1000 && // Solo para datasets pequeños
             newRows
-                .slice(0, rowDataInternal.value.length)
-                .every((item, i) => item.id === rowDataInternal.value[i].id);
+                .slice(0, Math.min(rowDataInternal.value.length, 10)) // Solo comparar primeros 10
+                .every((item, i) => item.id === rowDataInternal.value[i]?.id);
 
         if (!newRows || newRows.length === 0) {
-            rowDataInternal.value = [];
+            rowDataInternal.value = markRaw([]);
             gridApi.setGridOption("rowData", []);
-            gridApi.hideOverlay();
         } else if (isAppending) {
             const added = newRows.slice(rowDataInternal.value.length);
-            rowDataInternal.value = [...rowDataInternal.value, ...added];
-            gridApi.applyTransaction({ add: added });
+            rowDataInternal.value = markRaw([
+                ...rowDataInternal.value,
+                ...added,
+            ]);
+            gridApi.applyTransaction({ add: markRaw(added) });
         } else {
-            // Reemplazo completo (filtro nuevo, búsqueda, etc.)
-            rowDataInternal.value = [...newRows];
-            gridApi.setGridOption("rowData", newRows);
+            // Reemplazo completo optimizado
+            rowDataInternal.value = processedRows;
+            gridApi.setGridOption("rowData", processedRows);
         }
 
-        await nextTick();
+        // OPTIMIZACIÓN: Solo hacer nextTick para datasets pequeños
+        if (newRows.length < 500) {
+            await nextTick();
+        }
+
         gridApi.hideOverlay();
-        gridApi.refreshCells();
+
+        // OPTIMIZACIÓN ULTRA: Solo refrescar celdas si es realmente necesario
+        if (newRows.length < 200) {
+            gridApi.refreshCells();
+        }
+
+        // Animaciones solo para datasets muy pequeños
+        if (props.viewMode === "cards" && newRows.length < 50) {
+            setupDetailAnimations();
+        }
+    } catch (error) {
+        console.warn("Error updating grid:", error);
+    } finally {
+        isUpdatingGrid.value = false;
+    }
+}, 300);
+
+watch(
+    () => props.rows,
+    (newRows, oldRows) => {
+        // OPTIMIZACIÓN ULTRA: Comparaciones más eficientes
+        if (newRows === oldRows) return;
+
+        // Para datasets grandes, comparación ultra rápida
+        const newLength = newRows?.length || 0;
+        const oldLength = oldRows?.length || 0;
+
+        if (newLength > 1000 && oldLength > 1000) {
+            // Solo comparar longitud y hash del primer y último elemento
+            if (
+                newLength === oldLength &&
+                newRows[0]?.id === oldRows[0]?.id &&
+                newRows[newLength - 1]?.id === oldRows[oldLength - 1]?.id
+            ) {
+                return;
+            }
+        }
+
+        debouncedUpdateGrid(newRows);
     },
-    { immediate: true }
+    { immediate: true, deep: false, flush: "post" } // flush post para mejor rendimiento
+);
+
+// Watch para configurar animaciones cuando se cambia a vista de cards
+watch(
+    () => props.viewMode,
+    (newMode) => {
+        if (newMode === "cards" && (props.rows?.length || 0) < 500) {
+            nextTick(() => {
+                setupDetailAnimations();
+            });
+        }
+    }
 );
 
 // ===== MONTAJE Y EVENTOS =====
@@ -460,15 +1130,26 @@ onMounted(() => {
 
     const gridOptions = {
         columnDefs,
-        rowData: props.rows,
+        rowData: markRaw(props.rows || []),
         defaultColDef,
         rowSelection: "multiple",
         suppressRowClickSelection: false,
         rowHeight: 37,
         headerHeight: 35,
         enableRangeSelection: false,
-        animateRows: true,
+        animateRows: false, // Desactivar animaciones para mejor rendimiento
         suppressCellFocus: true,
+        // Optimizaciones de rendimiento
+        suppressColumnVirtualisation: false,
+        suppressRowVirtualisation: false,
+        rowBuffer: 10,
+        maxBlocksInCache: 10,
+        maxConcurrentDatasourceRequests: 2,
+        cacheBlockSize: 100,
+        // Desactivar funciones que consumen recursos
+        suppressAggFuncInHeader: true,
+        suppressMenuHide: true,
+        suppressMovableColumns: true,
         onGridReady: (params) => {
             gridApi = params.api;
 
@@ -483,7 +1164,10 @@ onMounted(() => {
                 params.columnApi.getAllColumns().forEach((column) => {
                     allColumnIds.push(column.getId());
                 });
-                params.columnApi.autoSizeColumns(allColumnIds, false);
+                // Solo auto-size si hay pocas columnas
+                if (allColumnIds.length <= 8) {
+                    params.columnApi.autoSizeColumns(allColumnIds, false);
+                }
             }
 
             // No mostrar overlay de loading de ag-Grid, el overlay propio ya se muestra
@@ -498,17 +1182,105 @@ onMounted(() => {
     gridContainer.value.addEventListener("mousedown", handleMouseDown);
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
+
+    // Event listener para resize de ventana con throttle
+    window.addEventListener("resize", throttledResize);
+
+    // Configurar animaciones de detalles en cards solo si hay pocos datos
+    if (props.viewMode === "cards" && (props.rows?.length || 0) < 500) {
+        nextTick(() => {
+            setupDetailAnimations();
+        });
+    }
 });
+
+// Función para manejar cambios de tamaño de ventana con throttle ULTRA
+let resizeTimeout = null;
+let resizeRequestId = null;
+
+const throttledResize = () => {
+    if (resizeTimeout) return;
+
+    // Cancelar frame anterior si existe
+    if (resizeRequestId) {
+        cancelAnimationFrame(resizeRequestId);
+    }
+
+    resizeTimeout = setTimeout(() => {
+        resizeRequestId = requestAnimationFrame(() => {
+            handleResize();
+            resizeTimeout = null;
+            resizeRequestId = null;
+        });
+    }, 350); // Delay más largo para menos llamadas
+};
+
+function handleResize() {
+    windowWidth.value = window.innerWidth;
+    if (gridApi && !isUpdatingGrid.value) {
+        gridApi.sizeColumnsToFit();
+    }
+}
 
 // ===== ACCIONES EXTRA =====
 function selectAll() {
-    gridApi?.selectAll();
-    emitSelectedRows();
+    if (props.viewMode === "grid") {
+        gridApi?.selectAll();
+        emitSelectedRows();
+    } else {
+        // Vista tarjetas - seleccionar todas
+        selectedItems.value.clear();
+        props.rows?.forEach((item) => selectedItems.value.add(item.id));
+        emitSelectedFromCards();
+    }
 }
+
 function clearSelection() {
-    gridApi?.deselectAll();
-    emitSelectedRows();
+    if (props.viewMode === "grid") {
+        gridApi?.deselectAll();
+        emitSelectedRows();
+    } else {
+        // Vista tarjetas - limpiar selección
+        selectedItems.value.clear();
+        emitSelectedFromCards();
+    }
 }
+
+// Watcher para sincronizar cuando se cambia de vista
+watch(
+    () => props.viewMode,
+    (newMode) => {
+        if (newMode === "cards") {
+            // Sincronizar selección del grid a las tarjetas
+            const gridSelected = gridApi?.getSelectedRows() || [];
+            selectedItems.value.clear();
+            gridSelected.forEach((item) => selectedItems.value.add(item.id));
+            emitSelectedFromCards();
+        } else {
+            // Sincronizar selección de tarjetas al grid
+            gridApi?.deselectAll();
+            const selectedIds = Array.from(selectedItems.value);
+            gridApi?.forEachNode((node) => {
+                if (selectedIds.includes(node.data.id)) {
+                    node.setSelected(true);
+                }
+            });
+            emitSelectedRows();
+        }
+    }
+);
+
+// Limpiar event listeners al desmontar
+onUnmounted(() => {
+    // Limpiar timeouts y frames
+    if (updateTimeout) clearTimeout(updateTimeout);
+    if (resizeTimeout) clearTimeout(resizeTimeout);
+    if (resizeRequestId) cancelAnimationFrame(resizeRequestId);
+
+    document.removeEventListener("mousemove", handleMouseMove);
+    document.removeEventListener("mouseup", handleMouseUp);
+    window.removeEventListener("resize", throttledResize);
+});
 </script>
 
 <style scoped>
@@ -555,5 +1327,194 @@ function clearSelection() {
     --ag-header-foreground-color: #333;
     --ag-selected-row-background-color: #ffcc99; /* ← naranja suave */
 }
+
+/* Animaciones keyframes personalizadas para forzar el comportamiento */
+@keyframes expandDetails {
+    0% {
+        max-height: 0;
+        opacity: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        max-height: 800px;
+        opacity: 1;
+        padding-top: 0.75rem;
+        padding-bottom: 0.75rem;
+    }
+}
+
+@keyframes collapseDetails {
+    0% {
+        max-height: 800px;
+        opacity: 1;
+        padding-top: 0.75rem;
+        padding-bottom: 0.75rem;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        max-height: 0;
+        opacity: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+}
+
+@keyframes slideDown {
+    0% {
+        transform: translateY(-25px);
+        opacity: 0;
+    }
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    0% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-25px);
+        opacity: 0;
+    }
+}
+
+/* Animación simple para details/summary - ULTRA RÁPIDA */
+.details-content {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    padding-top: 0;
+    padding-bottom: 0;
+    transition: max-height 0.2s ease-out, opacity 0.15s ease-out,
+        padding 0.2s ease-out;
+}
+
+.details-animated[open] .details-content {
+    max-height: 400px; /* Reducido para menos cálculos */
+    opacity: 1;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+.details-inner {
+    transform: translateY(-5px); /* Menos movimiento */
+    opacity: 0;
+    transition: all 0.15s ease-out;
+}
+
+.details-animated[open] .details-inner {
+    transform: translateY(0);
+    opacity: 1;
+    transition-delay: 0.05s; /* Delay mínimo */
+}
+
+/* Cada columna individual mantiene su espacio independiente */
+.flex-1 {
+    min-width: 0; /* Permite que flex-1 se comprima correctamente */
+}
+
+/* Las tarjetas dentro de cada columna se mueven suavemente - ULTRA RÁPIDO */
+.space-y-4 > * {
+    transition: margin-top 0.25s ease-out, transform 0.25s ease-out,
+        height 0.25s ease-out;
+    will-change: auto; /* Cambiar a auto para mejor rendimiento */
+}
+
+/* Asegurar que las tarjetas no se expandan más allá del contenedor */
+.flex-1 > div {
+    width: 100%;
+    overflow: hidden;
+}
+
+/* Optimización para mejor rendimiento en las animaciones - ULTRA RÁPIDO */
+.space-y-4 {
+    will-change: auto;
+    transition: height 0.25s ease-out;
+}
+
+/* Optimización adicional para transiciones de tarjetas - ULTRA RÁPIDO */
+.space-y-4 > .animated-card {
+    will-change: auto;
+    transform-origin: top center;
+    transition: all 0.25s ease-out;
+}
+
+/* Columna de tarjetas con posición relativa para transiciones - MÁS RÁPIDO */
+.card-column {
+    position: relative;
+    transition: height 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Mejorar la respuesta de las columnas a cambios de altura - MÁS RÁPIDO */
+.flex-1 {
+    min-width: 0; /* Permite que flex-1 se comprima correctamente */
+    transition: height 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Transiciones para TransitionGroup - movimiento de tarjetas ULTRA RÁPIDO */
+.card-move-move,
+.card-move-enter-active,
+.card-move-leave-active {
+    transition: all 0.2s ease-out;
+}
+
+.card-move-enter-from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+}
+
+.card-move-leave-to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+}
+
+.card-move-leave-active {
+    position: absolute;
+    width: calc(100% - 1rem);
+    z-index: 0;
+}
+
+/* Columna de tarjetas con posición relativa para transiciones - ULTRA RÁPIDO */
+.card-column {
+    position: relative;
+    transition: height 0.25s ease-out;
+}
+
+/* Clase específica para animaciones suaves de tarjetas - ULTRA RÁPIDA */
+.animated-card {
+    transition: transform 0.15s ease-out, box-shadow 0.15s ease-out,
+        border-color 0.15s ease-out, height 0.25s ease-out;
+    will-change: auto;
+    backface-visibility: hidden;
+    overflow: hidden;
+}
+
+.animated-card:hover {
+    transition: transform 0.1s ease-out, box-shadow 0.1s ease-out,
+        border-color 0.1s ease-out;
+}
+
+/* Transiciones suaves para elementos internos de las tarjetas - ULTRA RÁPIDO */
+.animated-card > * {
+    transition: all 0.15s ease-out;
+}
+
+/* Optimizar el espacio y movimiento suave - ULTRA RÁPIDO */
+.space-y-4 {
+    position: relative;
+    min-height: 0;
+    transition: height 0.25s ease-out;
+    will-change: auto;
+}
+
 /* Eliminado no-vertical-scroll para permitir scroll vertical natural de ag-Grid */
 </style>

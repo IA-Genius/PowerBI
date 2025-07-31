@@ -77,6 +77,38 @@
         </button>
 
         <button
+            v-if="canSchedule"
+            @click="scheduleDisabled ? null : $emit('schedule')"
+            class="action-btn"
+            :class="
+                scheduleDisabled
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-gradient-to-tr from-green-500 to-green-400 hover:from-green-600 hover:to-green-500 text-white'
+            "
+            :title="
+                scheduleDisabled
+                    ? 'Solo se puede agendar registros completados'
+                    : scheduleTitle
+            "
+            :disabled="scheduleDisabled"
+        >
+            <span class="sr-only">Agendar</span>
+            <svg
+                class="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+            </svg>
+        </button>
+
+        <button
             v-if="list"
             @click="$emit('list')"
             class="action-btn bg-gradient-to-tr from-blue-500 to-blue-400 hover:from-blue-600 hover:to-blue-500 text-white"
@@ -110,6 +142,9 @@ const props = defineProps({
     removeTitle: { type: String, default: "Eliminar" },
     listTitle: { type: String, default: "Ver listado" },
     canViewHistory: { type: Boolean, default: false },
+    canSchedule: { type: Boolean, default: false },
+    scheduleDisabled: { type: Boolean, default: false },
+    scheduleTitle: { type: String, default: "Agendar" },
 });
 </script>
 

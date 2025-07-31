@@ -2,7 +2,7 @@
 // =======================
 // 1. IMPORTS
 // =======================
-import { ref, computed, onMounted, watch, watchEffect } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch, watchEffect } from "vue";
 import { usePage, router } from "@inertiajs/vue3";
 import Swal from "sweetalert2";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
@@ -34,6 +34,12 @@ const currentPage = ref(1);
 const lastPage = ref(1);
 const isLoading = ref(false);
 const scrollContainer = ref(null);
+
+// =======================
+// 3.1. VISTA TARJETAS/TABLA
+// =======================
+const vistaTabla = ref(false);
+const esMobile = ref(false);
 
 // =======================
 // 4. PROPIEDADES REACTIVAS - MODALES
@@ -218,9 +224,10 @@ function getFiltrosDisponibles(list) {
             "irrelevante",
             "completado",
             "retornado",
+            "agendado",
         ];
     } else if (permisos.value.canFiltrar) {
-        trazabilidadOpciones = ["asignado", "completado"];
+        trazabilidadOpciones = ["asignado", "completado", "agendado"];
     } else {
         trazabilidadOpciones = [
             "pendiente",
@@ -228,6 +235,7 @@ function getFiltrosDisponibles(list) {
             "irrelevante",
             "completado",
             "retornado",
+            "agendado",
         ];
     }
 
@@ -260,20 +268,40 @@ function getItemsFiltrados(rawItems) {
     const term =
         (typeof searchValue === "string" ? searchValue.toLowerCase() : "") ||
         "";
-    let data = [...rawItems];
 
-    if (term) {
-        data = data.filter((item) =>
-            [
-                item.nombre_cliente,
-                item.dni_cliente,
-                item.telefono_principal,
-            ].some((field) =>
-                (field || "").toString().toLowerCase().includes(term)
-            )
-        );
+    // Para datasets grandes, crear una copia shallow en lugar de deep
+    let data = rawItems.length > 1000 ? rawItems.slice() : [...rawItems];
+
+    // Optimización: Si no hay filtros, devolver datos originales
+    if (!term && Object.keys(filtrosActivos).length <= 1) {
+        return data;
     }
 
+    // Filtro de búsqueda optimizado
+    if (term) {
+        // Usar un approach más eficiente para datasets grandes
+        if (data.length > 1000) {
+            data = data.filter((item) => {
+                // Crear string de búsqueda una sola vez
+                const searchString = `${item.nombre_cliente || ""} ${
+                    item.dni_cliente || ""
+                } ${item.telefono_principal || ""}`.toLowerCase();
+                return searchString.includes(term);
+            });
+        } else {
+            data = data.filter((item) =>
+                [
+                    item.nombre_cliente,
+                    item.dni_cliente,
+                    item.telefono_principal,
+                ].some((field) =>
+                    (field || "").toString().toLowerCase().includes(term)
+                )
+            );
+        }
+    }
+
+    // Aplicar otros filtros
     for (const [key, values] of Object.entries(filtrosActivos)) {
         if (key === "search" || !Array.isArray(values) || values.length === 0)
             continue;
@@ -289,6 +317,7 @@ function getColumnasGrid() {
         "id",
         "created_at_formatted",
         "trazabilidad",
+        "origen_base",
         "marca_base",
         "origen_motivo_cancelacion",
         "nombre_cliente",
@@ -380,6 +409,58 @@ function abrirModalAsignacion() {
         return;
     }
     modales.value.showAsignacionModal = true;
+}
+
+function abrirModalAgendar(item) {
+    // Verificar que el registro esté completado
+    if (item.trazabilidad !== "completado") {
+        mostrarAlerta(
+            "warning",
+            "No se puede agendar",
+            "Solo se pueden agendar registros completados."
+        );
+        return;
+    }
+
+    // Confirmar con el usuario
+    Swal.fire({
+        title: "¿Agendar registro?",
+        text: `¿Estás seguro de que quieres agendar el registro de ${
+            item.nombre_cliente || "este cliente"
+        }?`,
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonColor: "#10b981",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Sí, agendar",
+        cancelButtonText: "Cancelar",
+        reverseButtons: true,
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                // Mostrar loading
+                mostrarToast("info", "Agendando registro...");
+
+                // Hacer petición al backend
+                await axios.post(route("vodafone.agendar", item.id));
+
+                // Actualizar la lista
+                router.visit(route("vodafone.index"), {
+                    only: ["items", "success"],
+                });
+
+                mostrarToast("success", "Registro agendado correctamente");
+            } catch (error) {
+                console.error("Error al agendar:", error);
+                mostrarAlerta(
+                    "error",
+                    "Error al agendar",
+                    error.response?.data?.message ||
+                        "No se pudo agendar el registro"
+                );
+            }
+        }
+    });
 }
 
 function abrirHistorial(item) {
@@ -482,11 +563,25 @@ function canEditRecord(record) {
 // =======================
 // 14. FUNCIONES DE FILTROS
 // =======================
+// 14. FUNCIONES DE FILTROS
+// =======================
+
+// Optimización: Debounce para búsqueda instantánea
+let busquedaTimeout = null;
+
 function aplicarBusquedaInstantanea(val) {
-    filtros.value.filtrosActivos = {
-        ...filtros.value.filtrosActivos,
-        search: val,
-    };
+    // Limpiar timeout anterior
+    if (busquedaTimeout) clearTimeout(busquedaTimeout);
+
+    // Aplicar debounce más agresivo para datasets grandes
+    const delay = filteredItems.value.length > 1000 ? 500 : 200;
+
+    busquedaTimeout = setTimeout(() => {
+        filtros.value.filtrosActivos = {
+            ...filtros.value.filtrosActivos,
+            search: val,
+        };
+    }, delay);
 }
 
 async function aplicarFiltrosDesdeFlotante(f) {
@@ -783,6 +878,12 @@ onMounted(() => {
 
     filtros.value.filtrosActivos = filtrosIniciales;
 
+    // Detectar mobile y configurar vista
+    esMobile.value = window.innerWidth < 640;
+    if (esMobile.value) {
+        vistaTabla.value = false; // fuerza vista tarjetas en mobile
+    }
+
     inicializarItems();
     if (permisos.value.success) {
         mostrarToast("success", permisos.value.success);
@@ -790,6 +891,19 @@ onMounted(() => {
     if (pageProps.errors && pageProps.errors.general) {
         modalData.value.generalError = pageProps.errors.general;
     }
+
+    // Listener para cambios de tamaño de ventana
+    window.addEventListener("resize", () => {
+        esMobile.value = window.innerWidth < 640;
+        if (esMobile.value) {
+            vistaTabla.value = false;
+        }
+    });
+});
+
+// Cleanup al desmontar el componente
+onUnmounted(() => {
+    if (busquedaTimeout) clearTimeout(busquedaTimeout);
 }); // =======================
 // 19. EXPOSICIÓN DE PROPIEDADES COMPUTADAS PARA EL TEMPLATE
 // =======================
@@ -911,6 +1025,44 @@ const isLoadingAsignacion = computed(
                         />
                     </div>
 
+                    <!-- Toggle Vista Tabla/Tarjetas -->
+                    <button
+                        @click="vistaTabla = !vistaTabla"
+                        class="hidden sm:flex items-center gap-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 px-3 py-2 rounded-lg shadow hover:bg-gray-50 hover:text-indigo-600 transition"
+                    >
+                        <svg
+                            v-if="vistaTabla"
+                            class="w-5 h-5 text-indigo-500"
+                            fill="currentColor"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 512 512"
+                        >
+                            <!-- Icono de tarjetas (cuatro bloques) -->
+                            <path
+                                d="M272 64l0 176 208 0 0-144c0-17.7-14.3-32-32-32L272 64zm-32 0L64 64C46.3 64 32 78.3 32 96l0 144 208 0 0-176zM32 272l0 144c0 17.7 14.3 32 32 32l176 0 0-176L32 272zM272 448l176 0c17.7 0 32-14.3 32-32l0-144-208 0 0 176zM0 96C0 60.7 28.7 32 64 32l384 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96z"
+                            />
+                        </svg>
+
+                        <svg
+                            v-else
+                            class="w-5 h-5 text-indigo-500"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            viewBox="0 0 24 24"
+                        >
+                            <!-- Icono de tabla -->
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M3 6h18M3 12h18M3 18h18"
+                            />
+                        </svg>
+                        <span>{{
+                            vistaTabla ? "Vista Tarjetas" : "Vista Tabla"
+                        }}</span>
+                    </button>
+
                     <!-- Dropdown de Operaciones -->
                     <div
                         class="relative"
@@ -1020,10 +1172,7 @@ const isLoadingAsignacion = computed(
              TABLA PRINCIPAL
         ======================= -->
         <div class="py-6 relative">
-            <div
-                class="overflow-x-auto rounded-xl border border-gray-100 bg-gray-50 relative"
-                ref="scrollContainer"
-            >
+            <div class="relative" ref="scrollContainer">
                 <ExcelLikeGrid
                     :rows="filteredItems"
                     :columns="columnasGrid"
@@ -1034,10 +1183,13 @@ const isLoadingAsignacion = computed(
                     :canDelete="canDo('vodafone.eliminar')"
                     :isLoading="isLoading"
                     :canViewHistory="canViewHistory"
+                    :canSchedule="canDo('vodafone.agendar')"
+                    :viewMode="vistaTabla ? 'grid' : 'cards'"
                     v-model:selected="selectedRows"
                     @edit="abrirModalEditar"
                     @delete="eliminar"
                     @showHistory="abrirHistorial"
+                    @schedule="abrirModalAgendar"
                 />
                 <!-- =======================
              MODAL DE HISTORIAL DE ASIGNACIONES
@@ -1153,6 +1305,20 @@ const isLoadingAsignacion = computed(
             <template #default="{ form: slotForm, errors }">
                 <InputField
                     class="modalInputs"
+                    label="Orden Trabajo Anterior"
+                    v-model="slotForm.orden_trabajo_anterior"
+                    name="orden_trabajo_anterior"
+                    :error="errors.orden_trabajo_anterior"
+                />
+                <InputField
+                    class="modalInputs"
+                    label="Origen Base"
+                    v-model="slotForm.origen_base"
+                    name="origen_base"
+                    :error="errors.origen_base"
+                />
+                <InputField
+                    class="modalInputs"
                     label="Nombre del Cliente"
                     v-model="slotForm.nombre_cliente"
                     name="nombre_cliente"
@@ -1212,13 +1378,6 @@ const isLoadingAsignacion = computed(
                     v-model="slotForm.origen_motivo_cancelacion"
                     name="origen_motivo_cancelacion"
                     :error="errors.origen_motivo_cancelacion"
-                />
-                <InputField
-                    class="modalInputs"
-                    label="Orden Trabajo Anterior"
-                    v-model="slotForm.orden_trabajo_anterior"
-                    name="orden_trabajo_anterior"
-                    :error="errors.orden_trabajo_anterior"
                 />
                 <InputField
                     class="modalInputs"

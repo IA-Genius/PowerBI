@@ -319,21 +319,124 @@ function transformarForm(form) {
                 <!-- Listado de roles -->
                 <div>
                     <div
-                        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+                        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
                     >
                         <div
                             v-for="role in roles"
                             :key="role.id"
-                            class="group transition-all duration-300 rounded-xl border border-gray-200 bg-white/95 shadow hover:shadow-lg hover:border-indigo-300 p-5 flex flex-col min-h-[140px] relative overflow-hidden"
+                            class="bg-white rounded-xl border cursor-pointer transition-all duration-200 shadow-sm w-full max-w-full border-gray-200 hover:border-gray-300 hover:shadow-md flex flex-col overflow-hidden"
                         >
-                            <!-- Icono y acciones -->
-                            <div class="flex justify-between items-start mb-3">
-                                <div class="flex items-center gap-3">
-                                    <span
-                                        class="w-11 h-11 rounded-full bg-gradient-to-tr from-indigo-500 to-indigo-400 flex items-center justify-center text-xl font-bold shadow-lg border-2 border-white group-hover:scale-105 transition-transform"
+                            <!-- Header simplificado -->
+                            <div
+                                class="p-4 border-b bg-white border-gray-100 flex items-center gap-3 min-h-0"
+                            >
+                                <!-- Avatar con icono -->
+                                <div
+                                    class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center shadow-md flex-shrink-0"
+                                >
+                                    <svg
+                                        class="w-5 h-5 text-white"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        viewBox="0 0 24 24"
                                     >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+                                        />
+                                    </svg>
+                                </div>
+                                <!-- Nombre del rol -->
+                                <div class="min-w-0 flex-1">
+                                    <h3
+                                        class="text-sm font-semibold text-gray-900 truncate"
+                                        :title="role.name"
+                                    >
+                                        {{ role.name }}
+                                    </h3>
+                                    <p class="text-xs text-gray-500 truncate">
+                                        ID: {{ role.id }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Cuerpo de la tarjeta -->
+                            <div
+                                class="p-4 flex-1 flex flex-col space-y-3 min-h-0"
+                            >
+                                <!-- Carteras -->
+                                <div>
+                                    <h4
+                                        class="text-xs font-medium text-gray-600 mb-2 truncate"
+                                    >
+                                        Carteras asignadas
+                                    </h4>
+                                    <div class="flex flex-wrap gap-1.5">
+                                        <template v-if="role.carteras.length">
+                                            <span
+                                                v-for="c in role.carteras"
+                                                :key="c.id"
+                                                class="inline-flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-xs font-medium border border-blue-100 truncate max-w-full"
+                                                :title="c.nombre"
+                                            >
+                                                <span class="truncate">{{
+                                                    c.nombre
+                                                }}</span>
+                                                <span
+                                                    class="ml-1 w-3.5 h-3.5 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center flex-shrink-0"
+                                                >
+                                                    {{
+                                                        role.reportes.filter(
+                                                            (r) =>
+                                                                r.cartera_id ===
+                                                                c.id
+                                                        ).length
+                                                    }}
+                                                </span>
+                                            </span>
+                                        </template>
+                                        <span
+                                            v-else
+                                            class="text-gray-400 italic text-xs truncate"
+                                        >
+                                            Sin carteras asignadas
+                                        </span>
+                                    </div>
+                                </div>
+                                <!-- Reportes totales -->
+                                <div>
+                                    <h4
+                                        class="text-xs font-medium text-gray-600 mb-1 truncate"
+                                    >
+                                        Reportes totales
+                                    </h4>
+                                    <div class="flex items-center gap-2">
+                                        <span
+                                            class="inline-flex items-center bg-green-50 text-green-700 px-2 py-1 rounded-md text-xs font-medium border border-green-100"
+                                        >
+                                            {{
+                                                role.reportes
+                                                    ? role.reportes.length
+                                                    : 0
+                                            }}
+                                            reportes
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Footer -->
+                            <div
+                                class="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between min-h-0"
+                            >
+                                <div
+                                    class="text-xs text-gray-500 min-w-0 flex-1 mr-2"
+                                >
+                                    <div class="flex items-center gap-2">
                                         <svg
-                                            class="w-6 h-6 text-white"
+                                            class="w-3 h-3 text-gray-400 flex-shrink-0"
                                             fill="none"
                                             stroke="currentColor"
                                             stroke-width="2"
@@ -342,76 +445,29 @@ function transformarForm(form) {
                                             <path
                                                 stroke-linecap="round"
                                                 stroke-linejoin="round"
-                                                d="M5.121 17.804A9 9 0 0112 15a9 9 0 016.879 2.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
                                             />
                                         </svg>
-                                    </span>
-                                    <span
-                                        class="text-lg font-semibold text-gray-900 truncate max-w-[180px] sm:max-w-[260px] group-hover:text-indigo-700 transition-colors"
-                                        :title="role.name"
-                                    >
-                                        {{ role.name }}
-                                    </span>
-                                </div>
-                                <Actions
-                                    :edit="canDo('roles.editar')"
-                                    :remove="canDo('roles.eliminar')"
-                                    @edit="abrirModalEditar(role)"
-                                    @delete="eliminarRol(role)"
-                                    class="opacity-80 group-hover:opacity-100 transition"
-                                />
-                            </div>
-
-                            <!-- Carteras -->
-                            <div class="flex flex-wrap gap-2 mb-2">
-                                <template v-if="role.carteras.length">
-                                    <span
-                                        v-for="c in role.carteras"
-                                        :key="c.id"
-                                        class="flex items-center bg-indigo-50 border border-indigo-100 rounded-full px-3 py-1 text-xs text-indigo-700 font-medium shadow-sm"
-                                        :title="c.nombre"
-                                    >
-                                        {{ c.nombre }}
-                                        <span
-                                            class="ml-1 w-4 h-4 rounded-full bg-white text-indigo-600 text-[10px] font-bold flex items-center justify-center border border-indigo-200"
-                                        >
+                                        <span class="truncate">
                                             {{
-                                                role.reportes.filter(
-                                                    (r) => r.cartera_id === c.id
-                                                ).length
+                                                role.permissions &&
+                                                role.permissions.length
+                                                    ? role.permissions.length
+                                                    : 0
                                             }}
+                                            permisos
                                         </span>
-                                    </span>
-                                </template>
-                                <span
-                                    v-else
-                                    class="text-gray-400 italic text-xs"
-                                    >Sin carteras</span
-                                >
-                            </div>
+                                    </div>
+                                </div>
 
-                            <!-- Footer -->
-                            <div
-                                class="flex justify-between items-center border-t border-gray-100 pt-2 mt-auto text-[11px] text-gray-400"
-                            >
-                                <span>
-                                    <span class="font-semibold text-indigo-400"
-                                        >ID:</span
-                                    >
-                                    {{ role.id }}
-                                </span>
-                                <span
-                                    v-if="
-                                        role.permissions &&
-                                        role.permissions.length
-                                    "
-                                    class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100"
-                                >
-                                    {{ role.permissions.length }}
-                                    permiso{{
-                                        role.permissions.length > 1 ? "s" : ""
-                                    }}
-                                </span>
+                                <div class="flex-shrink-0">
+                                    <Actions
+                                        :edit="canDo('roles.editar')"
+                                        :remove="canDo('roles.eliminar')"
+                                        @edit="abrirModalEditar(role)"
+                                        @delete="eliminarRol(role)"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>

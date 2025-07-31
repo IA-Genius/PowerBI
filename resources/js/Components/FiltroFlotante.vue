@@ -179,7 +179,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from "vue";
+import { ref, watch, onMounted, onUnmounted } from "vue";
 import Swal from "sweetalert2";
 
 const props = defineProps({
@@ -197,6 +197,9 @@ const selectedFiltros = ref({});
 const fechaDesde = ref(props.fechaDesdeProp);
 const fechaHasta = ref(props.fechaHastaProp);
 
+// Optimización: Debounce para búsqueda
+let searchTimeout = null;
+
 // Para advertencia de cambios sin aplicar
 const originalFiltros = ref({});
 const originalFechaDesde = ref("");
@@ -212,29 +215,48 @@ onMounted(() => {
     originalFechaHasta.value = props.fechaHastaProp;
 });
 
-// Watch para reinicializar la copia local cuando cambian los props
+// Watch para reinicializar la copia local cuando cambian los props (optimizado)
 watch(
     () => props.selected,
     (nuevo, anterior) => {
+        // Evitar comparaciones costosas si no hay cambios reales
+        if (nuevo === anterior) return;
+
         // Solo actualizar si cambió algo más que la búsqueda
         const nuevoSinSearch = { ...nuevo };
         const anteriorSinSearch = { ...anterior };
         delete nuevoSinSearch.search;
         delete anteriorSinSearch.search;
 
+        // Usar una comparación más eficiente
+        const nuevoStringified = JSON.stringify(nuevoSinSearch);
+        const anteriorStringified = JSON.stringify(anteriorSinSearch);
+
         // Si solo cambió la búsqueda, no sobrescribir selectedFiltros
-        if (
-            JSON.stringify(nuevoSinSearch) !== JSON.stringify(anteriorSinSearch)
-        ) {
-            selectedFiltros.value = JSON.parse(JSON.stringify(nuevo || {}));
-            originalFiltros.value = JSON.parse(JSON.stringify(nuevo || {}));
+        if (nuevoStringified !== anteriorStringified) {
+            selectedFiltros.value = JSON.parse(nuevoStringified);
+            originalFiltros.value = JSON.parse(nuevoStringified);
         }
-    }
+    },
+    { deep: false } // Evitar deep watching para mejor rendimiento
 );
 
-// Search en tiempo real
+// Search en tiempo real con debounce optimizado
+const debouncedSearch = (searchValue) => {
+    if (searchTimeout) clearTimeout(searchTimeout);
+
+    searchTimeout = setTimeout(() => {
+        emit("search", searchValue);
+    }, 300); // 300ms de delay para evitar demasiadas emisiones
+};
+
 watch(internalSearch, (val) => {
-    emit("search", val);
+    debouncedSearch(val);
+});
+
+// Cleanup al desmontar
+onUnmounted(() => {
+    if (searchTimeout) clearTimeout(searchTimeout);
 });
 
 function toggleFiltro(key, value) {

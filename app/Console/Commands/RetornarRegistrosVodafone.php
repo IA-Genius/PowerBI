@@ -38,15 +38,16 @@ class RetornarRegistrosVodafone extends Command
     private const ESTADO_RETORNADO = 'retornado';
 
     private const CAMPOS_REQUERIDOS = [
-        'marca_base',
-        'origen_motivo_cancelacion',
+        'orden_trabajo_anterior',
+        'origen_base',
         'nombre_cliente',
         'dni_cliente',
-        'orden_trabajo_anterior',
         'telefono_principal',
         'telefono_adicional',
         'correo_referencia',
         'direccion_historico',
+        'marca_base',
+        'origen_motivo_cancelacion',
         'observaciones'
     ];
 

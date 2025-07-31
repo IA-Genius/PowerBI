@@ -152,6 +152,44 @@ class VodafoneController extends Controller
             ->with('success', "{$cantidad} registro(s) asignado(s) correctamente.");
     }
 
+    public function agendar(Request $request, Vodafone $vodafone)
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        // Verificar permisos
+        if (!$user->can('vodafone.agendar')) {
+            abort(403, 'No tienes permisos para agendar registros');
+        }
+
+        // Verificar que el registro esté completado
+        if ($vodafone->trazabilidad !== 'completado') {
+            return redirect()->back()
+                ->with('error', 'Solo se pueden agendar registros completados.');
+        }
+
+        // Cambiar la trazabilidad a 'agendado'
+        $trazabilidadAnterior = $vodafone->trazabilidad;
+        $vodafone->update([
+            'trazabilidad' => 'agendado',
+            'updated_at' => now(),
+        ]);
+
+        // Registrar en auditoría
+        $this->saveScheduleAuditTrail($vodafone, $user, $trazabilidadAnterior);
+
+        // Log de actividad
+        Log::info('Registro Vodafone agendado', [
+            'vodafone_id' => $vodafone->id,
+            'user_id' => $user->id,
+            'trazabilidad_anterior' => $trazabilidadAnterior,
+            'trazabilidad_nueva' => 'agendado',
+        ]);
+
+        return redirect()->back()
+            ->with('success', 'Registro agendado correctamente.');
+    }
+
     // =======================
     // MÉTODOS AUXILIARES PARA QUERIES
     // =======================
@@ -178,7 +216,7 @@ class VodafoneController extends Controller
                 ->where('trazabilidad', 'asignado')
                 ->whereBetween('created_at', [$hoy, $manana]);
         } elseif ($user->can('vodafone.ver') && !$user->can('vodafone.ver-global') && !$user->can('vodafone.recibe-asignacion')) {
-            // Solo ver los completados si solo tiene el permiso 'vodafone.ver'
+            // Asesor Vodafone: Ver completados de TODOS los días (usando rango de fechas)
             $query->where('trazabilidad', 'completado')
                 ->whereBetween('created_at', [$desde, $hasta]);
         } else {
@@ -217,6 +255,17 @@ class VodafoneController extends Controller
             if (!$user->can('vodafone.ver-global')) {
                 $query->where('asignado_a_id', $user->id);
             }
+        } elseif ($user->can('vodafone.recibe-asignacion') && !$user->can('vodafone.ver-global')) {
+            // Usuario que recibe asignaciones - solo día actual
+            $hoy = Carbon::today()->startOfDay();
+            $finDelDia = Carbon::today()->endOfDay();
+            $query->where('asignado_a_id', $user->id)
+                ->where('trazabilidad', 'asignado')
+                ->whereBetween('created_at', [$hoy, $finDelDia]);
+        } elseif ($user->can('vodafone.ver') && !$user->can('vodafone.ver-global') && !$user->can('vodafone.recibe-asignacion')) {
+            // Asesor Vodafone: Ver completados de TODOS los días (usando rango de fechas)
+            $query->where('trazabilidad', 'completado')
+                ->whereBetween('created_at', [$desde, $hasta]);
         } else {
             // Otros roles sí pueden usar rangos de fecha
             $query->whereBetween('created_at', [$desde, $hasta]);
@@ -230,7 +279,18 @@ class VodafoneController extends Controller
 
     private function getFormattedItems($query)
     {
-        $items = $query->orderBy('id')->get();
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        // Para asesor vodafone: ordenar de forma dispersa/desordenada
+        if ($user->can('vodafone.ver') && !$user->can('vodafone.ver-global') && !$user->can('vodafone.recibe-asignacion')) {
+            // Asesor Vodafone: ordenamiento disperso usando RAND()
+            $items = $query->orderByRaw('RAND()')->get();
+        } else {
+            // Otros roles: ordenamiento normal por ID
+            $items = $query->orderBy('id')->get();
+        }
+
         $hoy = Carbon::today();
         $ayer = Carbon::yesterday();
 
@@ -433,6 +493,27 @@ class VodafoneController extends Controller
         ]);
     }
 
+    private function saveScheduleAuditTrail($vodafone, $user, $trazabilidadAnterior)
+    {
+        $ultimaAsignacion = VodafoneAsignacion::where('vodafone_id', $vodafone->id)
+            ->orderByDesc('fecha')
+            ->first();
+
+        VodafoneAuditoria::create([
+            'vodafone_id' => $vodafone->id,
+            'asignacion_id' => $ultimaAsignacion ? $ultimaAsignacion->id : null,
+            'user_id' => $user->id,
+            'accion' => 'agendado',
+            'campos_editados' => [
+                'trazabilidad' => [
+                    'anterior' => $trazabilidadAnterior,
+                    'nueva' => 'agendado'
+                ]
+            ],
+            'fecha' => now(),
+        ]);
+    }
+
     // =======================
     // MÉTODOS AUXILIARES PARA ASIGNACIÓN
     // =======================
@@ -510,15 +591,16 @@ class VodafoneController extends Controller
     {
         return [
             'trazabilidad' => ['nullable', 'in:pendiente,asignado,irrelevante,completado,retornado'],
-            'marca_base' => 'nullable|string|max:255',
-            'origen_motivo_cancelacion' => 'nullable|string|max:255',
+            'orden_trabajo_anterior' => 'nullable|string|max:255',
+            'origen_base' => 'nullable|string|max:255',
             'nombre_cliente' => 'required|string|max:255',
             'dni_cliente' => ['required', 'string', 'max:255', 'unique:historial_registros_vodafone,dni_cliente,' . $ignoreId],
-            'orden_trabajo_anterior' => 'nullable|string|max:255',
             'telefono_principal' => 'required|string|max:20',
             'telefono_adicional' => 'nullable|string|max:20',
             'correo_referencia' => 'nullable|email|max:255',
             'direccion_historico' => 'nullable|string|max:255',
+            'marca_base' => 'nullable|string|max:255',
+            'origen_motivo_cancelacion' => 'nullable|string|max:255',
             'observaciones' => 'nullable|string',
             'asignado_a_id' => 'nullable|exists:users,id',
         ];
@@ -530,93 +612,100 @@ class VodafoneController extends Controller
 
     public function descargarPlantilla()
     {
-        // Crear un nuevo archivo Excel
-        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
+        try {
+            // Crear un nuevo archivo Excel
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
 
-        // Establecer el título de la hoja
-        $sheet->setTitle('Plantilla Vodafone');
+            // Establecer el título de la hoja
+            $sheet->setTitle('Plantilla Vodafone');
 
-        // Cabeceras del archivo
-        $headers = [
-            'marca_base',
-            'origen_motivo_cancelacion',
-            'nombre_cliente',
-            'dni_cliente',
-            'orden_trabajo_anterior',
-            'telefono_principal',
-            'telefono_adicional',
-            'correo_referencia',
-            'direccion_historico',
-            'observaciones'
-        ];
+            // Cabeceras del archivo
+            $headers = [
+                'orden_trabajo_anterior',
+                'origen_base',
+                'nombre_cliente',
+                'dni_cliente',
+                'telefono_principal',
+                'telefono_adicional',
+                'correo_referencia',
+                'direccion_historico',
+                'marca_base',
+                'origen_motivo_cancelacion',
+                'observaciones'
+            ];
 
-        // Datos de ejemplo
-        $ejemplos = [
-            [
-                'marca_base' => 'Vodafone',
-                'origen_motivo_cancelacion' => 'Cancelación por mudanza',
-                'nombre_cliente' => 'Juan Pérez García',
-                'observaciones' => 'Cliente requiere llamada previa',
-            ],
-            [
-                'marca_base' => 'Movistar',
-                'origen_motivo_cancelacion' => 'Cambio de operador',
-                'nombre_cliente' => 'María López Martín',
-                'observaciones' => 'Horario preferido: mañanas'
-            ]
-        ];
+            // Escribir cabeceras en la primera fila
+            foreach ($headers as $index => $header) {
+                $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($index + 1);
+                $sheet->setCellValue($columnLetter . '1', $header);
+            }
 
-        // Escribir cabeceras en la primera fila
-        foreach ($headers as $index => $header) {
-            $sheet->setCellValue(chr(65 + $index) . '1', $header);
-        }
-
-        // Aplicar formato a las cabeceras
-        $sheet->getStyle('A1:' . chr(65 + count($headers) - 1) . '1')->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'color' => ['rgb' => '000000'],
-            ],
-            'fill' => [
-                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                'startColor' => ['rgb' => 'E3F2FD'],
-            ],
-            'borders' => [
-                'allBorders' => [
-                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+            // Aplicar formato a las cabeceras
+            $lastColumn = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($headers));
+            $sheet->getStyle('A1:' . $lastColumn . '1')->applyFromArray([
+                'font' => [
+                    'bold' => true,
                     'color' => ['rgb' => '000000'],
                 ],
-            ],
-        ]);
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => 'E3F2FD'],
+                ],
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                        'color' => ['rgb' => '000000'],
+                    ],
+                ],
+            ]);
 
-        // Escribir datos de ejemplo
-        foreach ($ejemplos as $rowIndex => $ejemplo) {
-            $row = $rowIndex + 2; // Comenzar en la fila 2
-            foreach (array_values($ejemplo) as $colIndex => $value) {
-                $sheet->setCellValue(chr(65 + $colIndex) . $row, $value);
+            // Datos de ejemplo SOLO para los campos solicitados
+            $ejemplo = [
+                'orden_trabajo_anterior' => 'OT123456',
+                'origen_base' => 'XXXXXXXXXX',
+                'nombre_cliente' => '',
+                'dni_cliente' => '12345678X',
+                'telefono_principal' => '600123456',
+                'telefono_adicional' => '600654321',
+                'correo_referencia' => 'example@xxxxx.com',
+                'direccion_historico' => 'Av.Tacna 123, Lima-Perú',
+                'marca_base' => '',
+                'origen_motivo_cancelacion' => '',
+                'observaciones' => ''
+            ];
+
+
+            // Escribir datos de ejemplo en la fila 2
+            foreach ($headers as $colIndex => $header) {
+                $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 1);
+                $sheet->setCellValue($columnLetter . '2', $ejemplo[$header] ?? '');
             }
+
+            // Ajustar el ancho de las columnas automáticamente
+            foreach (range(1, count($headers)) as $colIndex) {
+                $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
+                $sheet->getColumnDimension($columnLetter)->setAutoSize(true);
+            }
+
+            // Crear el writer para Excel
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+
+            // Crear el nombre del archivo
+            $filename = 'plantilla_vodafone_' . date('Y-m-d') . '.xlsx';
+
+            // Crear respuesta con el archivo Excel
+            return response()->streamDownload(function () use ($writer) {
+                $writer->save('php://output');
+            }, $filename, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Pragma' => 'no-cache',
+                'Expires' => '0',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error al generar plantilla Excel: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Error al generar la plantilla Excel: ' . $e->getMessage());
         }
-
-        // Ajustar el ancho de las columnas automáticamente
-        foreach (range('A', chr(65 + count($headers) - 1)) as $column) {
-            $sheet->getColumnDimension($column)->setAutoSize(true);
-        }
-
-        // Crear el writer para Excel
-        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-
-        // Crear el nombre del archivo
-        $filename = 'plantilla_vodafone_' . date('Y-m-d') . '.xlsx';
-
-        // Crear respuesta con el archivo Excel
-        return response()->streamDownload(function () use ($writer) {
-            $writer->save('php://output');
-        }, $filename, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Cache-Control' => 'no-cache, no-store, must-revalidate',
-            'Pragma' => 'no-cache',
-            'Expires' => '0',
-        ]);
     }
 }
