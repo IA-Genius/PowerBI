@@ -350,7 +350,10 @@ PAGINAS
 }
 .noEditable input {
     background: #373737;
-    border-color: #373737;
+    border-color: #373737 !important;
+}
+.noEditable label {
+    color: #373737 !important;
 }
 .noEditable:before {
     content: "";
