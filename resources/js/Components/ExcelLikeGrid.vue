@@ -44,86 +44,87 @@
                 :class="'ag-theme-alpine w-full rounded-lg shadow border'"
                 :style="{ height: gridHeightStyle.height }"
             ></div>
-
-            <transition name="fade">
-                <div
-                    v-if="
-                        !isLoading && (!props.rows || props.rows.length === 0)
-                    "
-                    class="absolute inset-0 flex flex-col items-center justify-center bg-white/90 animate__animated animate__fadeIn"
-                    style="pointer-events: none"
-                >
-                    <div class="flex flex-col items-center gap-4">
-                        <svg
-                            class="h-16 w-16 text-gray-300"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                            />
-                        </svg>
-                        <span
-                            class="text-gray-500 font-semibold text-lg text-center"
-                        >
-                            Sin registros para mostrar
-                        </span>
-                        <span class="text-gray-400 text-sm text-center">
-                            No hay datos disponibles en este momento
-                        </span>
-                    </div>
-                </div>
-            </transition>
         </div>
 
         <!-- Nueva Vista de Tarjetas -->
         <div v-show="props.viewMode === 'cards'" class="relative">
-            <div :style="{ minHeight: '700px' }" class="flex flex-col">
+            <div :style="{ minHeight: '700px' }">
                 <div
-                    v-if="
-                        !isLoading && (!props.rows || props.rows.length === 0)
-                    "
-                    class="flex-1 flex flex-col items-center justify-center"
+                    v-if="isLoading"
+                    class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
                 >
-                    <div class="flex flex-col items-center gap-4">
-                        <svg
-                            class="h-16 w-16 text-gray-300"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                            />
-                        </svg>
-                        <span
-                            class="text-gray-500 font-semibold text-lg text-center"
-                        >
-                            Sin registros para mostrar
-                        </span>
-                        <span class="text-gray-400 text-sm text-center">
-                            No hay datos disponibles en este momento
-                        </span>
+                    <!-- Skeleton cards para loading -->
+                    <div
+                        v-for="n in 8"
+                        :key="n"
+                        class="bg-white rounded-lg border border-gray-200 animate-pulse"
+                    >
+                        <div class="p-4 space-y-3">
+                            <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                            <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                            <div class="space-y-2">
+                                <div class="h-3 bg-gray-200 rounded"></div>
+                                <div
+                                    class="h-3 bg-gray-200 rounded w-5/6"
+                                ></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div v-else class="w-full">
-                    <!-- Vista continua de todas las tarjetas -->
-                    <div class="w-full max-w-none">
+                <div
+                    v-else-if="!props.rows || props.rows.length === 0"
+                    class="flex flex-col items-center justify-center py-20"
+                >
+                    <svg
+                        class="h-16 w-16 text-gray-300 mb-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                    </svg>
+                    <span class="text-gray-500 font-semibold text-lg"
+                        >Sin registros para mostrar</span
+                    >
+                </div>
+
+                <div v-else class="flex gap-4">
+                    <!-- Indicador para datasets grandes -->
+                    <div
+                        v-if="props.rows && props.rows.length > 1000"
+                        class="absolute top-2 right-2 z-10 bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-xs font-semibold shadow-sm"
+                    >
+                        📊 Mostrando primeros
+                        {{
+                            Math.min(
+                                getItemsForColumn(0).length * getColumnCount,
+                                props.rows.length
+                            )
+                        }}
+                        de {{ props.rows.length }} registros
+                    </div>
+
+                    <!-- Columnas fijas para mantener el layout controlado -->
+                    <div
+                        v-for="columnIndex in getColumnCount"
+                        :key="columnIndex"
+                        class="flex-1 min-w-0 card-column"
+                    >
                         <TransitionGroup
                             name="card-move"
                             tag="div"
-                            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+                            class="space-y-4"
                         >
                             <div
-                                v-for="(item, itemIndex) in props.rows"
+                                v-for="(item, itemIndex) in getItemsForColumn(
+                                    columnIndex - 1
+                                )"
                                 :key="item.id"
                                 @click="toggleCardSelection(item)"
                                 :class="[
@@ -525,6 +526,16 @@ const gridHeightStyle = computed(() => {
     return { height: totalHeight + "px" };
 });
 
+// ===== CÁLCULO RESPONSIVE DE COLUMNAS =====
+const getColumnCount = computed(() => {
+    // Responsive: 1 en móvil, 2 en tablet, 3 en laptop, 4 en desktop
+    const width = windowWidth.value;
+    if (width < 640) return 1; // sm: 1 columna
+    if (width < 1024) return 2; // md: 2 columnas
+    if (width < 1280) return 3; // lg: 3 columnas
+    return 4; // xl: 4 columnas
+});
+
 // ===== FUNCIONES PARA VISTA DE TARJETAS =====
 function toggleCardSelection(item) {
     if (selectedItems.value.has(item.id)) {
@@ -601,6 +612,36 @@ function getSimpleStatusClass(status) {
     return "bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-xs font-medium";
 }
 
+// Función para distribuir elementos por columnas con optimización BALANCEADA
+function getItemsForColumn(columnIndex) {
+    if (!props.rows) return [];
+
+    const totalColumns = getColumnCount.value;
+    const items = [];
+
+    // OPTIMIZACIÓN BALANCEADA: Más cards visibles manteniendo performance
+    const dataSize = props.rows.length;
+    let maxItems;
+
+    if (dataSize > 15000) maxItems = 1000; // Datasets gigantes: 1000 items
+    else if (dataSize > 10000) maxItems = 1500; // Datasets masivos: 1500 items
+    else if (dataSize > 5000)
+        maxItems = 2000; // Datasets muy grandes: 2000 items
+    else if (dataSize > 2000) maxItems = 2500; // Datasets grandes: 2500 items
+    else if (dataSize > 1000) maxItems = 3000; // Datasets medianos: 3000 items
+    else maxItems = dataSize; // Datasets pequeños: todos los items
+
+    for (
+        let i = columnIndex;
+        i < Math.min(props.rows.length, maxItems);
+        i += totalColumns
+    ) {
+        items.push(props.rows[i]);
+    }
+
+    return items;
+}
+
 // ===== DEFINICIÓN DE COLUMNAS =====
 const columnDefs = props.columns
     .map((col) => {
@@ -611,8 +652,8 @@ const columnDefs = props.columns
                     field: "id",
                     headerName: "ID",
                     minWidth: 50,
-                    maxWidth: 210,
-                    width: 200,
+                    maxWidth: 60,
+                    width: 50,
                 };
             case "upload_id":
                 return {
