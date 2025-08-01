@@ -160,8 +160,15 @@ const activeFilterOptions = computed(() => {
 // =======================
 // 10. FUNCIONES AUXILIARES - INICIALIZACIÓN
 // =======================
+
+// Flag para controlar si tenemos datos filtrados activos
+const hasFilteredData = ref(false);
+
 function inicializarItems() {
-    items.value = Array.isArray(pageProps.items) ? pageProps.items : [];
+    // Solo inicializar con pageProps.items si no tenemos datos filtrados activos
+    if (!hasFilteredData.value) {
+        items.value = Array.isArray(pageProps.items) ? pageProps.items : [];
+    }
     currentPage.value = 1;
     lastPage.value = 1;
 }
@@ -525,6 +532,8 @@ function resetearImportacion() {
 function handleSuccess(msg) {
     mostrarToast("success", msg);
     cerrarModal();
+    // Resetear el estado de filtros activos cuando hay una acción exitosa
+    hasFilteredData.value = false;
     router.visit(route("vodafone.index"), { only: ["items", "success"] });
 }
 
@@ -580,6 +589,16 @@ function canEditRecord(record) {
 // Optimización: Debounce para búsqueda instantánea
 let busquedaTimeout = null;
 
+// Función para limpiar filtros y volver a datos originales
+function limpiarFiltros() {
+    hasFilteredData.value = false;
+    filtros.value.filtrosActivos = getFiltrosIniciales();
+    filtros.value.fechaDesde = pageProps.fechaDesde || "";
+    filtros.value.fechaHasta = pageProps.fechaHasta || "";
+    inicializarItems();
+    mostrarToast("info", "Filtros limpiados");
+}
+
 function aplicarBusquedaInstantanea(val) {
     // Limpiar timeout anterior
     if (busquedaTimeout) clearTimeout(busquedaTimeout);
@@ -599,25 +618,101 @@ async function aplicarFiltrosDesdeFlotante(f) {
     // Aplicar restricciones a los filtros recibidos
     const filtrosFiltrados = aplicarRestriccionesFiltros({ ...f });
 
+    // Obtener fechas a validar
+    let fechaDesde =
+        f.fecha_desde !== undefined ? f.fecha_desde : filtros.value.fechaDesde;
+    let fechaHasta =
+        f.fecha_hasta !== undefined ? f.fecha_hasta : filtros.value.fechaHasta;
+
+    // Validar y corregir fechas usando la función helper
+    const resultadoValidacion = validarYCorregirFechas(fechaDesde, fechaHasta);
+    fechaDesde = resultadoValidacion.fechaDesde;
+    fechaHasta = resultadoValidacion.fechaHasta;
+
+    if (resultadoValidacion.corregido) {
+        mostrarToast(
+            "warning",
+            "Las fechas han sido corregidas automáticamente"
+        );
+
+        // Actualizar los valores visuales también
+        filtros.value.fechaDesde = fechaDesde;
+        filtros.value.fechaHasta = fechaHasta;
+    }
+
     filtros.value.filtrosActivos = {
         ...filtros.value.filtrosActivos,
         ...filtrosFiltrados,
     };
-    if (f.fecha_desde !== undefined) filtros.value.fechaDesde = f.fecha_desde;
-    if (f.fecha_hasta !== undefined) filtros.value.fechaHasta = f.fecha_hasta;
+
+    // Actualizar fechas validadas
+    filtros.value.fechaDesde = fechaDesde;
+    filtros.value.fechaHasta = fechaHasta;
 
     isLoading.value = true;
     try {
         const response = await axios.get(route("vodafone.page"), {
             params: {
                 ...filtros.value.filtrosActivos,
-                fecha_desde: filtros.value.fechaDesde,
-                fecha_hasta: filtros.value.fechaHasta,
+                fecha_desde: fechaDesde,
+                fecha_hasta: fechaHasta,
             },
         });
-        items.value = response.data.items;
+
+        // Validar que la respuesta contenga datos válidos
+        if (response.data && Array.isArray(response.data.items)) {
+            items.value = response.data.items;
+            hasFilteredData.value = true; // Marcar que tenemos datos filtrados
+
+            console.log(
+                `🔍 Filtros aplicados - Registros encontrados: ${response.data.items.length}`,
+                {
+                    fecha_desde: fechaDesde,
+                    fecha_hasta: fechaHasta,
+                    filtros: filtros.value.filtrosActivos,
+                }
+            );
+
+            // Si no hay items y las fechas fueron corregidas, informar al usuario
+            if (
+                response.data.items.length === 0 &&
+                resultadoValidacion.corregido
+            ) {
+                mostrarToast(
+                    "info",
+                    "No se encontraron registros en el rango de fechas corregido"
+                );
+            }
+        } else {
+            console.warn("Respuesta inválida del servidor:", response.data);
+            items.value = [];
+            hasFilteredData.value = false;
+            mostrarToast("warning", "Respuesta inesperada del servidor");
+        }
     } catch (e) {
-        mostrarAlerta("error", "Error", "No se pudo filtrar por fecha");
+        console.error("Error al filtrar:", e);
+        // En caso de error, limpiar el caché y resetear a datos iniciales
+        items.value = [];
+        hasFilteredData.value = false;
+        mostrarAlerta(
+            "error",
+            "Error",
+            "No se pudo filtrar por fecha. Los filtros han sido reseteados."
+        );
+
+        // Resetear fechas a valores por defecto
+        filtros.value.fechaDesde =
+            pageProps.fechaDesde || new Date().toISOString().split("T")[0];
+        filtros.value.fechaHasta =
+            pageProps.fechaHasta || new Date().toISOString().split("T")[0];
+
+        // Opcional: recargar la página para obtener datos frescos
+        setTimeout(() => {
+            router.visit(route("vodafone.index"), {
+                only: ["items"],
+                preserveState: true,
+            });
+        }, 1500);
     } finally {
         isLoading.value = false;
     }
@@ -839,6 +934,53 @@ async function asignarRegistros(slotForm) {
 // =======================
 // 17. FUNCIONES DE UTILIDAD
 // =======================
+
+// Función para validar y corregir fechas
+function validarYCorregirFechas(fechaDesde, fechaHasta) {
+    if (!fechaDesde || !fechaHasta) {
+        return { fechaDesde, fechaHasta, corregido: false };
+    }
+
+    try {
+        const fechaDesdeObj = new Date(fechaDesde);
+        const fechaHastaObj = new Date(fechaHasta);
+
+        // Verificar que las fechas sean válidas
+        if (isNaN(fechaDesdeObj.getTime()) || isNaN(fechaHastaObj.getTime())) {
+            mostrarToast("error", "Fechas inválidas detectadas");
+            return {
+                fechaDesde:
+                    pageProps.fechaDesde ||
+                    new Date().toISOString().split("T")[0],
+                fechaHasta:
+                    pageProps.fechaHasta ||
+                    new Date().toISOString().split("T")[0],
+                corregido: true,
+            };
+        }
+
+        if (fechaDesdeObj > fechaHastaObj) {
+            return {
+                fechaDesde: fechaHasta,
+                fechaHasta: fechaDesde,
+                corregido: true,
+            };
+        }
+
+        return { fechaDesde, fechaHasta, corregido: false };
+    } catch (error) {
+        console.error("Error validando fechas:", error);
+        mostrarToast("error", "Error en las fechas seleccionadas");
+        return {
+            fechaDesde:
+                pageProps.fechaDesde || new Date().toISOString().split("T")[0],
+            fechaHasta:
+                pageProps.fechaHasta || new Date().toISOString().split("T")[0],
+            corregido: true,
+        };
+    }
+}
+
 function mostrarToast(icon, title) {
     Swal.fire({
         toast: true,
@@ -862,7 +1004,18 @@ function mostrarAlerta(icon, title, text) {
 // =======================
 // 18. WATCHERS Y CICLO DE VIDA
 // =======================
-watch(() => pageProps.items, inicializarItems);
+watch(
+    () => pageProps.items,
+    (newItems, oldItems) => {
+        // Solo reinicializar si realmente cambió el contenido desde el servidor
+        // y no tenemos datos filtrados activos
+        if (JSON.stringify(newItems) !== JSON.stringify(oldItems)) {
+            console.log("📡 Props items cambió, reinicializando...");
+            hasFilteredData.value = false;
+            inicializarItems();
+        }
+    }
+);
 
 watch(
     () => importacion.value.fileName,
@@ -915,10 +1068,19 @@ watchEffect(() => {
 });
 
 onMounted(() => {
+    // Inicializar estado de filtros
+    hasFilteredData.value = false;
+
     // Inicializar filtros activos
     const filtrosIniciales = getFiltrosIniciales();
-
     filtros.value.filtrosActivos = filtrosIniciales;
+
+    console.log("🚀 Component mounted - Estado inicial:", {
+        pageProps_items_count: pageProps.items?.length || 0,
+        filtrosIniciales,
+        fechaDesde: filtros.value.fechaDesde,
+        fechaHasta: filtros.value.fechaHasta,
+    });
 
     // Detectar mobile y configurar vista
     esMobile.value = window.innerWidth < 640;

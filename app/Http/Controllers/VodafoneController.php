@@ -27,6 +27,26 @@ class VodafoneController extends Controller
         $fechaDesde = $request->input('fecha_desde') ?: Carbon::yesterday()->toDateString();
         $fechaHasta = $request->input('fecha_hasta') ?: Carbon::today()->toDateString();
 
+        // Validar y corregir fechas si están en orden incorrecto
+        $fechaDesdeCarbon = Carbon::parse($fechaDesde);
+        $fechaHastaCarbon = Carbon::parse($fechaHasta);
+
+        if ($fechaDesdeCarbon->gt($fechaHastaCarbon)) {
+            // Si fecha desde es mayor que fecha hasta, intercambiarlas
+            $temp = $fechaDesde;
+            $fechaDesde = $fechaHasta;
+            $fechaHasta = $temp;
+
+            // Log para debugging
+            Log::info('Fechas corregidas automáticamente en index', [
+                'fecha_desde_original' => $temp,
+                'fecha_hasta_original' => $fechaHasta,
+                'fecha_desde_corregida' => $fechaDesde,
+                'fecha_hasta_corregida' => $fechaHasta,
+                'user_id' => $user->id
+            ]);
+        }
+
         // Construir query según permisos del usuario
         $query = $this->buildQueryByPermissions($user, $fechaDesde, $fechaHasta);
 
@@ -56,11 +76,55 @@ class VodafoneController extends Controller
         $fechaDesde = $request->input('fecha_desde') ?: Carbon::yesterday()->toDateString();
         $fechaHasta = $request->input('fecha_hasta') ?: Carbon::today()->toDateString();
 
+        // Log para debugging - ver exactamente qué parámetros recibimos
+        Log::info('🔍 FetchPage - Parámetros recibidos', [
+            'fecha_desde_request' => $request->input('fecha_desde'),
+            'fecha_hasta_request' => $request->input('fecha_hasta'),
+            'fecha_desde_final' => $fechaDesde,
+            'fecha_hasta_final' => $fechaHasta,
+            'todos_los_parametros' => $request->all(),
+            'user_id' => $user->id,
+            'user_permissions' => [
+                'filtrar' => $user->can('vodafone.filtrar'),
+                'ver-global' => $user->can('vodafone.ver-global'),
+                'asignar' => $user->can('vodafone.asignar'),
+                'recibe-asignacion' => $user->can('vodafone.recibe-asignacion'),
+            ]
+        ]);
+
+        // Validar y corregir fechas si están en orden incorrecto
+        $fechaDesdeCarbon = Carbon::parse($fechaDesde);
+        $fechaHastaCarbon = Carbon::parse($fechaHasta);
+
+        if ($fechaDesdeCarbon->gt($fechaHastaCarbon)) {
+            // Si fecha desde es mayor que fecha hasta, intercambiarlas
+            $temp = $fechaDesde;
+            $fechaDesde = $fechaHasta;
+            $fechaHasta = $temp;
+
+            // Log para debugging
+            Log::info('Fechas corregidas automáticamente', [
+                'fecha_desde_original' => $temp,
+                'fecha_hasta_original' => $fechaHasta,
+                'fecha_desde_corregida' => $fechaDesde,
+                'fecha_hasta_corregida' => $fechaHasta,
+                'user_id' => $user->id
+            ]);
+        }
+
         // Construir query con filtros de fecha y trazabilidad
         $query = $this->buildFetchQuery($user, $fechaDesde, $fechaHasta, $request);
 
         // Obtener y formatear items
         $items = $this->getFormattedItems($query);
+
+        // Log para debugging - ver cuántos items se devuelven
+        Log::info('🔍 FetchPage - Resultado final', [
+            'cantidad_items' => count($items),
+            'fecha_desde_aplicada' => $fechaDesde,
+            'fecha_hasta_aplicada' => $fechaHasta,
+            'user_id' => $user->id
+        ]);
 
         return response()->json(['items' => $items]);
     }
@@ -202,10 +266,8 @@ class VodafoneController extends Controller
         $query = Vodafone::query()->with(['asignado_a', 'user']);
 
         if ($user->can('vodafone.filtrar')) {
-            // Filtrador restringido SOLO al día actual - sin selección de fechas
-            $hoy = Carbon::today()->startOfDay();
-            $finDelDia = Carbon::today()->endOfDay();
-            $query->whereBetween('created_at', [$hoy, $finDelDia]);
+            // Filtrador: puede seleccionar fechas, por defecto hoy y ayer
+            $query->whereBetween('created_at', [$desde, $hasta]);
             if (!$user->can('vodafone.ver-global')) {
                 $query->where('asignado_a_id', $user->id);
             }
@@ -248,10 +310,7 @@ class VodafoneController extends Controller
 
         // Filtros según permisos del usuario
         if ($user->can('vodafone.filtrar')) {
-            // Filtrador restringido SOLO al día actual - ignorar parámetros de fecha
-            $hoy = Carbon::today()->startOfDay();
-            $finDelDia = Carbon::today()->endOfDay();
-            $query->whereBetween('created_at', [$hoy, $finDelDia]);
+            $query->whereBetween('created_at', [$desde, $hasta]);
             if (!$user->can('vodafone.ver-global')) {
                 $query->where('asignado_a_id', $user->id);
             }
