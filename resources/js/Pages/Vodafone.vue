@@ -986,7 +986,7 @@ async function asignarRegistros(slotForm) {
             ids: slotForm.ids,
             asignado_a_id: slotForm.asignado_a_id,
         });
-
+        cerrarModal();
         // Mostrar mensaje de éxito
         mostrarToast(
             "success",
@@ -999,8 +999,6 @@ async function asignarRegistros(slotForm) {
         // Limpiar selección después de asignar
         selectedRows.value = [];
         selectedItemIds.value.clear();
-
-        cerrarModal();
     } catch (e) {
         console.error("Error al asignar registros:", e);
         mostrarAlerta("error", "Error", "No se pudo asignar registros");
@@ -2036,7 +2034,8 @@ const showServerPaginationInfo = computed(
              MODAL DE ASIGNACIÓN
         ======================= -->
         <ModalGestion
-            :show="showAsignacionModal"
+            v-if="showAsignacionModal"
+            :show="true"
             :title="asignacionTitulo ? 'ASIGNAR' : 'Asignación de Registros'"
             submitLabel="Asignar"
             :initialForm="{
