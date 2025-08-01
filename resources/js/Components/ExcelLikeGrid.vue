@@ -761,13 +761,56 @@ const hasActions =
     props.canEditComplete;
 
 if (hasActions) {
+    // Calcular ancho dinámico basado en la cantidad de acciones disponibles
+    const calculateActionsWidth = () => {
+        let actionCount = 0;
+
+        if (props.canEdit) actionCount++;
+        if (props.canDelete) actionCount++;
+        if (props.canList) actionCount++;
+        if (props.canViewHistory) actionCount++;
+        if (props.canSchedule) actionCount++;
+        if (props.canEditComplete) actionCount++;
+
+        // Ancho base por acción (40px) + padding + gap
+        // 1 acción: ~80px, 2-3 acciones: ~140px, 4+ acciones: ~200px, 5+ acciones: ~250px
+        const baseWidth = 40; // Ancho por botón
+        const padding = 40; // Padding lateral
+        const gap = 8; // Gap entre botones
+
+        let calculatedWidth =
+            actionCount * baseWidth + padding + (actionCount - 1) * gap;
+
+        // Rangos mínimos y máximos (reducidos 40%)
+        if (actionCount === 1) {
+            calculatedWidth = Math.max(calculatedWidth, 54);
+            calculatedWidth = Math.min(calculatedWidth, 72);
+        } else if (actionCount === 2) {
+            calculatedWidth = Math.max(calculatedWidth, 72);
+            calculatedWidth = Math.min(calculatedWidth, 96);
+        } else if (actionCount === 3) {
+            calculatedWidth = Math.max(calculatedWidth, 96);
+            calculatedWidth = Math.min(calculatedWidth, 120);
+        } else if (actionCount === 4) {
+            calculatedWidth = Math.max(calculatedWidth, 120);
+            calculatedWidth = Math.min(calculatedWidth, 144);
+        } else if (actionCount >= 5) {
+            calculatedWidth = Math.max(calculatedWidth, 144);
+            calculatedWidth = Math.min(calculatedWidth, 180);
+        }
+
+        return calculatedWidth;
+    };
+
+    const dynamicWidth = calculateActionsWidth();
+
     columnDefs.push({
         headerName: "Acciones",
         field: "acciones",
         pinned: "right",
-        minWidth: 120,
-        maxWidth: 160,
-        width: 160,
+        minWidth: Math.max(dynamicWidth - 20, 80), // Mínimo absoluto de 80px
+        maxWidth: Math.min(dynamicWidth + 50, 350), // Máximo de 350px
+        width: dynamicWidth,
         resizable: false,
         flex: undefined,
         cellRenderer: (params) => {

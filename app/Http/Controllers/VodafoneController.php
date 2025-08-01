@@ -36,15 +36,6 @@ class VodafoneController extends Controller
             $temp = $fechaDesde;
             $fechaDesde = $fechaHasta;
             $fechaHasta = $temp;
-
-            // Log para debugging
-            Log::info('Fechas corregidas automáticamente en index', [
-                'fecha_desde_original' => $temp,
-                'fecha_hasta_original' => $fechaHasta,
-                'fecha_desde_corregida' => $fechaDesde,
-                'fecha_hasta_corregida' => $fechaHasta,
-                'user_id' => $user->id
-            ]);
         }
 
         // Construir query según permisos del usuario
@@ -76,22 +67,6 @@ class VodafoneController extends Controller
         $fechaDesde = $request->input('fecha_desde') ?: Carbon::yesterday()->toDateString();
         $fechaHasta = $request->input('fecha_hasta') ?: Carbon::today()->toDateString();
 
-        // Log para debugging - ver exactamente qué parámetros recibimos
-        Log::info('🔍 FetchPage - Parámetros recibidos', [
-            'fecha_desde_request' => $request->input('fecha_desde'),
-            'fecha_hasta_request' => $request->input('fecha_hasta'),
-            'fecha_desde_final' => $fechaDesde,
-            'fecha_hasta_final' => $fechaHasta,
-            'todos_los_parametros' => $request->all(),
-            'user_id' => $user->id,
-            'user_permissions' => [
-                'filtrar' => $user->can('vodafone.filtrar'),
-                'ver-global' => $user->can('vodafone.ver-global'),
-                'asignar' => $user->can('vodafone.asignar'),
-                'recibe-asignacion' => $user->can('vodafone.recibe-asignacion'),
-            ]
-        ]);
-
         // Validar y corregir fechas si están en orden incorrecto
         $fechaDesdeCarbon = Carbon::parse($fechaDesde);
         $fechaHastaCarbon = Carbon::parse($fechaHasta);
@@ -101,15 +76,6 @@ class VodafoneController extends Controller
             $temp = $fechaDesde;
             $fechaDesde = $fechaHasta;
             $fechaHasta = $temp;
-
-            // Log para debugging
-            Log::info('Fechas corregidas automáticamente', [
-                'fecha_desde_original' => $temp,
-                'fecha_hasta_original' => $fechaHasta,
-                'fecha_desde_corregida' => $fechaDesde,
-                'fecha_hasta_corregida' => $fechaHasta,
-                'user_id' => $user->id
-            ]);
         }
 
         // Construir query con filtros de fecha y trazabilidad
@@ -117,14 +83,6 @@ class VodafoneController extends Controller
 
         // Obtener y formatear items
         $items = $this->getFormattedItems($query);
-
-        // Log para debugging - ver cuántos items se devuelven
-        Log::info('🔍 FetchPage - Resultado final', [
-            'cantidad_items' => count($items),
-            'fecha_desde_aplicada' => $fechaDesde,
-            'fecha_hasta_aplicada' => $fechaHasta,
-            'user_id' => $user->id
-        ]);
 
         return response()->json(['items' => $items]);
     }
@@ -159,11 +117,22 @@ class VodafoneController extends Controller
             return $validationResult; // Retorna el error
         }
 
-        // Detectar cambios
+        // Detectar cambios ANTES de auto-completar
         $cambios = $this->detectChanges($vodafone, $data);
 
         // Auto-completar si todos los campos están llenos
         $data = $this->autoCompleteIfReady($data);
+
+        // Si autoCompleteIfReady cambió la trazabilidad, detectar este cambio también
+        if (isset($data['trazabilidad']) && $data['trazabilidad'] !== $vodafone->trazabilidad) {
+            if (!in_array('trazabilidad', $cambios['campos'])) {
+                $cambios['campos'][] = 'trazabilidad';
+                $cambios['cambios']['trazabilidad'] = [
+                    'old' => $vodafone->trazabilidad,
+                    'new' => $data['trazabilidad'],
+                ];
+            }
+        }
 
         // Actualizar registro
         $vodafone->update($data);
@@ -241,14 +210,6 @@ class VodafoneController extends Controller
 
         // Registrar en auditoría
         $this->saveScheduleAuditTrail($vodafone, $user, $trazabilidadAnterior);
-
-        // Log de actividad
-        Log::info('Registro Vodafone agendado', [
-            'vodafone_id' => $vodafone->id,
-            'user_id' => $user->id,
-            'trazabilidad_anterior' => $trazabilidadAnterior,
-            'trazabilidad_nueva' => 'agendado',
-        ]);
 
         return redirect()->back()
             ->with('success', 'Registro agendado correctamente.');
@@ -348,11 +309,7 @@ class VodafoneController extends Controller
         $limit = $this->calculateOptimalLimit($totalCount);
 
         if ($limit && $totalCount > $limit) {
-            Log::info('Aplicando limitación en VodafoneController', [
-                'total_registros' => $totalCount,
-                'limite_aplicado' => $limit,
-                'user_id' => $user->id
-            ]);
+            // Limitación aplicada
         }
 
         // Para asesor vodafone: ordenar de forma dispersa/desordenada
@@ -474,20 +431,10 @@ class VodafoneController extends Controller
         if ($vodafone->trazabilidad === 'completado') {
             // Si el usuario tiene permiso para editar completados, permitir edición completa
             if ($user->can('vodafone.editar-completados')) {
-                Log::info('Edición de registro completado autorizada', [
-                    'id' => $vodafone->id,
-                    'user_id' => $user->id,
-                    'campos_editados' => array_keys($data),
-                ]);
                 // Permitir edición completa
                 return true;
             } else {
                 // Usuario sin permiso para editar completados
-                Log::warning('Intento de edición sobre registro completado sin permisos', [
-                    'id' => $vodafone->id,
-                    'user_id' => $user->id,
-                    'trazabilidad_actual' => $vodafone->trazabilidad,
-                ]);
                 return redirect()->back()->withErrors([
                     'general' => 'Este registro ya está completado y no puede ser editado.'
                 ]);
@@ -496,12 +443,6 @@ class VodafoneController extends Controller
 
         // Solo bloquear si el registro NO está en 'asignado' Y el usuario es el asignado actual
         if (!in_array($vodafone->trazabilidad, ['asignado']) && $vodafone->asignado_a_id === $user->id) {
-            Log::warning('Intento de edición sobre registro no editable por usuario asignado', [
-                'id' => $vodafone->id,
-                'user_id' => $user->id,
-                'trazabilidad_actual' => $vodafone->trazabilidad,
-                'data_intentada' => $data,
-            ]);
             return redirect()->back()->withErrors([
                 'general' => 'El registro ya no está disponible para edición. Actualiza la página.'
             ]);
@@ -515,11 +456,12 @@ class VodafoneController extends Controller
         $camposEditados = [];
         $cambios = [];
         $campos = [
+            'orden_trabajo_anterior',
+            'origen_base',
             'marca_base',
             'origen_motivo_cancelacion',
             'nombre_cliente',
             'dni_cliente',
-            'orden_trabajo_anterior',
             'telefono_principal',
             'telefono_adicional',
             'correo_referencia',
@@ -532,7 +474,12 @@ class VodafoneController extends Controller
             if (array_key_exists($campo, $data)) {
                 $old = $vodafone->$campo;
                 $new = $data[$campo];
-                if ($old !== $new) {
+
+                // Normalizar valores para comparación (null vs vacío)
+                $oldNormalized = $old === null ? '' : (string)$old;
+                $newNormalized = $new === null ? '' : (string)$new;
+
+                if ($oldNormalized !== $newNormalized) {
                     $camposEditados[] = $campo;
                     $cambios[$campo] = [
                         'old' => $old,
@@ -542,23 +489,18 @@ class VodafoneController extends Controller
             }
         }
 
-        Log::info('Campos editados', [
-            'id' => $vodafone->id,
-            'campos' => $camposEditados,
-            'cambios' => $cambios,
-        ]);
-
         return ['campos' => $camposEditados, 'cambios' => $cambios];
     }
 
     private function autoCompleteIfReady($data)
     {
         $camposRequeridos = [
+            'orden_trabajo_anterior',
+            'origen_base',
             'marca_base',
             'origen_motivo_cancelacion',
             'nombre_cliente',
             'dni_cliente',
-            'orden_trabajo_anterior',
             'telefono_principal',
             'telefono_adicional',
             'correo_referencia',
@@ -587,7 +529,7 @@ class VodafoneController extends Controller
             ->orderByDesc('fecha')
             ->first();
 
-        VodafoneAuditoria::create([
+        $auditoria = VodafoneAuditoria::create([
             'vodafone_id' => $vodafone->id,
             'asignacion_id' => $ultimaAsignacion ? $ultimaAsignacion->id : null,
             'user_id' => $user->id,
@@ -595,6 +537,8 @@ class VodafoneController extends Controller
             'campos_editados' => $cambios,
             'fecha' => now(),
         ]);
+
+        return $auditoria;
     }
 
     private function saveScheduleAuditTrail($vodafone, $user, $trazabilidadAnterior)
@@ -679,12 +623,7 @@ class VodafoneController extends Controller
 
     private function logAssignmentActivity($ids, $asignadoA, $userId, $cantidad)
     {
-        Log::info('Registros Vodafone asignados', [
-            'ids' => $ids,
-            'asignado_a_id' => $asignadoA,
-            'asignador_id' => $userId,
-            'cantidad' => $cantidad,
-        ]);
+        // Log activity without detailed logging
     }
 
     // =======================
@@ -808,7 +747,6 @@ class VodafoneController extends Controller
                 'Expires' => '0',
             ]);
         } catch (\Exception $e) {
-            Log::error('Error al generar plantilla Excel: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Error al generar la plantilla Excel: ' . $e->getMessage());
         }
     }
