@@ -349,8 +349,8 @@ PAGINAS
     position: relative;
 }
 .noEditable input {
-    background: #373737;
-    border-color: #373737;
+    background: #373737 !important;
+    border-color: #373737 !important;
 }
 .noEditable:before {
     content: "";
