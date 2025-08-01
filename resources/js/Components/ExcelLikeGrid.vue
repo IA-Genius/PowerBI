@@ -144,7 +144,7 @@
                                 :key="item.id"
                                 @click="toggleCardSelection(item)"
                                 :class="[
-                                    'card bg-white rounded-xl border cursor-pointer shadow-sm w-full rounded',
+                                    'card bg-white rounded-xl border cursor-pointer shadow-sm w-full overflow-hidden',
                                     selectedItems.has(item.id)
                                         ? 'border-orange-200 shadow-blue-100 shadow-lg ring-1 ring-blue-200'
                                         : 'border-gray-200 hover:border-gray-300 hover:shadow-md',
