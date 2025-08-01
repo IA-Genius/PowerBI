@@ -181,6 +181,15 @@ class VodafoneController extends Controller
 
         $this->logAssignmentActivity($ids, $asignadoA, $user->id, $cantidad);
 
+        // Verificar si es una petición AJAX o HTTP normal
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "{$cantidad} registro(s) asignado(s) correctamente.",
+                'assigned_count' => $cantidad
+            ]);
+        }
+
         return redirect()->back()
             ->with('success', "{$cantidad} registro(s) asignado(s) correctamente.");
     }

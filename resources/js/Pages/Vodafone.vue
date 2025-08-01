@@ -982,13 +982,27 @@ async function esperarImportacion(logId) {
 async function asignarRegistros(slotForm) {
     importacion.value.isLoadingAsignacion = true;
     try {
-        await axios.post(route("vodafone.asignar"), {
+        const response = await axios.post(route("vodafone.asignar"), {
             ids: slotForm.ids,
             asignado_a_id: slotForm.asignado_a_id,
         });
-        handleSuccess("Registros asignados correctamente.");
+
+        // Mostrar mensaje de éxito
+        mostrarToast(
+            "success",
+            response.data.message || "Registros asignados correctamente."
+        );
+
+        // Refrescar los datos después de la asignación exitosa
+        await fetchServerPage(currentPage.value, filtros.value.filtrosActivos);
+
+        // Limpiar selección después de asignar
+        selectedRows.value = [];
+        selectedItemIds.value.clear();
+
         cerrarModal();
     } catch (e) {
+        console.error("Error al asignar registros:", e);
         mostrarAlerta("error", "Error", "No se pudo asignar registros");
     } finally {
         importacion.value.isLoadingAsignacion = false;
