@@ -30,10 +30,34 @@ const canDo = (key) => !!can[key];
 // =======================
 const items = ref([]);
 const selectedRows = ref([]);
+const selectedItemIds = ref(new Set()); // Para mantener selección entre páginas
 const currentPage = ref(1);
 const lastPage = ref(1);
 const isLoading = ref(false);
 const scrollContainer = ref(null);
+
+// Estado de paginación del servidor
+const paginationData = ref({
+    data: [],
+    pagination: {
+        current_page: 1,
+        per_page: 50,
+        total_records: 0,
+        total_pages: 1,
+        has_next_page: false,
+        has_prev_page: false,
+        from: 0,
+        to: 0,
+    },
+    view_mode: "grid",
+});
+
+// Configuración de paginación
+const serverPagination = ref({
+    enabled: true,
+    perPage: 50,
+    viewMode: "grid",
+});
 
 // =======================
 // 3.1. VISTA TARJETAS/TABLA
@@ -165,12 +189,22 @@ const activeFilterOptions = computed(() => {
 const hasFilteredData = ref(false);
 
 function inicializarItems() {
-    // Solo inicializar con pageProps.items si no tenemos datos filtrados activos
-    if (!hasFilteredData.value) {
+    // Verificar si tenemos datos paginados del servidor
+    if (pageProps.paginatedData) {
+        paginationData.value = pageProps.paginatedData;
+        items.value = pageProps.paginatedData.data || [];
+
+        // Actualizar configuración de paginación
+        const pagination = pageProps.paginatedData.pagination;
+        currentPage.value = pagination.current_page;
+        lastPage.value = pagination.total_pages;
+        serverPagination.value.perPage = pagination.per_page;
+    } else {
+        // Fallback para compatibilidad con datos antiguos
         items.value = Array.isArray(pageProps.items) ? pageProps.items : [];
+        currentPage.value = 1;
+        lastPage.value = 1;
     }
-    currentPage.value = 1;
-    lastPage.value = 1;
 }
 
 function getFiltrosIniciales() {
@@ -599,19 +633,102 @@ function limpiarFiltros() {
     mostrarToast("info", "Filtros limpiados");
 }
 
-function aplicarBusquedaInstantanea(val) {
-    // Limpiar timeout anterior
-    if (busquedaTimeout) clearTimeout(busquedaTimeout);
+// =======================
+// 15. FUNCIONES DE PAGINACIÓN DEL SERVIDOR
+// =======================
+async function fetchServerPage(page = 1, filters = {}) {
+    try {
+        isLoading.value = true;
 
-    // Aplicar debounce más agresivo para datasets grandes
-    const delay = filteredItems.value.length > 1000 ? 500 : 200;
-
-    busquedaTimeout = setTimeout(() => {
-        filtros.value.filtrosActivos = {
-            ...filtros.value.filtrosActivos,
-            search: val,
+        const params = {
+            page,
+            per_page: serverPagination.value.perPage,
+            view_mode: serverPagination.value.viewMode,
+            fecha_desde: filtros.value.fechaDesde,
+            fecha_hasta: filtros.value.fechaHasta,
+            ...filters,
         };
-    }, delay);
+
+        const response = await axios.get("/vodafone/paginated", { params });
+
+        if (response.data) {
+            paginationData.value = response.data;
+            items.value = response.data.data || [];
+
+            // Actualizar estado de paginación
+            const pagination = response.data.pagination;
+            currentPage.value = pagination.current_page;
+            lastPage.value = pagination.total_pages;
+
+            // Mantener selección de elementos entre páginas
+            updateSelectionAfterPageChange();
+        }
+    } catch (error) {
+        console.error("Error fetching page:", error);
+        mostrarToast("error", "Error al cargar los datos");
+    } finally {
+        isLoading.value = false;
+    }
+}
+
+function updateSelectionAfterPageChange() {
+    // Restaurar selección de elementos que están en la página actual
+    const currentPageItems = items.value.filter((item) =>
+        selectedItemIds.value.has(item.id)
+    );
+    selectedRows.value = currentPageItems;
+}
+
+async function goToPage(page) {
+    if (page >= 1 && page <= lastPage.value && page !== currentPage.value) {
+        await fetchServerPage(page, filtros.value.filtrosActivos);
+    }
+}
+
+async function nextPage() {
+    if (currentPage.value < lastPage.value) {
+        await goToPage(currentPage.value + 1);
+    }
+}
+
+async function prevPage() {
+    if (currentPage.value > 1) {
+        await goToPage(currentPage.value - 1);
+    }
+}
+
+async function changePageSize(newSize) {
+    serverPagination.value.perPage = newSize;
+    currentPage.value = 1;
+    await fetchServerPage(1, filtros.value.filtrosActivos);
+}
+
+async function handleGridPageChange({ page, pageSize }) {
+    if (pageSize && pageSize !== serverPagination.value.perPage) {
+        // Si cambió el tamaño de página, actualizar y ir a página 1
+        serverPagination.value.perPage = pageSize;
+        await fetchServerPage(1, filtros.value.filtrosActivos);
+    } else if (page) {
+        // Si solo cambió la página, ir a esa página
+        await goToPage(page);
+    }
+}
+
+function handleSelectionChange(selected) {
+    selectedRows.value = selected;
+
+    // Actualizar set de IDs seleccionados
+    selectedItemIds.value.clear();
+    selected.forEach((item) => {
+        selectedItemIds.value.add(item.id);
+    });
+}
+
+// Aplicar filtros con paginación del servidor
+async function aplicarFiltrosConPaginacion(nuevosFiltros) {
+    currentPage.value = 1;
+    await fetchServerPage(1, nuevosFiltros);
+    hasFilteredData.value = true;
 }
 
 async function aplicarFiltrosDesdeFlotante(f) {
@@ -649,78 +766,17 @@ async function aplicarFiltrosDesdeFlotante(f) {
     filtros.value.fechaDesde = fechaDesde;
     filtros.value.fechaHasta = fechaHasta;
 
-    isLoading.value = true;
-    try {
-        const response = await axios.get(route("vodafone.page"), {
-            params: {
-                ...filtros.value.filtrosActivos,
-                fecha_desde: fechaDesde,
-                fecha_hasta: fechaHasta,
-            },
-        });
-
-        // Validar que la respuesta contenga datos válidos
-        if (response.data && Array.isArray(response.data.items)) {
-            items.value = response.data.items;
-            hasFilteredData.value = true; // Marcar que tenemos datos filtrados
-
-            console.log(
-                `🔍 Filtros aplicados - Registros encontrados: ${response.data.items.length}`,
-                {
-                    fecha_desde: fechaDesde,
-                    fecha_hasta: fechaHasta,
-                    filtros: filtros.value.filtrosActivos,
-                }
-            );
-
-            // Si no hay items y las fechas fueron corregidas, informar al usuario
-            if (
-                response.data.items.length === 0 &&
-                resultadoValidacion.corregido
-            ) {
-                mostrarToast(
-                    "info",
-                    "No se encontraron registros en el rango de fechas corregido"
-                );
-            }
-        } else {
-            console.warn("Respuesta inválida del servidor:", response.data);
-            items.value = [];
-            hasFilteredData.value = false;
-            mostrarToast("warning", "Respuesta inesperada del servidor");
-        }
-    } catch (e) {
-        console.error("Error al filtrar:", e);
-        // En caso de error, limpiar el caché y resetear a datos iniciales
-        items.value = [];
-        hasFilteredData.value = false;
-        mostrarAlerta(
-            "error",
-            "Error",
-            "No se pudo filtrar por fecha. Los filtros han sido reseteados."
-        );
-
-        // Resetear fechas a valores por defecto
-        filtros.value.fechaDesde =
-            pageProps.fechaDesde || new Date().toISOString().split("T")[0];
-        filtros.value.fechaHasta =
-            pageProps.fechaHasta || new Date().toISOString().split("T")[0];
-
-        // Opcional: recargar la página para obtener datos frescos
-        setTimeout(() => {
-            router.visit(route("vodafone.index"), {
-                only: ["items"],
-                preserveState: true,
-            });
-        }, 1500);
-    } finally {
-        isLoading.value = false;
-    }
+    // Usar la nueva función con paginación del servidor
+    await aplicarFiltrosConPaginacion({
+        ...filtros.value.filtrosActivos,
+        fecha_desde: fechaDesde,
+        fecha_hasta: fechaHasta,
+    });
 }
 
 // =======================
 // 15. FUNCIONES DE IMPORTACIÓN
-// =======================
+// ======================
 function handleFileUpload(event) {
     const file = event.target.files[0];
     if (file) {
@@ -1052,6 +1108,11 @@ watch(
         if (!esMobile.value) {
             saveViewModeToStorage(newValue);
         }
+
+        // Actualizar el modo de vista en la configuración de paginación del servidor
+        if (serverPagination.value.enabled) {
+            serverPagination.value.viewMode = newValue ? "grid" : "cards";
+        }
     }
 );
 
@@ -1077,6 +1138,9 @@ onMounted(() => {
 
     console.log("🚀 Component mounted - Estado inicial:", {
         pageProps_items_count: pageProps.items?.length || 0,
+        paginatedData: pageProps.paginatedData
+            ? "Datos paginados disponibles"
+            : "Sin datos paginados",
         filtrosIniciales,
         fechaDesde: filtros.value.fechaDesde,
         fechaHasta: filtros.value.fechaHasta,
@@ -1089,6 +1153,12 @@ onMounted(() => {
     } else {
         // En desktop, cargar preferencia guardada
         vistaTabla.value = loadViewModeFromStorage();
+    }
+
+    // Configurar paginación del servidor si está disponible
+    if (pageProps.paginatedData) {
+        serverPagination.value.enabled = true;
+        serverPagination.value.viewMode = vistaTabla.value ? "grid" : "cards";
     }
 
     inicializarItems();
@@ -1174,6 +1244,24 @@ const importando = computed(() => importacion.value.importando);
 const isLoadingAsignacion = computed(
     () => importacion.value.isLoadingAsignacion
 );
+
+// Información de paginación del servidor
+const serverPaginationInfo = computed(() => {
+    if (!paginationData.value?.pagination) return null;
+
+    const p = paginationData.value.pagination;
+    return {
+        showing: `${p.from || 0} - ${p.to || 0}`,
+        total: p.total_records || 0,
+        page: p.current_page || 1,
+        totalPages: p.total_pages || 1,
+        perPage: p.per_page || 50,
+    };
+});
+
+const showServerPaginationInfo = computed(
+    () => serverPagination.value.enabled && serverPaginationInfo.value
+);
 </script>
 
 <!-- =======================
@@ -1232,7 +1320,6 @@ const isLoadingAsignacion = computed(
                                 permisos.puedeSeleccionarFechas
                             "
                             @filtrar="aplicarFiltrosDesdeFlotante"
-                            @search="aplicarBusquedaInstantanea"
                             @close="showFiltro = false"
                         />
                     </div>
@@ -1386,7 +1473,7 @@ const isLoadingAsignacion = computed(
         <div class="py-6 relative">
             <div class="relative" ref="scrollContainer">
                 <ExcelLikeGrid
-                    :rows="filteredItems"
+                    :rows="items"
                     :columns="columnasGrid"
                     :canViewGlobal="canViewGlobal"
                     :canEdit="canDo('vodafone.editar')"
@@ -1397,11 +1484,22 @@ const isLoadingAsignacion = computed(
                     :canViewHistory="canViewHistory"
                     :canSchedule="canDo('vodafone.agendar')"
                     :viewMode="vistaTabla ? 'grid' : 'cards'"
+                    :enablePagination="false"
+                    :serverPagination="true"
+                    :paginationData="paginationData"
+                    :currentPage="currentPage"
+                    :totalPages="lastPage"
                     v-model:selected="selectedRows"
                     @edit="abrirModalEditar"
                     @delete="eliminar"
                     @showHistory="abrirHistorial"
                     @schedule="abrirModalAgendar"
+                    @page-change="goToPage"
+                    @page-size-change="changePageSize"
+                    @changePage="handleGridPageChange"
+                    @selection-change="handleSelectionChange"
+                    @next-page="nextPage"
+                    @prev-page="prevPage"
                 />
                 <!-- =======================
              MODAL DE HISTORIAL DE ASIGNACIONES

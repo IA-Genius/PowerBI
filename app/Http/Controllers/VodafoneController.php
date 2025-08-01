@@ -41,15 +41,15 @@ class VodafoneController extends Controller
         // Construir query según permisos del usuario
         $query = $this->buildQueryByPermissions($user, $fechaDesde, $fechaHasta);
 
-        // Obtener y formatear items
-        $items = $this->getFormattedItems($query);
+        // Obtener datos paginados
+        $paginatedData = $this->getPaginatedData($query, $request);
 
         // Obtener usuarios asignables
         $usuariosAsignables = $this->getAssignableUsers();
 
         // Renderizar vista
         return Inertia::render('Vodafone', [
-            'items' => $items,
+            'paginatedData' => $paginatedData,
             'success' => session('success'),
             'canViewGlobal' => $user->can('vodafone.ver-global'),
             'canAssign' => $user->can('vodafone.asignar'),
@@ -81,10 +81,10 @@ class VodafoneController extends Controller
         // Construir query con filtros de fecha y trazabilidad
         $query = $this->buildFetchQuery($user, $fechaDesde, $fechaHasta, $request);
 
-        // Obtener y formatear items
-        $items = $this->getFormattedItems($query);
+        // Obtener datos paginados
+        $paginatedData = $this->getPaginatedData($query, $request);
 
-        return response()->json(['items' => $items]);
+        return response()->json($paginatedData);
     }
 
     // =======================
@@ -259,6 +259,24 @@ class VodafoneController extends Controller
 
         $query = Vodafone::query()->with(['asignado_a', 'user']);
 
+        // Filtro de búsqueda global
+        if ($request->filled('search')) {
+            $searchTerm = $request->input('search');
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('nombre_cliente', 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('dni_cliente', 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('telefono_principal', 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('telefono_adicional', 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('correo_referencia', 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('orden_trabajo_anterior', 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('direccion_historico', 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('observaciones', 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('marca_base', 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('origen_base', 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('origen_motivo_cancelacion', 'LIKE', "%{$searchTerm}%");
+            });
+        }
+
         // Filtro de trazabilidad si viene
         if ($request->filled('trazabilidad')) {
             $trazabilidad = $request->input('trazabilidad');
@@ -351,6 +369,90 @@ class VodafoneController extends Controller
                 $item->ultima_asignacion = $ultimaAsignacion;
                 $item->auditoria_historial = $ultimaAsignacion ? $ultimaAsignacion->auditoria_historial : collect();
             }
+
+            return $item;
+        });
+    }
+
+    /**
+     * Obtiene datos paginados para el frontend
+     */
+    private function getPaginatedData($query, $request)
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        // Parámetros de paginación
+        $page = max(1, (int) $request->input('page', 1));
+        $perPage = max(10, min(100, (int) $request->input('per_page', 50))); // Entre 10 y 100
+        $viewMode = $request->input('view_mode', 'grid'); // 'grid' o 'cards'
+
+        // Contar total de registros
+        $totalRecords = $query->count();
+
+        // Calcular offset
+        $offset = ($page - 1) * $perPage;
+
+        // Aplicar ordenamiento según el rol del usuario
+        if ($user->can('vodafone.ver') && !$user->can('vodafone.ver-global') && !$user->can('vodafone.recibe-asignacion')) {
+            // Asesor Vodafone: ordenamiento disperso
+            $queryWithOrder = $query->orderByRaw('RAND()');
+        } else {
+            // Otros roles: ordenamiento normal por ID ascendente (de menor a mayor)
+            $queryWithOrder = $query->orderBy('id');
+        }
+
+        // Obtener registros paginados
+        $items = $queryWithOrder
+            ->offset($offset)
+            ->limit($perPage)
+            ->get();
+
+        // Formatear datos
+        $formattedItems = $this->formatItems($items, $totalRecords);
+
+        // Calcular información de paginación
+        $totalPages = (int) ceil($totalRecords / $perPage);
+        $hasNextPage = $page < $totalPages;
+        $hasPrevPage = $page > 1;
+
+        return [
+            'data' => $formattedItems,
+            'pagination' => [
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total_records' => $totalRecords,
+                'total_pages' => $totalPages,
+                'has_next_page' => $hasNextPage,
+                'has_prev_page' => $hasPrevPage,
+                'from' => min($offset + 1, $totalRecords),
+                'to' => min($offset + $perPage, $totalRecords),
+            ],
+            'view_mode' => $viewMode,
+        ];
+    }
+
+    /**
+     * Formatea los items para el frontend (versión optimizada)
+     */
+    private function formatItems($items, $totalCount = 0)
+    {
+        $hoy = Carbon::today();
+        $ayer = Carbon::yesterday();
+
+        return $items->transform(function ($item) use ($hoy, $ayer, $totalCount) {
+            // Formato de fecha amigable
+            $fecha = Carbon::parse($item->created_at);
+            $dia = $fecha->isSameDay($hoy) ? 'Hoy' : ($fecha->isSameDay($ayer) ? 'Ayer' : $fecha->format('d/m/Y'));
+            $hora = $fecha->format('g:i A');
+            $item->created_at_formatted = "$dia $hora";
+
+            // Para paginación, cargamos historial completo solo si es necesario
+            // En el contexto de paginación, cargar historial básico
+            $item->asignaciones_historial = $this->getAssignmentHistory($item->id);
+            $ultimaAsignacion = $item->asignaciones_historial->first();
+            $item->ultima_asignacion = $ultimaAsignacion;
+            $item->auditoria_historial = $ultimaAsignacion ? $ultimaAsignacion->auditoria_historial : collect();
 
             return $item;
         });

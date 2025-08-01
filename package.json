@@ -24,6 +24,8 @@
         "@heroicons/vue": "^2.2.0",
         "@vueuse/core": "^13.5.0",
         "@vueuse/motion": "^3.0.3",
+        "ag-grid-community": "^34.1.0",
+        "ag-grid-vue3": "^34.1.0",
         "dayjs": "^1.11.13",
         "sweetalert2": "^11.22.2",
         "vue-multiselect": "^3.2.0"

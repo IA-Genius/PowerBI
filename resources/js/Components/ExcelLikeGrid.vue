@@ -77,6 +77,126 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Paginación para Grid - Diseño simplificado y profesional -->
+            <div
+                v-if="isServerPagination && gridPaginationInfo.pages > 1"
+                class="mt-4 bg-white border border-gray-200 rounded-lg shadow-sm p-4"
+            >
+                <div
+                    class="flex flex-col sm:flex-row items-center justify-between gap-4"
+                >
+                    <!-- Información de registros -->
+                    <div class="text-sm text-gray-600">
+                        Mostrando
+                        <strong>{{ gridPaginationInfo.start }}</strong> -
+                        <strong>{{ gridPaginationInfo.end }}</strong> de
+                        <strong>{{
+                            gridPaginationInfo.total.toLocaleString()
+                        }}</strong>
+                        registros
+                    </div>
+
+                    <!-- Controles de navegación -->
+                    <div class="flex items-center gap-3">
+                        <!-- Navegación de páginas -->
+                        <div class="flex items-center gap-1">
+                            <button
+                                @click="firstGridPage"
+                                :disabled="currentServerPage === 1"
+                                class="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                title="Primera página"
+                            >
+                                ←←
+                            </button>
+                            <button
+                                @click="prevGridPage"
+                                :disabled="currentServerPage === 1"
+                                class="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                title="Anterior"
+                            >
+                                ←
+                            </button>
+
+                            <!-- Selector de página -->
+                            <select
+                                :value="currentServerPage"
+                                @change="
+                                    goToGridPage(parseInt($event.target.value))
+                                "
+                                class="px-3 py-1.5 text-sm border border-gray-300 rounded bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-no-repeat bg-right pr-7"
+                                style="
+                                    background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iNiIgdmlld0JveD0iMCAwIDEwIDYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNSA1TDkgMSIgc3Ryb2tlPSIjOUM5Q0EwIiBzdHJva2Utd2lkdGg9IjEuMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=');
+                                    background-position: right 6px center;
+                                    background-size: 10px 6px;
+                                "
+                            >
+                                <option
+                                    v-for="page in gridPaginationInfo.pages"
+                                    :key="page"
+                                    :value="page"
+                                >
+                                    {{ page }}
+                                </option>
+                            </select>
+                            <span class="text-sm text-gray-500"
+                                >de {{ gridPaginationInfo.pages }}</span
+                            >
+
+                            <button
+                                @click="nextGridPage"
+                                :disabled="
+                                    currentServerPage >=
+                                    gridPaginationInfo.pages
+                                "
+                                class="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                title="Siguiente"
+                            >
+                                →
+                            </button>
+                            <button
+                                @click="lastGridPage"
+                                :disabled="
+                                    currentServerPage >=
+                                    gridPaginationInfo.pages
+                                "
+                                class="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                title="Última página"
+                            >
+                                →→
+                            </button>
+                        </div>
+
+                        <!-- Selector de elementos por página -->
+                        <div class="flex items-center gap-2">
+                            <label class="text-sm text-gray-600"
+                                >Mostrar:</label
+                            >
+                            <select
+                                :value="
+                                    props.paginationData?.pagination
+                                        ?.per_page || 50
+                                "
+                                @change="
+                                    handleGridPageSizeChange(
+                                        parseInt($event.target.value)
+                                    )
+                                "
+                                class="px-2 py-1.5 text-sm border border-gray-300 rounded bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-no-repeat bg-right pr-6"
+                                style="
+                                    background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iNiIgdmlld0JveD0iMCAwIDEwIDYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNSA1TDkgMSIgc3Ryb2tlPSIjOUM5Q0EwIiBzdHJva2Utd2lkdGg9IjEuMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=');
+                                    background-position: right 5px center;
+                                    background-size: 10px 6px;
+                                "
+                            >
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Vista de Tarjetas -->
@@ -439,6 +559,159 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Paginación para Cards - Diseño simplificado y profesional -->
+            <div
+                v-if="
+                    isServerPagination
+                        ? props.totalPages > 1
+                        : props.enablePagination && totalCardPages > 1
+                "
+                class="mt-4 bg-white border border-gray-200 rounded-lg shadow-sm p-4"
+            >
+                <div
+                    class="flex flex-col sm:flex-row items-center justify-between gap-4"
+                >
+                    <!-- Información de registros -->
+                    <div class="text-sm text-gray-600">
+                        Mostrando
+                        <strong>{{ cardPageInfo.start }}</strong> -
+                        <strong>{{ cardPageInfo.end }}</strong> de
+                        <strong>{{
+                            cardPageInfo.total.toLocaleString()
+                        }}</strong>
+                        registros
+                    </div>
+
+                    <!-- Controles de navegación -->
+                    <div class="flex items-center gap-3">
+                        <!-- Navegación de páginas -->
+                        <div class="flex items-center gap-1">
+                            <button
+                                @click="firstCardPage"
+                                :disabled="
+                                    (isServerPagination
+                                        ? props.currentPage
+                                        : currentCardPage) === 1
+                                "
+                                class="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                title="Primera página"
+                            >
+                                ←←
+                            </button>
+                            <button
+                                @click="previousCardPage"
+                                :disabled="
+                                    (isServerPagination
+                                        ? props.currentPage
+                                        : currentCardPage) === 1
+                                "
+                                class="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                title="Anterior"
+                            >
+                                ←
+                            </button>
+
+                            <!-- Selector de página -->
+                            <select
+                                :value="
+                                    isServerPagination
+                                        ? props.currentPage
+                                        : currentCardPage
+                                "
+                                @change="
+                                    goToCardPage(parseInt($event.target.value))
+                                "
+                                class="px-3 py-1.5 text-sm border border-gray-300 rounded bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-no-repeat bg-right pr-7"
+                                style="
+                                    background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iNiIgdmlld0JveD0iMCAwIDEwIDYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNSA1TDkgMSIgc3Ryb2tlPSIjOUM5Q0EwIiBzdHJva2Utd2lkdGg9IjEuMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=');
+                                    background-position: right 6px center;
+                                    background-size: 10px 6px;
+                                "
+                            >
+                                <option
+                                    v-for="page in isServerPagination
+                                        ? props.totalPages
+                                        : totalCardPages"
+                                    :key="page"
+                                    :value="page"
+                                >
+                                    {{ page }}
+                                </option>
+                            </select>
+                            <span class="text-sm text-gray-500"
+                                >de
+                                {{
+                                    isServerPagination
+                                        ? props.totalPages
+                                        : totalCardPages
+                                }}</span
+                            >
+
+                            <button
+                                @click="nextCardPage"
+                                :disabled="
+                                    (isServerPagination
+                                        ? props.currentPage
+                                        : currentCardPage) >=
+                                    (isServerPagination
+                                        ? props.totalPages
+                                        : totalCardPages)
+                                "
+                                class="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                title="Siguiente"
+                            >
+                                →
+                            </button>
+                            <button
+                                @click="lastCardPage"
+                                :disabled="
+                                    (isServerPagination
+                                        ? props.currentPage
+                                        : currentCardPage) >=
+                                    (isServerPagination
+                                        ? props.totalPages
+                                        : totalCardPages)
+                                "
+                                class="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                title="Última página"
+                            >
+                                →→
+                            </button>
+                        </div>
+
+                        <!-- Selector de elementos por página -->
+                        <div class="flex items-center gap-2">
+                            <label class="text-sm text-gray-600"
+                                >Mostrar:</label
+                            >
+                            <select
+                                :value="
+                                    isServerPagination
+                                        ? props.paginationData?.pagination
+                                              ?.per_page
+                                        : props.cardPageSize
+                                "
+                                @change="
+                                    handlePageSizeChange(
+                                        parseInt($event.target.value)
+                                    )
+                                "
+                                class="px-2 py-1.5 text-sm border border-gray-300 rounded bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-no-repeat bg-right pr-6"
+                                style="
+                                    background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iNiIgdmlld0JveD0iMCAwIDEwIDYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNSA1TDkgMSIgc3Ryb2tlPSIjOUM5Q0EwIiBzdHJva2Utd2lkdGg9IjEuMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=');
+                                    background-position: right 5px center;
+                                    background-size: 10px 6px;
+                                "
+                            >
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </template>
@@ -459,7 +732,17 @@ import {
     markRaw,
     nextTick,
 } from "vue";
+import {
+    createGrid,
+    ModuleRegistry,
+    AllCommunityModule,
+} from "ag-grid-community";
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-alpine.css";
 import Actions from "@/Components/Actions.vue";
+
+// Registrar módulos de AG Grid
+ModuleRegistry.registerModules([AllCommunityModule]);
 
 // ========================================
 // PROPS Y EMITS
@@ -481,6 +764,47 @@ const props = defineProps({
         default: "grid",
         validator: (value) => ["grid", "cards"].includes(value),
     },
+    // Propiedades de paginación local
+    enablePagination: {
+        type: Boolean,
+        default: true,
+    },
+    pageSize: {
+        type: Number,
+        default: 50,
+    },
+    cardPageSize: {
+        type: Number,
+        default: 20,
+    },
+    // Propiedades de paginación del servidor
+    serverPagination: {
+        type: Boolean,
+        default: false,
+    },
+    paginationData: {
+        type: Object,
+        default: () => ({
+            pagination: {
+                current_page: 1,
+                per_page: 50,
+                total_records: 0,
+                total_pages: 1,
+                has_next_page: false,
+                has_prev_page: false,
+                from: 0,
+                to: 0,
+            },
+        }),
+    },
+    currentPage: {
+        type: Number,
+        default: 1,
+    },
+    totalPages: {
+        type: Number,
+        default: 1,
+    },
 });
 
 const emit = defineEmits([
@@ -490,6 +814,13 @@ const emit = defineEmits([
     "update:selected",
     "showHistory",
     "schedule",
+    "update:cardPageSize",
+    "page-change",
+    "page-size-change",
+    "selection-change",
+    "next-page",
+    "prev-page",
+    "changePage",
 ]);
 
 // ========================================
@@ -504,6 +835,17 @@ const rowDataInternal = shallowRef([]);
 const isUpdatingGrid = ref(false);
 const isLoadingViewSwitch = ref(false);
 const cardColumnsData = ref([]);
+
+// Variables de paginación para tarjetas
+const currentCardPage = ref(1);
+const totalCardPages = ref(1);
+
+// Variables de paginación del servidor
+const currentServerPage = computed(() => props.currentPage || 1);
+const currentServerPageSize = computed(
+    () => props.paginationData?.pagination?.per_page || 50
+);
+
 let gridApi = null;
 
 // ========================================
@@ -530,6 +872,66 @@ const getColumnCount = computed(() => {
     return 4; // xl: 4 columnas
 });
 
+// Computadas para paginación
+const isServerPagination = computed(() => props.serverPagination);
+
+const paginatedCardRows = computed(() => {
+    if (isServerPagination.value || !props.rows || props.viewMode !== "cards") {
+        // Para paginación del servidor, usar directamente los datos
+        return props.rows || [];
+    }
+
+    // Para paginación local
+    const startIndex = (currentCardPage.value - 1) * props.cardPageSize;
+    const endIndex = startIndex + props.cardPageSize;
+    return props.rows.slice(startIndex, endIndex);
+});
+
+const cardPaginationInfo = computed(() => {
+    if (isServerPagination.value) {
+        // Usar información del servidor
+        const pagination = props.paginationData?.pagination || {};
+        return {
+            total: pagination.total_records || 0,
+            pages: pagination.total_pages || 1,
+            start: pagination.from || 0,
+            end: pagination.to || 0,
+        };
+    }
+
+    // Paginación local
+    if (!props.rows) return { total: 0, pages: 0, start: 0, end: 0 };
+
+    const total = props.rows.length;
+    const pages = Math.ceil(total / props.cardPageSize);
+    const start = (currentCardPage.value - 1) * props.cardPageSize + 1;
+    const end = Math.min(start + props.cardPageSize - 1, total);
+
+    totalCardPages.value = pages;
+
+    return { total, pages, start, end };
+});
+
+// Alias para retrocompatibilidad
+const cardPageInfo = computed(() => cardPaginationInfo.value);
+
+// Computada para información de paginación del grid
+const gridPaginationInfo = computed(() => {
+    if (isServerPagination.value) {
+        // Usar información del servidor
+        const pagination = props.paginationData?.pagination || {};
+        return {
+            total: pagination.total_records || 0,
+            pages: pagination.total_pages || 1,
+            start: pagination.from || 0,
+            end: pagination.to || 0,
+        };
+    }
+
+    // Fallback para paginación local (no debería usarse para grid)
+    return { total: 0, pages: 0, start: 0, end: 0 };
+});
+
 // ========================================
 // FUNCIONES DE TARJETAS
 // ========================================
@@ -548,6 +950,7 @@ function emitSelectedFromCards() {
             props.rows?.filter((item) => selectedItems.value.has(item.id)) ||
             [];
         emit("update:selected", selected);
+        emit("selection-change", selected);
     }
 }
 
@@ -580,7 +983,11 @@ function getStatusClass(status) {
 }
 
 function getItemsForColumn(columnIndex) {
-    if (!props.rows) return [];
+    // Para vista de tarjetas, usar datos paginados
+    const dataToUse =
+        props.viewMode === "cards" ? paginatedCardRows.value : props.rows;
+
+    if (!dataToUse) return [];
 
     // Usar datos cacheados si están disponibles
     if (cardColumnsData.value[columnIndex]) {
@@ -591,8 +998,8 @@ function getItemsForColumn(columnIndex) {
     const items = [];
 
     // Distribuir elementos por columnas
-    for (let i = columnIndex; i < props.rows.length; i += totalColumns) {
-        items.push(props.rows[i]);
+    for (let i = columnIndex; i < dataToUse.length; i += totalColumns) {
+        items.push(dataToUse[i]);
     }
 
     return items;
@@ -605,24 +1012,28 @@ function prepareColumnData() {
             .fill(null)
             .map(() => []);
 
-        if (props.rows) {
-            const chunkSize = Math.max(50, Math.floor(props.rows.length / 10));
+        // Para vista de tarjetas, usar datos paginados
+        const dataToUse =
+            props.viewMode === "cards" ? paginatedCardRows.value : props.rows;
+
+        if (dataToUse) {
+            const chunkSize = Math.max(50, Math.floor(dataToUse.length / 10));
             let currentIndex = 0;
 
             const processChunk = () => {
                 const endIndex = Math.min(
                     currentIndex + chunkSize,
-                    props.rows.length
+                    dataToUse.length
                 );
 
                 for (let i = currentIndex; i < endIndex; i++) {
                     const columnIndex = i % totalColumns;
-                    newColumnsData[columnIndex].push(props.rows[i]);
+                    newColumnsData[columnIndex].push(dataToUse[i]);
                 }
 
                 currentIndex = endIndex;
 
-                if (currentIndex < props.rows.length) {
+                if (currentIndex < dataToUse.length) {
                     requestAnimationFrame(processChunk);
                 } else {
                     cardColumnsData.value = newColumnsData;
@@ -635,6 +1046,100 @@ function prepareColumnData() {
             resolve();
         }
     });
+}
+
+// ========================================
+// FUNCIONES DE PAGINACIÓN (LOCAL Y SERVIDOR)
+// ========================================
+function goToCardPage(page) {
+    if (isServerPagination.value) {
+        emit("page-change", page);
+    } else {
+        // Paginación local
+        if (page >= 1 && page <= totalCardPages.value) {
+            currentCardPage.value = page;
+            prepareColumnData();
+        }
+    }
+}
+
+function nextCardPage() {
+    if (isServerPagination.value) {
+        emit("next-page");
+    } else {
+        // Paginación local
+        if (currentCardPage.value < totalCardPages.value) {
+            currentCardPage.value++;
+            prepareColumnData();
+        }
+    }
+}
+
+function previousCardPage() {
+    if (isServerPagination.value) {
+        emit("prev-page");
+    } else {
+        // Paginación local
+        if (currentCardPage.value > 1) {
+            currentCardPage.value--;
+            prepareColumnData();
+        }
+    }
+}
+
+function firstCardPage() {
+    goToCardPage(1);
+}
+
+function lastCardPage() {
+    const lastPage = isServerPagination.value
+        ? props.totalPages
+        : totalCardPages.value;
+    goToCardPage(lastPage);
+}
+
+// Funciones para paginación del grid
+function goToGridPage(page) {
+    if (isServerPagination.value && page !== currentServerPage.value) {
+        emit("changePage", { page, pageSize: currentServerPageSize.value });
+    }
+}
+
+function firstGridPage() {
+    goToGridPage(1);
+}
+
+function lastGridPage() {
+    goToGridPage(gridPaginationInfo.value.pages);
+}
+
+function prevGridPage() {
+    if (currentServerPage.value > 1) {
+        goToGridPage(currentServerPage.value - 1);
+    }
+}
+
+function nextGridPage() {
+    if (currentServerPage.value < gridPaginationInfo.value.pages) {
+        goToGridPage(currentServerPage.value + 1);
+    }
+}
+
+function changeGridPageSize(newSize) {
+    emit("changePage", { page: 1, pageSize: newSize });
+}
+
+function handleGridPageSizeChange(newSize) {
+    changeGridPageSize(newSize);
+}
+
+function handlePageSizeChange(newSize) {
+    if (isServerPagination.value) {
+        emit("page-size-change", newSize);
+    } else {
+        // Manejar cambio local del tamaño de página
+        emit("update:cardPageSize", newSize);
+    }
 }
 
 // ========================================
@@ -711,19 +1216,16 @@ const createColumnDef = (col) => {
             cellRenderer: ({ data }) => {
                 const estado = (data.trazabilidad || "—").toLowerCase();
                 const colorMap = {
-                    pendiente: { bg: "bg-yellow-100", text: "text-yellow-800" },
-                    asignado: { bg: "bg-blue-100", text: "text-blue-700" },
-                    completado: { bg: "bg-green-100", text: "text-green-700" },
-                    retornado: { bg: "bg-red-100", text: "text-red-700" },
-                    agendado: { bg: "bg-purple-100", text: "text-purple-700" },
+                    pendiente: "bg-yellow-100 text-yellow-800",
+                    asignado: "bg-blue-100 text-blue-700",
+                    completado: "bg-green-100 text-green-700",
+                    retornado: "bg-red-100 text-red-700",
+                    agendado: "bg-purple-100 text-purple-700",
                 };
-                const colors = colorMap[estado] || {
-                    bg: "bg-gray-200",
-                    text: "text-gray-700",
-                };
+                const colors = colorMap[estado] || "bg-gray-100 text-gray-700";
 
                 const span = document.createElement("span");
-                span.className = `${colors.bg} ${colors.text} inline-block px-2 py-1 rounded-full text-xs font-semibold min-w-[70px] text-center whitespace-nowrap`;
+                span.className = `status-badge ${colors}`;
                 span.textContent = data.trazabilidad || "—";
                 span.title = data.trazabilidad || "—";
                 return span;
@@ -738,18 +1240,15 @@ const createColumnDef = (col) => {
             cellRenderer: ({ data }) => {
                 const origen = (data.origen_base || "—").toLowerCase();
                 const colorMap = {
-                    vodafone: { bg: "bg-blue-100", text: "text-blue-700" },
-                    movistar: { bg: "bg-green-100", text: "text-green-700" },
-                    orange: { bg: "bg-orange-100", text: "text-orange-700" },
-                    otros: { bg: "bg-purple-100", text: "text-purple-700" },
+                    vodafone: "bg-blue-100 text-blue-700",
+                    movistar: "bg-green-100 text-green-700",
+                    orange: "bg-orange-100 text-orange-700",
+                    otros: "bg-purple-100 text-purple-700",
                 };
-                const colors = colorMap[origen] || {
-                    bg: "bg-gray-200",
-                    text: "text-gray-700",
-                };
+                const colors = colorMap[origen] || "bg-gray-100 text-gray-700";
 
                 const span = document.createElement("span");
-                span.className = `${colors.bg} ${colors.text} inline-block px-2 py-1 rounded-full text-xs font-semibold min-w-[70px] text-center whitespace-nowrap`;
+                span.className = `origin-badge ${colors}`;
                 span.textContent = data.origen_base || "—";
                 span.title = data.origen_base || "—";
                 return span;
@@ -878,6 +1377,7 @@ function getRowIdFromElement(el) {
 function emitSelectedRows() {
     const selected = gridApi?.getSelectedRows() || [];
     emit("update:selected", selected);
+    emit("selection-change", selected);
 }
 
 function selectAll() {
@@ -1111,7 +1611,7 @@ watch(
 // ========================================
 onMounted(async () => {
     // Verificar que AG-Grid esté disponible
-    if (!window.agGrid?.createGrid) {
+    if (!createGrid) {
         console.warn("AG-Grid no está disponible");
         return;
     }
@@ -1136,11 +1636,14 @@ onMounted(async () => {
             columnDefs,
             rowData: markRaw(props.rows || []),
             defaultColDef,
-            rowSelection: "multiple",
-            suppressRowClickSelection: false,
+            theme: "legacy", // Usar tema legacy para evitar conflictos con ag-grid.css
+            rowSelection: {
+                mode: "multiRow",
+                enableClickSelection: true,
+            },
             rowHeight: 37,
             headerHeight: 35,
-            enableRangeSelection: false,
+            cellSelection: false,
             animateRows: false,
             suppressCellFocus: true,
             suppressColumnVirtualisation: false,
@@ -1151,6 +1654,17 @@ onMounted(async () => {
             suppressAggFuncInHeader: true,
             suppressMenuHide: true,
             suppressMovableColumns: true,
+            // Configuración de paginación
+            pagination: isServerPagination.value
+                ? false
+                : props.enablePagination,
+            paginationPageSize: isServerPagination.value
+                ? undefined
+                : props.pageSize,
+            paginationPageSizeSelector: isServerPagination.value
+                ? undefined
+                : [20, 50, 100, 200],
+            suppressPaginationPanel: isServerPagination.value ? true : false,
             onGridReady: (params) => {
                 gridApi = params.api;
 
@@ -1205,7 +1719,6 @@ onMounted(async () => {
             },
         };
 
-        const { createGrid } = window.agGrid;
         gridApi = createGrid(gridContainer.value, gridOptions);
 
         // Verificar que el grid se creó correctamente
@@ -1338,13 +1851,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.ag-center-cols {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-}
-
 .btn {
     padding: 0.4rem 0.8rem;
     background-color: #007bff;
@@ -1374,12 +1880,116 @@ onUnmounted(() => {
     background: #eef2ff;
     transform: scale(1.12);
 }
+
+/* Estilos mejorados para AG-Grid - Similar a tabla de gestión usuarios */
 .ag-theme-alpine {
     min-height: 700px;
     font-size: 13px;
     --ag-header-background-color: #f8f9fa;
     --ag-header-foreground-color: #333;
-    --ag-selected-row-background-color: #ffcc99; /* ← naranja suave */
+    --ag-selected-row-background-color: #e0f2fe; /* azul suave */
+    --ag-row-hover-color: #f0f9ff; /* hover azul muy suave */
+    --ag-border-color: #e5e7eb; /* gris suave */
+    --ag-header-height: 42px;
+    --ag-row-height: 40px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+/* Header styling similar a gestión usuarios */
+.ag-theme-alpine .ag-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-bottom: none;
+}
+
+.ag-theme-alpine .ag-header-cell {
+    background: transparent;
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ag-theme-alpine .ag-header-cell:last-child {
+    border-right: none;
+}
+
+/* Row styling similar a gestión usuarios */
+.ag-theme-alpine .ag-row {
+    border-bottom: 1px solid #f3f4f6;
+    transition: all 0.2s ease;
+}
+
+.ag-theme-alpine .ag-row:nth-child(even) {
+    background-color: #f8fafc;
+}
+
+.ag-theme-alpine .ag-row:nth-child(odd) {
+    background-color: white;
+}
+
+.ag-theme-alpine .ag-row:hover {
+    background-color: #e0f2fe !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.ag-theme-alpine .ag-row.ag-row-selected {
+    background-color: #dbeafe !important;
+    border-left: 3px solid #3b82f6;
+}
+
+/* Cell styling */
+.ag-theme-alpine .ag-cell {
+    border-right: 1px solid #f3f4f6;
+    padding: 8px 12px;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.ag-theme-alpine .ag-cell:last-child {
+    border-right: none;
+}
+
+/* Estilo para los badges de estado */
+.status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    min-width: 70px;
+    white-space: nowrap;
+}
+
+/* Estilo para badges de origen */
+.origin-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    min-width: 70px;
+    white-space: nowrap;
+}
+
+/* Estilos responsive */
+@media (max-width: 768px) {
+    .ag-theme-alpine {
+        font-size: 12px;
+        --ag-header-height: 38px;
+        --ag-row-height: 36px;
+    }
+
+    .ag-theme-alpine .ag-cell {
+        padding: 6px 8px;
+    }
 }
 
 /* Animación simple para details/summary - ULTRA RÁPIDA */

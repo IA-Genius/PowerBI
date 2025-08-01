@@ -213,6 +213,11 @@ onMounted(() => {
     if (props.fechaHastaProp) fechaHasta.value = props.fechaHastaProp;
     originalFechaDesde.value = props.fechaDesdeProp;
     originalFechaHasta.value = props.fechaHastaProp;
+
+    // Inicializar búsqueda si existe en los filtros seleccionados
+    if (props.selected?.search) {
+        internalSearch.value = props.selected.search;
+    }
 });
 
 // Watch para reinicializar la copia local cuando cambian los props (optimizado)
@@ -292,6 +297,7 @@ function limpiarFiltros() {
 function aplicarFiltros() {
     emit("filtrar", {
         ...selectedFiltros.value,
+        ...(internalSearch.value ? { search: internalSearch.value } : {}),
         ...(fechaDesde.value ? { fecha_desde: fechaDesde.value } : {}),
         ...(fechaHasta.value ? { fecha_hasta: fechaHasta.value } : {}),
     });
@@ -308,7 +314,8 @@ function hayCambiosSinAplicar() {
         JSON.stringify(selectedFiltros.value) !==
             JSON.stringify(originalFiltros.value) ||
         fechaDesde.value !== originalFechaDesde.value ||
-        fechaHasta.value !== originalFechaHasta.value
+        fechaHasta.value !== originalFechaHasta.value ||
+        internalSearch.value !== ""
     );
 }
 
