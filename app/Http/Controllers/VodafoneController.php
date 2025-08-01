@@ -259,22 +259,25 @@ class VodafoneController extends Controller
 
         $query = Vodafone::query()->with(['asignado_a', 'user']);
 
-        // Filtro de búsqueda global
-        if ($request->filled('search')) {
+        // Filtro de búsqueda global - verificar si existe el parámetro (no si está lleno)
+        if ($request->has('search') && $request->input('search') !== null) {
             $searchTerm = $request->input('search');
-            $query->where(function ($q) use ($searchTerm) {
-                $q->where('nombre_cliente', 'LIKE', "%{$searchTerm}%")
-                  ->orWhere('dni_cliente', 'LIKE', "%{$searchTerm}%")
-                  ->orWhere('telefono_principal', 'LIKE', "%{$searchTerm}%")
-                  ->orWhere('telefono_adicional', 'LIKE', "%{$searchTerm}%")
-                  ->orWhere('correo_referencia', 'LIKE', "%{$searchTerm}%")
-                  ->orWhere('orden_trabajo_anterior', 'LIKE', "%{$searchTerm}%")
-                  ->orWhere('direccion_historico', 'LIKE', "%{$searchTerm}%")
-                  ->orWhere('observaciones', 'LIKE', "%{$searchTerm}%")
-                  ->orWhere('marca_base', 'LIKE', "%{$searchTerm}%")
-                  ->orWhere('origen_base', 'LIKE', "%{$searchTerm}%")
-                  ->orWhere('origen_motivo_cancelacion', 'LIKE', "%{$searchTerm}%");
-            });
+            // Solo aplicar filtro si hay término de búsqueda
+            if (!empty(trim($searchTerm))) {
+                $query->where(function ($q) use ($searchTerm) {
+                    $q->where('nombre_cliente', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('dni_cliente', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('telefono_principal', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('telefono_adicional', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('correo_referencia', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('orden_trabajo_anterior', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('direccion_historico', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('observaciones', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('marca_base', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('origen_base', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('origen_motivo_cancelacion', 'LIKE', "%{$searchTerm}%");
+                });
+            }
         }
 
         // Filtro de trazabilidad si viene

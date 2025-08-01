@@ -624,12 +624,20 @@ function canEditRecord(record) {
 let busquedaTimeout = null;
 
 // Función para limpiar filtros y volver a datos originales
-function limpiarFiltros() {
+async function limpiarFiltros() {
     hasFilteredData.value = false;
     filtros.value.filtrosActivos = getFiltrosIniciales();
     filtros.value.fechaDesde = pageProps.fechaDesde || "";
     filtros.value.fechaHasta = pageProps.fechaHasta || "";
-    inicializarItems();
+
+    // Usar paginación del servidor para limpiar filtros correctamente
+    await aplicarFiltrosConPaginacion({
+        search: "", // Explícitamente limpiar búsqueda
+        fecha_desde: filtros.value.fechaDesde,
+        fecha_hasta: filtros.value.fechaHasta,
+        ...getFiltrosIniciales(),
+    });
+
     mostrarToast("info", "Filtros limpiados");
 }
 
@@ -757,8 +765,8 @@ async function aplicarFiltrosDesdeFlotante(f) {
         filtros.value.fechaHasta = fechaHasta;
     }
 
+    // Usar directamente los filtros del modal en lugar de mezclar con los anteriores
     filtros.value.filtrosActivos = {
-        ...filtros.value.filtrosActivos,
         ...filtrosFiltrados,
     };
 
@@ -766,9 +774,9 @@ async function aplicarFiltrosDesdeFlotante(f) {
     filtros.value.fechaDesde = fechaDesde;
     filtros.value.fechaHasta = fechaHasta;
 
-    // Usar la nueva función con paginación del servidor
+    // Usar la nueva función con paginación del servidor - pasar filtros completos
     await aplicarFiltrosConPaginacion({
-        ...filtros.value.filtrosActivos,
+        ...filtrosFiltrados,
         fecha_desde: fechaDesde,
         fecha_hasta: fechaHasta,
     });
