@@ -761,8 +761,7 @@ const mobileSidebarOpen = computed(() => ui.value.mobileSidebarOpen);
 
             <!-- ===== PAGE CONTENT ===== -->
             <main
-                class="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-100"
-                style="padding: 1.5rem 2rem"
+                class="flex-1 overflow-y-auto p-4 sm:p-3 lg:p-6  bg-gray-100"
             >
                 <div class="mx-auto rellenoInternas">
                     <slot name="header" />

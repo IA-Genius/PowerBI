@@ -136,7 +136,6 @@
                             v-model="form.orden"
                             name="cartera_orden"
                             type="number"
-                            :min="1"
                             :error="errors.orden"
                         />
                     </div>

@@ -319,16 +319,16 @@ function transformarForm(form) {
                 <!-- Listado de roles -->
                 <div>
                     <div
-                        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+                        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 cursor-auto"
                     >
                         <div
                             v-for="role in roles"
                             :key="role.id"
-                            class="bg-white rounded-xl border cursor-pointer transition-all duration-200 shadow-sm w-full max-w-full border-gray-200 hover:border-gray-300 hover:shadow-md flex flex-col overflow-hidden"
+                            class="bg-white cursor-auto rounded-xl border cursor-pointer transition-all duration-200 shadow-sm w-full max-w-full border-gray-200 hover:border-gray-300 hover:shadow-md flex flex-col overflow-hidden"
                         >
                             <!-- Header simplificado -->
                             <div
-                                class="p-4 border-b bg-white border-gray-100 flex items-center gap-3 min-h-0"
+                                class="p-2 border-b bg-white border-gray-100 flex items-center gap-3 min-h-0 bgPrincipal cabeRoles"
                             >
                                 <!-- Avatar con icono -->
                                 <div
@@ -378,14 +378,14 @@ function transformarForm(form) {
                                             <span
                                                 v-for="c in role.carteras"
                                                 :key="c.id"
-                                                class="inline-flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-xs font-medium border border-blue-100 truncate max-w-full"
+                                                class="inline-flex items-center bg-blue-50 text-gray-700 px-2 py-1 rounded-md text-xs font-medium border border-blue-100 truncate max-w-full"
                                                 :title="c.nombre"
                                             >
                                                 <span class="truncate">{{
                                                     c.nombre
                                                 }}</span>
                                                 <span
-                                                    class="ml-1 w-3.5 h-3.5 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center flex-shrink-0"
+                                                    class="ml-1 w-3.5 h-3.5 rounded-full bgPrincipal text-white text-[9px] font-bold flex items-center justify-center flex-shrink-0"
                                                 >
                                                     {{
                                                         role.reportes.filter(

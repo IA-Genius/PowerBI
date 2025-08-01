@@ -352,12 +352,12 @@ const reportesFiltrados = computed(() => {
             <TransitionGroup
                 name="fade-slide"
                 tag="div"
-                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 min-h-[150px] grid-auto-rows-[minmax(110px,_auto)]"
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 min-h-[150px] grid-auto-rows-[minmax(110px,_auto)]"
             >
                 <div
                     v-for="reporte in reportesFiltrados"
                     :key="reporte.id"
-                    class="rounded-lg border border-gray-200 bg-white/90 shadow-sm hover:shadow-md transition-all p-4 flex flex-col min-h-[110px]"
+                    class="rounded-lg border border-gray-200 bg-white/90 shadow-sm hover:shadow-md transition-all flex flex-col min-h-[110px] pb-4 "
                 >
                     <!-- Header -->
                     <div class="">

@@ -12,6 +12,7 @@ COLORES
     --colorPrincipal: #5f5ffffc;
     --colortTxt: #4d4a48;
     --colorSecundario: #ff7e00;
+    --colorSecundarioPalido: #ffcc99;
     --blackTransparent: #000000b2;
 }
 .tituloPag,
@@ -41,6 +42,15 @@ button {
 
 .pl-26 {
     padding-left: 26px;
+}
+.cabeRoles * {
+    color: #fff !important;
+}
+.bgNaranga {
+    background: var(--colorSecundarioPalido)
+}
+.bagroundSecundario {
+    background: var(--colorSecundario);
 }
 /*==============
 MENU

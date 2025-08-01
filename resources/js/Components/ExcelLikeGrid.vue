@@ -144,18 +144,18 @@
                                 :key="item.id"
                                 @click="toggleCardSelection(item)"
                                 :class="[
-                                    'card bg-white rounded-xl border cursor-pointer shadow-sm w-full',
+                                    'card bg-white rounded-xl border cursor-pointer shadow-sm w-full rounded',
                                     selectedItems.has(item.id)
-                                        ? 'border-blue-500 shadow-blue-100 shadow-lg ring-1 ring-blue-200'
+                                        ? 'border-orange-200 shadow-blue-100 shadow-lg ring-1 ring-blue-200'
                                         : 'border-gray-200 hover:border-gray-300 hover:shadow-md',
                                 ]"
                             >
                                 <!-- Header -->
                                 <div
                                     :class="[
-                                        'p-4 border-b flex items-center justify-between',
+                                        'p-4 border-b flex items-center justify-between bgPrincipal tiCardRoles rounded',
                                         selectedItems.has(item.id)
-                                            ? 'bg-blue-50 border-blue-100'
+                                            ? 'bagroundSecundario'
                                             : 'bg-white border-gray-100',
                                     ]"
                                 >
@@ -174,14 +174,14 @@
                                         />
                                         <div class="min-w-0 flex-1">
                                             <h3
-                                                class="font-semibold text-gray-900 text-sm truncate"
+                                                class="font-semibold text-white text-sm truncate"
                                             >
                                                 {{
                                                     item.nombre_cliente ||
                                                     "Sin nombre"
                                                 }}
                                             </h3>
-                                            <p class="text-xs text-gray-500">
+                                            <p class="text-xs text-gray-100">
                                                 ID: {{ item.id }}
                                             </p>
                                         </div>
