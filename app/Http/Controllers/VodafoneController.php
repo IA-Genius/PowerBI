@@ -282,35 +282,80 @@ class VodafoneController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
+        // Contar total de registros antes de aplicar límites
+        $totalCount = $query->count();
+
+        // Aplicar limitación inteligente basada en el tamaño del dataset
+        $limit = $this->calculateOptimalLimit($totalCount);
+
+        if ($limit && $totalCount > $limit) {
+            Log::info('Aplicando limitación en VodafoneController', [
+                'total_registros' => $totalCount,
+                'limite_aplicado' => $limit,
+                'user_id' => $user->id
+            ]);
+        }
+
         // Para asesor vodafone: ordenar de forma dispersa/desordenada
         if ($user->can('vodafone.ver') && !$user->can('vodafone.ver-global') && !$user->can('vodafone.recibe-asignacion')) {
             // Asesor Vodafone: ordenamiento disperso usando RAND()
-            $items = $query->orderByRaw('RAND()')->get();
+            $queryWithOrder = $query->orderByRaw('RAND()');
         } else {
             // Otros roles: ordenamiento normal por ID
-            $items = $query->orderBy('id')->get();
+            $queryWithOrder = $query->orderBy('id');
+        }
+
+        // Aplicar límite si es necesario
+        if ($limit && $totalCount > $limit) {
+            $items = $queryWithOrder->limit($limit)->get();
+        } else {
+            $items = $queryWithOrder->get();
         }
 
         $hoy = Carbon::today();
         $ayer = Carbon::yesterday();
 
-        return $items->transform(function ($item) use ($hoy, $ayer) {
+        return $items->transform(function ($item) use ($hoy, $ayer, $totalCount) {
             // Formato de fecha amigable
             $fecha = Carbon::parse($item->created_at);
             $dia = $fecha->isSameDay($hoy) ? 'Hoy' : ($fecha->isSameDay($ayer) ? 'Ayer' : $fecha->format('d/m/Y'));
             $hora = $fecha->format('g:i A');
             $item->created_at_formatted = "$dia $hora";
 
-            // Obtener historial de asignaciones
-            $item->asignaciones_historial = $this->getAssignmentHistory($item->id);
-
-            // Última cabecera relevante
-            $ultimaAsignacion = $item->asignaciones_historial->first();
-            $item->ultima_asignacion = $ultimaAsignacion;
-            $item->auditoria_historial = $ultimaAsignacion ? $ultimaAsignacion->auditoria_historial : collect();
+            // Obtener historial de asignaciones - optimizado para datasets grandes
+            if ($totalCount > 5000) {
+                // Para datasets muy grandes, no cargar historial completo
+                $item->asignaciones_historial = collect();
+                $item->ultima_asignacion = null;
+                $item->auditoria_historial = collect();
+            } else {
+                // Para datasets normales, cargar historial completo
+                $item->asignaciones_historial = $this->getAssignmentHistory($item->id);
+                $ultimaAsignacion = $item->asignaciones_historial->first();
+                $item->ultima_asignacion = $ultimaAsignacion;
+                $item->auditoria_historial = $ultimaAsignacion ? $ultimaAsignacion->auditoria_historial : collect();
+            }
 
             return $item;
         });
+    }
+
+    /**
+     * Calcula el límite óptimo basado en el tamaño total del dataset
+     */
+    private function calculateOptimalLimit($totalCount)
+    {
+        if ($totalCount <= 500) {
+            return null; // Sin límite para datasets pequeños
+        } elseif ($totalCount <= 1000) {
+            return 500; // Datasets medianos: límite 700
+        } elseif ($totalCount <= 7000) {
+            return 500; // Datasets grandes: límite 700
+        } elseif ($totalCount <= 15000) {
+            return 500; // Datasets muy grandes: límite 500
+        } else {
+            return 500; // Datasets masivos: límite 5000
+        }
     }
 
     private function getAssignableUsers()
