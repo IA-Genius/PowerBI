@@ -26,19 +26,20 @@ class VodafoneImportController extends Controller
             $rows = collect($array[0] ?? [])->slice(1)
                 ->map(function ($row, $index) use ($dnilist, $tellist) {
                     $dni = $row[3] ?? '';
-                    $tel = $row[5] ?? '';
+                    $tel = $row[4] ?? '';
                     return [
                         'index' => $index + 2,
-                        'id_interno' => $row[0] ?? '',
-                        'fecha_registro' => $row[1] ?? '',
+                        'orden_trabajo_anterior' => $row[0] ?? '',
+                        'origen_base' => $row[1] ?? '',
                         'nombre_cliente' => $row[2] ?? '',
                         'dni_cliente' => $dni,
-                        'direccion_cliente' => $row[4] ?? '',
                         'telefono_principal' => $tel,
-                        'correo_electronico' => $row[6] ?? '',
-                        'operador_origen' => $row[7] ?? '',
-                        'operador_destino' => $row[8] ?? '',
-                        'observaciones' => $row[9] ?? '', // <-- agrega esto según la posición real en tu Excel
+                        'telefono_adicional' => $row[5] ?? '',
+                        'correo_referencia' => $row[6] ?? '',
+                        'direccion_historico' => $row[7] ?? '',
+                        'marca_base' => $row[8] ?? '',
+                        'origen_motivo_cancelacion' => $row[9] ?? '',
+                        'observaciones' => $row[10] ?? '',
                         'duplicado' => ($dni && in_array($dni, $dnilist)) || ($tel && in_array($tel, $tellist)),
                     ];
                 })
@@ -101,19 +102,20 @@ class VodafoneImportController extends Controller
             $rows = collect($array[0] ?? [])->slice(1)
                 ->map(function ($row, $index) use ($dnilist, $tellist) {
                     $dni = $row[3] ?? '';
-                    $tel = $row[5] ?? '';
+                    $tel = $row[4] ?? '';
                     return [
                         'index' => $index + 2,
-                        'id_interno' => $row[0] ?? '',
-                        'fecha_registro' => $row[1] ?? '',
+                        'orden_trabajo_anterior' => $row[0] ?? '',
+                        'origen_base' => $row[1] ?? '',
                         'nombre_cliente' => $row[2] ?? '',
                         'dni_cliente' => $dni,
-                        'direccion_cliente' => $row[4] ?? '',
                         'telefono_principal' => $tel,
-                        'correo_electronico' => $row[6] ?? '',
-                        'operador_origen' => $row[7] ?? '',
-                        'operador_destino' => $row[8] ?? '',
-                        'observaciones' => $row[9] ?? '',
+                        'telefono_adicional' => $row[5] ?? '',
+                        'correo_referencia' => $row[6] ?? '',
+                        'direccion_historico' => $row[7] ?? '',
+                        'marca_base' => $row[8] ?? '',
+                        'origen_motivo_cancelacion' => $row[9] ?? '',
+                        'observaciones' => $row[10] ?? '',
                         'duplicado' => ($dni && in_array($dni, $dnilist)) || ($tel && in_array($tel, $tellist)),
                     ];
                 })
@@ -122,7 +124,7 @@ class VodafoneImportController extends Controller
                     return $row['dni_cliente'] || $row['telefono_principal'] || $row['nombre_cliente'];
                 });
 
-            // Convertir a array plano para procesamiento
+            // Los datos ya vienen con los nombres correctos según la plantilla
             $datos = $rows->toArray();
 
             // Validar que cada registro tenga los campos mínimos
@@ -130,26 +132,11 @@ class VodafoneImportController extends Controller
                 return isset($row['dni_cliente']) && isset($row['telefono_principal']);
             });
 
-            // Mapeo de campos del array recibido a los campos esperados por Vodafone
-            $mapeo = [
-                'id_interno' => 'marca_base',
-                'fecha_registro' => 'origen_motivo_cancelacion',
-                'nombre_cliente' => 'nombre_cliente',
-                'dni_cliente' => 'dni_cliente',
-                'direccion_cliente' => 'orden_trabajo_anterior',
-                'telefono_principal' => 'telefono_principal',
-                'correo_electronico' => 'telefono_adicional',
-                'operador_origen' => 'correo_referencia',
-                'operador_destino' => 'direccion_historico',
-                'observaciones' => 'observaciones',
-            ];
-
-            $datosMapeados = array_map(function ($row) use ($mapeo) {
-                $nuevo = [];
-                foreach ($mapeo as $origen => $destino) {
-                    $nuevo[$destino] = $row[$origen] ?? null;
-                }
-                return $nuevo;
+            // Remover campos que no son de la base de datos
+            $datosMapeados = array_map(function ($row) {
+                // Remover campos auxiliares del preview
+                unset($row['index'], $row['duplicado']);
+                return $row;
             }, $datos);
 
             $log = LogImportacionVodafone::create([

@@ -38,6 +38,7 @@ class VodafoneImportJob implements ShouldQueue
         $modo = strtolower(trim($this->modo ?? ''));
         Log::info("Modo de importación recibido en Job", ['modo' => $modo]);
 
+       
         if ($log) {
             $log->estado = 'procesando'; // 🔥 ESTADO EN PROCESO
             $log->save();
@@ -51,16 +52,17 @@ class VodafoneImportJob implements ShouldQueue
                 if (!$dni) continue;
 
                 $data = [
+                    'orden_trabajo_anterior' => $row['orden_trabajo_anterior'] ?? null,
+                    'origen_base' => $row['origen_base'] ?? null,
+                    'nombre_cliente' => $row['nombre_cliente'] ?? null,
                     'dni_cliente' => $dni,
                     'telefono_principal' => $row['telefono_principal'] ?? null,
-                    'nombre_cliente' => $row['nombre_cliente'] ?? null,
-                    'orden_trabajo_anterior' => $row['orden_trabajo_anterior'] ?? null,
                     'telefono_adicional' => $row['telefono_adicional'] ?? null,
                     'correo_referencia' => $row['correo_referencia'] ?? null,
                     'direccion_historico' => $row['direccion_historico'] ?? null,
-                    'observaciones' => $row['observaciones'] ?? null,
                     'marca_base' => $row['marca_base'] ?? null,
                     'origen_motivo_cancelacion' => $row['origen_motivo_cancelacion'] ?? null,
+                    'observaciones' => $row['observaciones'] ?? null,
                     'trazabilidad' => 'pendiente',
                     'asignado_a_id' => $row['asignado_a_id'] ?? null,
                     'user_id' => $this->userId,

@@ -955,7 +955,10 @@ async function esperarImportacion(logId) {
                         "success",
                         "Los registros se importaron correctamente."
                     );
-                    handleSuccess("Importación realizada correctamente.");
+                    // Cerrar modal y actualizar datos
+                    cerrarModal();
+                    // Actualizar datos desde el servidor
+                    await fetchServerPage(1);
                 }
                 return;
             } else if (estado === "procesando") {
@@ -1637,21 +1640,19 @@ const showServerPaginationInfo = computed(
         >
             <template #default="{ form: slotForm, errors }">
                 <InputField
-                    class="modalInputs"
-                    :class="['noEditable', { noEditable: registroEditar === 'Editar Registro' }]"
+                    :class="['modalInputs', registroEditar ? 'noEditable' : '']"
                     label="Orden Trabajo Anterior"
                     v-model="slotForm.orden_trabajo_anterior"
                     name="orden_trabajo_anterior"
                     :error="errors.orden_trabajo_anterior"
                 />
                 <InputField
-                    class="modalInputs"
+                    :class="['modalInputs', registroEditar ? 'noEditable' : '']"
                     label="Origen Base"
                     v-model="slotForm.origen_base"
                     name="origen_base"
                     :error="errors.origen_base"
                     :readonly="registroEditar === 'Editar Registro'"
-                    :class="['noEditable', { noEditable: registroEditar === 'Editar Registro' }]"
                 />
                 <InputField
                     class="modalInputs"
