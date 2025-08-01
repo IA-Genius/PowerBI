@@ -38,12 +38,45 @@
 
         <!-- Vista Grid (AG-Grid) -->
         <div v-show="props.viewMode === 'grid'" class="relative">
+            <!-- Grid con datos -->
             <div
+                v-if="props.rows && props.rows.length > 0"
                 ref="gridContainer"
                 id="myGrid"
                 class="ag-theme-alpine w-full rounded-lg shadow border"
                 :style="{ height: gridHeightStyle.height }"
             ></div>
+
+            <!-- Sin datos en vista grid -->
+            <div
+                v-else
+                class="flex flex-col items-center justify-center min-h-[700px] h-full w-full text-center px-8 bg-white rounded-lg border shadow"
+            >
+                <div class="flex flex-col items-center space-y-4">
+                    <svg
+                        class="h-20 w-20 text-gray-300"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.5"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                    </svg>
+                    <div class="space-y-2">
+                        <h3 class="text-xl font-semibold text-gray-600">
+                            Sin registros para mostrar
+                        </h3>
+                        <p class="text-sm text-gray-400 max-w-md">
+                            No hay datos disponibles en este momento. Intenta
+                            ajustar los filtros o cargar nuevos datos.
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Vista de Tarjetas -->
@@ -64,33 +97,10 @@
                     </div>
                 </div>
 
-                <!-- Skeleton cards -->
-                <div
-                    v-else-if="isLoading"
-                    class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
-                >
-                    <div
-                        v-for="n in 8"
-                        :key="n"
-                        class="bg-white rounded-lg border border-gray-200 animate-pulse"
-                    >
-                        <div class="p-4 space-y-3">
-                            <div class="h-4 bg-gray-200 rounded w-3/4"></div>
-                            <div class="h-3 bg-gray-200 rounded w-1/2"></div>
-                            <div class="space-y-2">
-                                <div class="h-3 bg-gray-200 rounded"></div>
-                                <div
-                                    class="h-3 bg-gray-200 rounded w-5/6"
-                                ></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Sin datos -->
                 <div
                     v-else-if="!props.rows || props.rows.length === 0"
-                    class="flex flex-col items-center justify-center min-h-[500px] h-full w-full text-center px-8"
+                    class="flex flex-col items-center justify-center min-h-[700px] h-full w-full text-center px-8"
                 >
                     <div class="flex flex-col items-center space-y-4">
                         <svg
@@ -447,6 +457,7 @@ import {
     onUnmounted,
     shallowRef,
     markRaw,
+    nextTick,
 } from "vue";
 import Actions from "@/Components/Actions.vue";
 
@@ -781,7 +792,7 @@ if (hasActions) {
         let calculatedWidth =
             actionCount * baseWidth + padding + (actionCount - 1) * gap;
 
-        // Rangos mínimos y máximos (reducidos 40%)
+        // Rangos mínimos y máximos
         if (actionCount === 1) {
             calculatedWidth = Math.max(calculatedWidth, 54);
             calculatedWidth = Math.min(calculatedWidth, 72);
@@ -1098,85 +1109,125 @@ watch(
 // ========================================
 // CONFIGURACIÓN Y MONTAJE DE AG-GRID
 // ========================================
-onMounted(() => {
-    if (!window.agGrid?.createGrid) return;
+onMounted(async () => {
+    // Verificar que AG-Grid esté disponible
+    if (!window.agGrid?.createGrid) {
+        console.warn("AG-Grid no está disponible");
+        return;
+    }
 
-    const gridOptions = {
-        columnDefs,
-        rowData: markRaw(props.rows || []),
-        defaultColDef,
-        rowSelection: "multiple",
-        suppressRowClickSelection: false,
-        rowHeight: 37,
-        headerHeight: 35,
-        enableRangeSelection: false,
-        animateRows: false,
-        suppressCellFocus: true,
-        suppressColumnVirtualisation: false,
-        suppressRowVirtualisation: false,
-        rowBuffer: 10,
-        maxBlocksInCache: 2,
-        maxConcurrentDatasourceRequests: 1,
-        suppressAggFuncInHeader: true,
-        suppressMenuHide: true,
-        suppressMovableColumns: true,
-        onGridReady: (params) => {
-            gridApi = params.api;
+    // Esperar a que el DOM esté completamente renderizado
+    await nextTick();
 
-            const gridElement = gridContainer.value;
-            if (
-                gridElement &&
-                gridElement.offsetWidth > 0 &&
-                props.viewMode === "grid"
-            ) {
-                setTimeout(() => {
-                    if (gridApi && gridElement.offsetWidth > 0) {
-                        gridApi.sizeColumnsToFit();
-                    }
-                }, 100);
-            }
+    // Verificar que el contenedor del grid existe y está en el DOM
+    if (!gridContainer.value) {
+        console.warn("Contenedor del grid no encontrado");
+        return;
+    }
 
-            gridApi.addEventListener("selectionChanged", emitSelectedRows);
+    // Verificar que el contenedor está conectado al DOM
+    if (!gridContainer.value.isConnected) {
+        console.warn("Contenedor del grid no está conectado al DOM");
+        return;
+    }
 
-            if (
-                params.columnApi &&
-                typeof params.columnApi.getAllColumns === "function"
-            ) {
-                const allColumnIds = [];
-                params.columnApi.getAllColumns().forEach((column) => {
-                    allColumnIds.push(column.getId());
-                });
+    try {
+        const gridOptions = {
+            columnDefs,
+            rowData: markRaw(props.rows || []),
+            defaultColDef,
+            rowSelection: "multiple",
+            suppressRowClickSelection: false,
+            rowHeight: 37,
+            headerHeight: 35,
+            enableRangeSelection: false,
+            animateRows: false,
+            suppressCellFocus: true,
+            suppressColumnVirtualisation: false,
+            suppressRowVirtualisation: false,
+            rowBuffer: 10,
+            maxBlocksInCache: 2,
+            maxConcurrentDatasourceRequests: 1,
+            suppressAggFuncInHeader: true,
+            suppressMenuHide: true,
+            suppressMovableColumns: true,
+            onGridReady: (params) => {
+                gridApi = params.api;
 
+                const gridElement = gridContainer.value;
                 if (
-                    allColumnIds.length <= 8 &&
+                    gridElement &&
                     gridElement.offsetWidth > 0 &&
                     props.viewMode === "grid"
                 ) {
                     setTimeout(() => {
-                        if (params.columnApi && gridElement.offsetWidth > 0) {
-                            params.columnApi.autoSizeColumns(
-                                allColumnIds,
-                                false
-                            );
+                        if (
+                            gridApi &&
+                            !gridApi.isDestroyed?.() &&
+                            gridElement.offsetWidth > 0
+                        ) {
+                            gridApi.sizeColumnsToFit();
                         }
-                    }, 150);
+                    }, 100);
                 }
-            }
 
-            gridApi.hideOverlay();
-        },
-    };
+                gridApi.addEventListener("selectionChanged", emitSelectedRows);
 
-    const { createGrid } = window.agGrid;
-    gridApi = createGrid(gridContainer.value, gridOptions);
+                if (
+                    params.columnApi &&
+                    typeof params.columnApi.getAllColumns === "function"
+                ) {
+                    const allColumnIds = [];
+                    params.columnApi.getAllColumns().forEach((column) => {
+                        allColumnIds.push(column.getId());
+                    });
 
-    // Eventos personalizados
-    gridContainer.value.addEventListener("mousedown", handleMouseDown);
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
+                    if (
+                        allColumnIds.length <= 8 &&
+                        gridElement.offsetWidth > 0 &&
+                        props.viewMode === "grid"
+                    ) {
+                        setTimeout(() => {
+                            if (
+                                params.columnApi &&
+                                gridElement.offsetWidth > 0
+                            ) {
+                                params.columnApi.autoSizeColumns(
+                                    allColumnIds,
+                                    false
+                                );
+                            }
+                        }, 150);
+                    }
+                }
 
-    // Event listener para resize de ventana
-    window.addEventListener("resize", throttledResize);
+                gridApi.hideOverlay();
+            },
+        };
+
+        const { createGrid } = window.agGrid;
+        gridApi = createGrid(gridContainer.value, gridOptions);
+
+        // Verificar que el grid se creó correctamente
+        if (!gridApi) {
+            console.warn("No se pudo crear el grid AG-Grid");
+            return;
+        }
+
+        // Eventos personalizados - solo si el grid se creó exitosamente
+        if (gridContainer.value) {
+            gridContainer.value.addEventListener("mousedown", handleMouseDown);
+        }
+
+        document.addEventListener("mousemove", handleMouseMove);
+        document.addEventListener("mouseup", handleMouseUp);
+
+        // Event listener para resize de ventana
+        window.addEventListener("resize", throttledResize);
+    } catch (error) {
+        console.error("Error al crear AG-Grid:", error);
+        // No propagar el error para evitar que se rompa la aplicación
+    }
 });
 
 // ========================================
@@ -1251,13 +1302,38 @@ watch(
 // LIMPIEZA Y DESMONTAJE
 // ========================================
 onUnmounted(() => {
-    if (updateTimeout) clearTimeout(updateTimeout);
-    if (resizeTimeout) clearTimeout(resizeTimeout);
-    if (resizeRequestId) cancelAnimationFrame(resizeRequestId);
+    try {
+        // Limpiar timeouts
+        if (updateTimeout) clearTimeout(updateTimeout);
+        if (resizeTimeout) clearTimeout(resizeTimeout);
+        if (resizeRequestId) cancelAnimationFrame(resizeRequestId);
 
-    document.removeEventListener("mousemove", handleMouseMove);
-    document.removeEventListener("mouseup", handleMouseUp);
-    window.removeEventListener("resize", throttledResize);
+        // Limpiar grid API
+        if (gridApi && !gridApi.isDestroyed?.()) {
+            try {
+                gridApi.destroy();
+            } catch (error) {
+                console.warn("Error al destruir AG-Grid:", error);
+            }
+        }
+
+        // Remover event listeners
+        if (gridContainer.value) {
+            gridContainer.value.removeEventListener(
+                "mousedown",
+                handleMouseDown
+            );
+        }
+
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+        window.removeEventListener("resize", throttledResize);
+
+        // Limpiar referencias
+        gridApi = null;
+    } catch (error) {
+        console.warn("Error durante la limpieza del componente:", error);
+    }
 });
 </script>
 
