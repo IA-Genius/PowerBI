@@ -47,7 +47,7 @@ button {
     color: #fff !important;
 }
 .bgNaranga {
-    background: var(--colorSecundarioPalido)
+    background: var(--colorSecundarioPalido);
 }
 .bagroundSecundario {
     background: var(--colorSecundario);
@@ -114,7 +114,6 @@ label.linkCarteras {
     top: -4px;
     text-transform: capitalize;
 }
-
 
 .menu-scroll > ul::-webkit-scrollbar {
     display: none;
@@ -344,7 +343,23 @@ PAGINAS
     padding: 1.5rem 2rem;
     border-radius: 6px;
 }
+/*cambiosss*/
 
+.noEditable {
+    position: relative;
+}
+.noEditable input {
+    background: #373737;
+    border-color: #373737;
+}
+.noEditable:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
 /*==============
 MULTISELECT
 ==============*/

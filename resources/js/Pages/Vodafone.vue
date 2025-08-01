@@ -1638,6 +1638,7 @@ const showServerPaginationInfo = computed(
             <template #default="{ form: slotForm, errors }">
                 <InputField
                     class="modalInputs"
+                    :class="['noEditable', { noEditable: registroEditar === 'Editar Registro' }]"
                     label="Orden Trabajo Anterior"
                     v-model="slotForm.orden_trabajo_anterior"
                     name="orden_trabajo_anterior"
@@ -1649,6 +1650,8 @@ const showServerPaginationInfo = computed(
                     v-model="slotForm.origen_base"
                     name="origen_base"
                     :error="errors.origen_base"
+                    :readonly="registroEditar === 'Editar Registro'"
+                    :class="['noEditable', { noEditable: registroEditar === 'Editar Registro' }]"
                 />
                 <InputField
                     class="modalInputs"
